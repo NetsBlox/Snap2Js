@@ -1,0 +1,18 @@
+{
+  "name": "snap2js",
+  "version": "1.0.0",
+  "description": "Cross compiler from Snap! to JavaScript",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha --recursive test/"
+  },
+  "author": "Brian Broll",
+  "license": "ISC",
+  "devDependencies": {
+    "mocha": "^3.2.0"
+  },
+  "dependencies": {
+    "q": "^1.5.0",
+    "xml2js": "^0.4.17"
+  }
+}
