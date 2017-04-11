@@ -5,29 +5,72 @@
     const Q = require('q');
     const fs = require('fs');
     const inputFilename = process.argv[2];
+    const indent = lines => '  ' + lines.replace(/\n/g, '  ');
 
     const parseSpriteScripts = model => {
         var scripts = model.sprite[0].scripts[0].script;
-        console.log('getting scripts for', model.sprite[0]['$'].name);
-        console.log(scripts);
-        console.log();
-        return scripts.map(model => parseScript(model.block))
+        return scripts.map(parseScript);
     };
 
     const createAstNode = (curr, next) => {
         // TODO: Parse input blocks
-        var inputs = (curr.l || []).map(input =>
-            typeof input === 'object' ? createAstNode(input) : input
-        );
-        return {
-            type: curr['$'].s,
-            inputs: curr.l && inputs,
+        if (typeof curr !== 'object') {
+            return {
+                type: typeof curr,
+                value: curr
+            };
+        }
+
+        var node,
+            type;
+
+        if (!curr['$']) {
+            type = Object.keys(curr)[0];
+            if (type === 'block') {
+                console.log();
+                console.log(curr);
+                throw 'bad parsing';
+            }
+        } else {
+            type = curr['$'].s;
+        }
+        if (type === 'undefined') {
+            console.log();
+            console.log(curr);
+            throw 'bad parsing';
+        }
+
+        node = {
+            type: type,
+            inputs: null,
             next: next || null
         };
+
+        node.inputs = Object.keys(curr)
+            .filter(key => key !== '$')
+            .map(key => {
+                var is2dArray = curr[key][0] instanceof Array;
+
+                if (key === 'script') {
+                    return curr[key].map(parseScript);
+                } else {
+                    return curr[key].map(createAstNode);
+                }
+            });
+
+        if (type === 'doIfElse') {
+            console.log();
+            console.log('if-else');
+            console.log(curr);
+            console.log(curr.block[0].block);
+            console.log();
+        }
+        return node;
     };
 
-    const parseScript = blocks => {
+    const parseScript = script => {
         var rootNode,
+            blocks = script.block,
             last;
 
         for (var i = blocks.length; i--;) {
@@ -78,7 +121,6 @@
             });
     };
 
-    var indent = lines => '  ' + lines.replace(/\n/g, '  ');
     Snap2Js._initNodeMap = {};
     Snap2Js._initNodeMap.receiveGo = function(code, node) {
         return [
@@ -99,36 +141,80 @@
 
     Snap2Js.newContext = () => { return {}; };
     Snap2Js.generateCode = function(root) {
-        if (!Snap2Js._nodeMap[root.type]) throw `Unsupported node type: ${root.type}`;
-
-        if (root.next) {
-            return [
-                Snap2Js._nodeMap[root.type](root),
-                Snap2Js.generateCode(root.next)
-            ].join('\n');
-        } else {
-            return Snap2Js._nodeMap[root.type](root)
+        if (!Snap2Js._nodeMap[root.type]) {
+            console.log();
+            console.log();
+            console.log(root);
+            console.log();
+            console.log();
+            throw `Unsupported node type: ${root.type}`;
         }
+
+        // TODO: Generate the 'next' blocks
+        return Snap2Js._nodeMap[root.type](root)
     };
 
     Snap2Js._nodeMap = {};
 
     var isAstNode = val => typeof val === 'object' && val.type;
 
+    // Templates...
     Snap2Js._nodeMap.bubble = function(node) {
         var inputs;
 
-        if (isAstNode(node.inputs[0])) {
-            inputs = Snap2Js.generateCode(node.inputs[0]);
-        } else {
-            inputs = `'${node.inputs[0]}'`;
-        }
+        inputs = Snap2Js.generateCode(node.inputs[0][0]);
+        console.log('inputs', inputs);
         return `__ENV.bubble(${inputs});`;
     };
 
+    Snap2Js._nodeMap.doIfElse = function(node) {
+        console.log('>>> node:', node);
+        var cond = Snap2Js.generateCode(node.inputs[0][0]),
+            ifTrue = Snap2Js.generateCode(node.inputs[1][0]),
+            ifFalse = Snap2Js.generateCode(node.inputs[1][1]);
+
+        console.log(ifFalse);
+        return [
+            `if (${cond}) {`,
+            indent(ifTrue),
+            `} else {`,
+            indent(ifFalse),
+            `}`
+        ].join('\n');
+    };
+
+    Snap2Js._nodeMap.reportEquals = function(node) {
+        console.log('<<<< ', node);
+        var left = Snap2Js.generateCode(node.inputs[0][0]),
+            right = Snap2Js.generateCode(node.inputs[1][0]);
+
+        return `+${left} === +${right}`;
+    };
+
+    Snap2Js._nodeMap.string = function(node) {
+        return `'${node.value}'`;
+    };
+
+    Snap2Js._nodeMap.getScale = function(node) {
+        return `100`;
+    };
+
+    Snap2Js._nodeMap.doSayFor = function(node) {
+        var inputs = node.inputs[0].map(Snap2Js.generateCode);
+        inputs[1] = '+' + inputs[1];
+        return `__ENV.doSayFor(${inputs.join(', ')})`;
+    };
+
+    Snap2Js._nodeMap.reportJoinWords = function(node) {
+        var listInput = node.inputs[0][0],
+            inputs = listInput.inputs[0].map(Snap2Js.generateCode);
+
+        return `[${inputs.join(',')}].join('')`;
+    };
+
     Snap2Js._nodeMap.turnLeft = function(node) {
-        return '// When I turn left... TODO';
         // TODO
+        return '// When I turn left... TODO';
     };
 
 

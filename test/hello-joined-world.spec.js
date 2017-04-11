@@ -1,4 +1,4 @@
-describe('hello world', function() {
+describe('hello (joined) world', function() {
     let fs = require('fs'),
         path = require('path'),
         TEST_CASE_DIR = path.join(__dirname, 'test-cases'),
@@ -7,7 +7,7 @@ describe('hello world', function() {
         content;
 
     before(function(){
-        content = fs.readFileSync(path.join(TEST_CASE_DIR, 'hello-world.xml'));
+        content = fs.readFileSync(path.join(TEST_CASE_DIR, 'hello-joined-world.xml'));
     });
 
     describe('transpile', function() {
@@ -21,12 +21,9 @@ describe('hello world', function() {
                 .nodeify(done);
         });
 
-        it('should generate js code', function() {
-            assert(code);
-        });
-
-        it('should contain "bubble" block selector (fn)', function() {
-            assert(code.includes('bubble'));
+        it('should contain "bubble" block selector w/ nested fn', function() {
+            console.log('code', code);
+            assert(/bubble\([^'"]/.test(code));
         });
 
     });
@@ -36,10 +33,11 @@ describe('hello world', function() {
             .then(bin => {
                 var cxt = snap2js.newContext();
                 cxt['bubble'] = function(str) {
-                    assert.equal(str, 'Hello world!');
+                    assert.equal(str, 'hello world!');
                     done();
                 };
                 bin(cxt);
-            });
+            })
+            .fail(err => done(err));
     });
 });
