@@ -1,11 +1,11 @@
 // We will be generating JavaScript code which will call the primitive fns
-// TODO
 (function(Snap2Js) {
     const xml2js = require('xml2js');
     const Q = require('q');
     const fs = require('fs');
     const inputFilename = process.argv[2];
-    const indent = lines => '  ' + lines.replace(/\n/g, '  ');
+    const indent = require('./src/indent');
+    const DefaultBackend = require('./src/backend');
 
     const parseSpriteScripts = model => {
         var scripts = model.sprite[0].scripts[0].script;
@@ -58,13 +58,6 @@
                 }
             });
 
-        if (type === 'doIfElse') {
-            console.log();
-            console.log('if-else');
-            console.log(curr);
-            console.log(curr.block[0].block);
-            console.log();
-        }
         return node;
     };
 
@@ -97,6 +90,7 @@
     };
 
     Snap2Js.compile = function(xml) {
+        console.log('------ compiling ------');
         return Snap2Js.transpile(xml)
             .then(src => {
                 return new Function('__ENV', src);
@@ -141,7 +135,7 @@
 
     Snap2Js.newContext = () => { return {}; };
     Snap2Js.generateCode = function(root) {
-        if (!Snap2Js._nodeMap[root.type]) {
+        if (!Snap2Js._backend[root.type]) {
             console.log();
             console.log();
             console.log(root);
@@ -150,79 +144,17 @@
             throw `Unsupported node type: ${root.type}`;
         }
 
-        var code = Snap2Js._nodeMap[root.type](root);
-        if (!Snap2Js._nodeMap[root.type].async && root.next) {
+        console.log('-- START', root.type);
+        var code = Snap2Js._backend[root.type].call(Snap2Js, root);
+        if (!Snap2Js._backend[root.type].async && root.next) {
             code += '\n' + Snap2Js.generateCode(root.next);
         }
+        console.log('-- END', root.type);
         return code;
     };
 
-    Snap2Js._nodeMap = {};
-
-    var isAstNode = val => typeof val === 'object' && val.type;
-
-    // Templates...
-    Snap2Js._nodeMap.bubble = function(node) {
-        var inputs;
-
-        inputs = Snap2Js.generateCode(node.inputs[0][0]);
-        console.log('inputs', inputs);
-        return `__ENV.bubble(${inputs});`;
-    };
-
-    Snap2Js._nodeMap.doIfElse = function(node) {
-        console.log('>>> node:', node);
-        var cond = Snap2Js.generateCode(node.inputs[0][0]),
-            ifTrue = Snap2Js.generateCode(node.inputs[1][0]),
-            ifFalse = Snap2Js.generateCode(node.inputs[1][1]);
-
-        console.log(ifFalse);
-        return [
-            `if (${cond}) {`,
-            indent(ifTrue),
-            `} else {`,
-            indent(ifFalse),
-            `}`
-        ].join('\n');
-    };
-
-    Snap2Js._nodeMap.reportEquals = function(node) {
-        console.log('<<<< ', node);
-        var left = Snap2Js.generateCode(node.inputs[0][0]),
-            right = Snap2Js.generateCode(node.inputs[1][0]);
-
-        return `+${left} === +${right}`;
-    };
-
-    Snap2Js._nodeMap.string = function(node) {
-        return `'${node.value}'`;
-    };
-
-    Snap2Js._nodeMap.getScale = function(node) {
-        return `__ENV.${node.type}()`;
-    };
-
-    Snap2Js._nodeMap.doSayFor = function(node) {
-        var inputs = node.inputs[0].map(Snap2Js.generateCode);
-        inputs[1] = '+' + inputs[1];
-        return `__ENV.doSayFor(${inputs.join(', ')});`;
-    };
-
-    Snap2Js._nodeMap.reportJoinWords = function(node) {
-        var listInput = node.inputs[0][0],
-            inputs = listInput.inputs[0].map(Snap2Js.generateCode);
-
-        return `[${inputs.join(',')}].join('')`;
-    };
-
-    Snap2Js._nodeMap.turnLeft = function(node) {
-        // TODO
-        return '__ENV.turnLeft(${inputs.join(', ')})';
-    };
-
-    Snap2Js._nodeMap.forward = function(node) {
-        var dist = Snap2Js.generateCode(node.inputs[0][0]);
-        return `__ENV.${node.type}(${dist});`;
-    };
+    Snap2Js._backend = {};
+    Snap2Js.setBackend = backend => Snap2Js._backend = backend;
+    Snap2Js.setBackend(DefaultBackend);
 
 })(module.exports);
