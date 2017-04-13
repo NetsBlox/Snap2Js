@@ -1,4 +1,4 @@
-describe.only('hello if-else', function() {
+describe('hello if-else', function() {
     let fs = require('fs'),
         path = require('path'),
         TEST_CASE_DIR = path.join(__dirname, 'test-cases'),
@@ -22,22 +22,49 @@ describe.only('hello if-else', function() {
         });
 
         it('should contain "bubble" block selector w/ nested fn', function() {
-            console.log('code', code);
             assert(/bubble\([^'"]/.test(code));
         });
 
     });
 
-    it('should call "bubble" with "Hello world!"', function(done) {
-        snap2js.compile(content)
-            .then(bin => {
-                var cxt = snap2js.newContext();
-                cxt['bubble'] = function(str) {
-                    assert.equal(str, 'hello world!');
-                    done();
-                };
-                bin(cxt);
-            })
-            .fail(err => done(err));
+    describe('compile', function() {
+        var bin;
+
+        before(function(done) {
+            snap2js.compile(content)
+                .then(_bin => bin = _bin)
+                .nodeify(done);
+        });
+
+        it('should call "bubble" if "getScale" != 50', function(done) {
+            var cxt = snap2js.newContext();
+            cxt['getScale'] = () => 49;
+            cxt['bubble'] = function(str) {
+                assert.equal(str, 'hello world!');
+                done();
+            };
+            bin(cxt);
+        });
+
+        it('should call "doSayFor" if "getScale" == 50', function(done) {
+            var cxt = snap2js.newContext(),
+                said = false;
+
+            cxt['getScale'] = () => 50;
+            cxt['bubble'] = function(str) {
+                assert(false);
+            };
+            cxt['doSayFor'] = function(str, time) {
+                assert.equal(time, 2);
+                assert.equal(str, 'I am small');
+                said = true;
+            };
+            cxt['forward'] = function(d) {
+                assert.equal(d, 10);
+                assert(said);
+                done();
+            };
+            bin(cxt);
+        });
     });
 });

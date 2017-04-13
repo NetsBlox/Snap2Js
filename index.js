@@ -150,8 +150,11 @@
             throw `Unsupported node type: ${root.type}`;
         }
 
-        // TODO: Generate the 'next' blocks
-        return Snap2Js._nodeMap[root.type](root)
+        var code = Snap2Js._nodeMap[root.type](root);
+        if (!Snap2Js._nodeMap[root.type].async && root.next) {
+            code += '\n' + Snap2Js.generateCode(root.next);
+        }
+        return code;
     };
 
     Snap2Js._nodeMap = {};
@@ -196,13 +199,13 @@
     };
 
     Snap2Js._nodeMap.getScale = function(node) {
-        return `100`;
+        return `__ENV.${node.type}()`;
     };
 
     Snap2Js._nodeMap.doSayFor = function(node) {
         var inputs = node.inputs[0].map(Snap2Js.generateCode);
         inputs[1] = '+' + inputs[1];
-        return `__ENV.doSayFor(${inputs.join(', ')})`;
+        return `__ENV.doSayFor(${inputs.join(', ')});`;
     };
 
     Snap2Js._nodeMap.reportJoinWords = function(node) {
@@ -214,8 +217,12 @@
 
     Snap2Js._nodeMap.turnLeft = function(node) {
         // TODO
-        return '// When I turn left... TODO';
+        return '__ENV.turnLeft(${inputs.join(', ')})';
     };
 
+    Snap2Js._nodeMap.forward = function(node) {
+        var dist = Snap2Js.generateCode(node.inputs[0][0]);
+        return `__ENV.${node.type}(${dist});`;
+    };
 
 })(module.exports);
