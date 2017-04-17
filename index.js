@@ -6,6 +6,7 @@
     const inputFilename = process.argv[2];
     const indent = require('./src/indent');
     const DefaultBackend = require('./src/backend');
+    const DefaultContext = require('./src/context/default');
 
     const parseSpriteScripts = model => {
         var scripts = model.sprite[0].scripts[0].script;
@@ -93,6 +94,7 @@
         console.log('------ compiling ------');
         return Snap2Js.transpile(xml)
             .then(src => {
+                src = `console.log('hey', __ENV);\n` + src 
                 return new Function('__ENV', src);
             });
     };
@@ -133,7 +135,7 @@
         }
     };
 
-    Snap2Js.newContext = () => { return {}; };
+    Snap2Js.newContext = () => { return DefaultContext; };
     Snap2Js.generateCode = function(root) {
         if (!Snap2Js._backend[root.type]) {
             console.log();
