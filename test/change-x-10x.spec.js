@@ -23,7 +23,7 @@ describe('change x 10x', function() {
         });
 
         it('should contain "setXPosition"', function() {
-            assert(/setXPosition\([^'"]/.test(code));
+            assert(/setXPosition.call\([^'"]/.test(code));
         });
 
         it('should contain "for"', function() {

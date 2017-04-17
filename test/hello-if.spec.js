@@ -22,7 +22,7 @@ describe('hello if-else', function() {
         });
 
         it('should contain "bubble" block selector w/ nested fn', function() {
-            assert(/bubble\([^'"]/.test(code));
+            assert(/bubble.call\([^'"]/.test(code));
         });
 
     });
