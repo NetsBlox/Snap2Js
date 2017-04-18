@@ -22,8 +22,8 @@ describe('concurrency', function() {
                 .nodeify(done);
         });
 
-        it('should contain "setXPosition"', function() {
-            assert(/setXPosition.call\([^'"]/.test(code));
+        it('should contain "doWarp"', function() {
+            assert(/doWarp.call\([^'"]/.test(code));
         });
 
         it('should contain "for"', function() {

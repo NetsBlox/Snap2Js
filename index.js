@@ -8,10 +8,25 @@
     const DefaultBackend = require('./src/backend');
     const DefaultContext = require('./src/context/default');
     const _ = require('lodash');
+    const boilerplate = fs.readFileSync('./src/base.js.ejs', 'utf8');
+    const boilerplateTpl = _.template(boilerplate);
 
     const parseSpriteScripts = model => {
-        var scripts = model.sprite[0].scripts[0].script;
-        return scripts.map(parseScript);
+        var rawScripts = model.sprite[0].scripts[0].script,
+            asts = rawScripts.map(parseScript),
+            eventHandlers = {},
+            code;
+
+        for (var i = asts.length; i--;) {
+            code = Snap2Js.generateScriptCode(asts[i]);
+            if (code) {
+                if (!eventHandlers[asts[i].type]) {
+                    eventHandlers[asts[i].type] = [];
+                }
+                eventHandlers[asts[i].type].push(code);
+            }
+        }
+        return eventHandlers;
     };
 
     const createAstNode = (curr, next) => {
@@ -76,23 +91,51 @@
         return last;
     };
 
+    parseVariableValue = function(variable) {
+        var value = 0;
+
+        if (variable.l) {
+            value = variable.l[0];
+        } else if (variable.list) {
+            value = variable.list[0].item.map(item => parseVariableValue(item));
+        }
+        return value;
+    };
+
+    parseInitialVariables = function(vars) {
+        var context = {},
+            variable;
+
+        for (var i = vars.length; i--;) {
+            variable = vars[i];
+            context[variable['$'].name] = parseVariableValue(variable);
+        }
+        console.log(context);
+        return context;
+    };
+
+    Snap2Js.parseSprite = function(raw) {
+        var rawSprite = raw.sprite[0];
+        var sprite = {
+            id: rawSprite['$'].collabId,
+            name: rawSprite['$'].name,
+            variables: parseInitialVariables(rawSprite.variables[0].variable),
+            scripts: parseSpriteScripts(raw)
+        };
+        return sprite;
+    };
+
     // This is odd because we need different contexts for each sprite...
     // TODO
     Snap2Js.parse = function(content) {
         return Q.nfcall(xml2js.parseString, content).then(parsed => {
                 var sprites = parsed.project.stage[0].sprites;
-
-                console.log('sprite scripts', sprites[0].sprite[0].scripts[0]);
-                const scripts = sprites.map(parseSpriteScripts);
-
-                console.log(scripts);
-                return scripts;
+                return sprites.map(Snap2Js.parseSprite);
             });
 
     };
 
     Snap2Js.compile = function(xml) {
-        console.log('------ compiling ------');
         return Snap2Js.transpile(xml)
             .then(src => {
                 console.log(src);
@@ -102,19 +145,15 @@
 
     Snap2Js.transpile = function(xml) {
         return Snap2Js.parse(xml)
-            .then(asts => {
+            .then(sprites => {
+                console.log(sprites[0].scripts);
+
                 // TODO: for now, we will ignore sprite var scoping
-                asts = asts.reduce((l1, l2) => l1.concat(l2), []);
+                var code = boilerplateTpl({sprites: sprites});
+                console.log(code);
 
-                console.log('asts', asts);
-                // TODO: Create the src code
-
-                var code = asts.map(Snap2Js.generateScriptCode).join('\n\n');
                 // TODO: Add context info
-                return [
-                    '__ENV = __ENV || this;',
-                    code.replace(/\n/g, '  \n')
-                ].join('\n')
+                return code;
             });
     };
 
