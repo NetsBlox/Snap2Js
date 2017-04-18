@@ -19,12 +19,12 @@ backend.forward = function(node) {
 backend.doWarp = function(node) {
     console.log(node);
     // TODO
-    return `__ENV.${node.type}.call(this)`;
+    return `__ENV.${node.type}.call(this);`;
 };
 
 backend.doWait = function(node) {
     var time = this.generateCode(node.inputs[0][0]);
-    return `__ENV.${node.type}.call(this, ${time})`;
+    return `__ENV.${node.type}.call(this, ${time});`;
 };
 
 backend.doIfElse = function(node) {
@@ -43,12 +43,13 @@ backend.doIfElse = function(node) {
 
 backend.doRepeat = function(node) {
     var count = this.generateCode(node.inputs[0][0]),
-        body = this.generateCode(node.inputs[1][0]);
+        body = this.generateCode(node.inputs[1][0]),
+        iterVar = node.id;
 
     return [
-        `for (var _i = ${count}; _i--;) {`,
+        `for (var ${iterVar} = +${count}; ${iterVar}--;) {`,
         indent(body),
-        `}`
+        `}\n`
     ].join('\n');
 };
 

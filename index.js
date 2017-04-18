@@ -27,6 +27,7 @@
             type;
 
         node = {
+            id: null,
             type: null,
             inputs: null,
             next: next || null
@@ -42,6 +43,7 @@
             node.value = curr['$'].var;
         } else {
             type = curr['$'].s;
+            node.id = curr['$'].collabId;
         }
         if (type === 'undefined') {
             throw 'bad parsing';
