@@ -1,3 +1,10 @@
+class Variable {
+    constructor(name, value) {
+        this.name = name;
+        this.value = value;
+    }
+}
+
 class VariableFrame {
     constructor(parent) {
         this.parent = parent;
@@ -10,6 +17,10 @@ class VariableFrame {
         } else if (this.parent) {
             return this.parent.get(name);
         }
+    }
+
+    set(name, value) {
+        this.vars[name] = new Variable(name, value);
     }
 }
 
@@ -44,9 +55,11 @@ project.stage = new Stage(project.variables);
 var sprite;
 <% sprites.forEach(function(rawSprite) { %>
 sprite = new Sprite('<%= rawSprite.name %>', project.variables);
+<% Object.keys(rawSprite.variables).forEach(function(variable) { %>
+sprite.variables.set('<%= variable %>', JSON.parse('<%= JSON.stringify(rawSprite.variables[variable]) %>'));<% }) %>
 
 sprite.onFlagPressed = function() {
-console.log(this.name, 'is starting!')
+    var self = this;
 <%
 rawSprite.scripts.receiveGo
     .forEach(function(code) {
@@ -55,10 +68,10 @@ rawSprite.scripts.receiveGo
 <%
 });
 %>
-console.log(this.name, 'finished')
 };
 
 sprite.onKeyPressed = function(key) {
+    var self = this;
     if (key === 'l') {
         // Add code for the given key...
         // TODO
@@ -66,6 +79,8 @@ sprite.onKeyPressed = function(key) {
 };
 
 sprite.onUserEventReceived = function(event) {
+    var self = this;
+
     if (event === 'fire!') {
         // Add code for the given event...
         // TODO
@@ -73,6 +88,8 @@ sprite.onUserEventReceived = function(event) {
 };
 
 sprite.onEventReceived = function(event) {
+    var self = this;
+
     if (event === 'clicked') {
         // Add code for the given event...
         // TODO
@@ -80,6 +97,8 @@ sprite.onEventReceived = function(event) {
 };
 
 sprite.checkConditions = function() {
+    var self = this;
+
     // TODO: add arbitrary hat block code here
 };
 

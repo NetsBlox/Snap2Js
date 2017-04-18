@@ -2,6 +2,11 @@
 const indent = require('./indent');
 var backend = {};
 
+var callFnWithArgs = function(fn) {
+    var inputs = Array.prototype.slice.call(arguments, 1);
+    return `__ENV.${fn}.call(self, ${inputs.join(', ')}, __CONTEXT)`;
+};
+
 ///////////////////// Motion ///////////////////// 
 
 backend.turnRight =
@@ -12,19 +17,19 @@ backend.changeXPosition =
 backend.changeYPosition =
 backend.forward = function(node) {
     var dist = this.generateCode(node.inputs[0][0]);
-    return `__ENV.${node.type}.call(this, +${dist});`;
+    return callFnWithArgs(node.type, `+${dist}`) + ';';
 };
 
 ///////////////////// Control ///////////////////// 
 backend.doWarp = function(node) {
     console.log(node);
     // TODO
-    return `__ENV.${node.type}.call(this);`;
+    return callFnWithArgs(node.type) + ';';
 };
 
 backend.doWait = function(node) {
     var time = this.generateCode(node.inputs[0][0]);
-    return `__ENV.${node.type}.call(this, ${time});`;
+    return callFnWithArgs(node.type, time) + ';';
 };
 
 backend.doIfElse = function(node) {
@@ -55,20 +60,20 @@ backend.doRepeat = function(node) {
 
 ///////////////////// Looks ///////////////////// 
 backend.getScale = function(node) {
-    return `__ENV.${node.type}.call(this)`;
+    return callFnWithArgs(node.type);
 };
 
 backend.doSayFor = function(node) {
     var inputs = node.inputs[0].map(this.generateCode);
     inputs[1] = '+' + inputs[1];
-    return `__ENV.doSayFor.call(this, ${inputs.join(', ')});`;
+    return callFnWithArgs(node.type, inputs.join(', ')) + ';';
 };
 
 backend.bubble = function(node) {
     var inputs;
 
     inputs = this.generateCode(node.inputs[0][0]);
-    return `__ENV.bubble.call(this, ${inputs});`;
+    return callFnWithArgs(node.type, inputs) + ';';
 };
 
 ///////////////////// Operators ///////////////////// 
@@ -93,21 +98,21 @@ backend.doSetVar = function(node) {
     var name = this.generateCode(node.inputs[0][0]);
     var value = this.generateCode(node.inputs[0][1] || node.inputs[1][0]) || null;
 
-    return `__ENV.${node.type}.call(this, ${name}, ${value});`;
+    return callFnWithArgs(node.type, name, value) + ';';
 };
 
 backend.doShowVar =
 backend.doHideVar = function(node) {
     var name = this.generateCode(node.inputs[0][0]);
 
-    return `__ENV.${node.type}.call(this, ${name});`;
+    return `__ENV.${node.type}.call(self, ${name});`;
 };
 
 backend.doDeclareVariables = function(node) {
     var names = node.inputs[0][0].inputs[0]
         .map(input => this.generateCode(input));
 
-    return `__ENV.${node.type}.call(this, ${names});`;
+    return `__ENV.${node.type}.call(self, ${names});`;
 };
 
 backend.doAddToList = function(node) {
@@ -118,7 +123,7 @@ backend.doAddToList = function(node) {
     if (rawList && rawList.type === 'variable') {
         list = `'${rawList.value}'`;
     }
-    return `__ENV.${node.type}.call(this, ${value}, ${list});`;
+    return `__ENV.${node.type}.call(self, ${value}, ${list});`;
 };
 
 backend.reportListLength = function(node) {
@@ -128,19 +133,19 @@ backend.reportListLength = function(node) {
         variable = node.inputs[0][0].value;
     }
 
-    return `__ENV.${node.type}.call(this, '${variable}')`;
+    return `__ENV.${node.type}.call(self, '${variable}')`;
 };
 
 backend.reportListItem = function(node) {
     var index = this.generateCode(node.inputs[0][0]),
         list = this.generateCode(node.inputs[1][0]);
 
-    return `__ENV.${node.type}.call(this, ${index}, ${list})`;
+    return `__ENV.${node.type}.call(self, ${index}, ${list})`;
 };
 
 backend.reportCDR = function(node) {
     var list = this.generateCode(node.inputs[0][0]);
-    return `__ENV.${node.type}.call(this, ${list})`;
+    return `__ENV.${node.type}.call(self, ${list})`;
 };
 
 backend.reportNewList = function(node) {
@@ -148,26 +153,26 @@ backend.reportNewList = function(node) {
     console.log(node.inputs);
     var items = [];
     // TODO: multiple item support
-    return `__ENV.${node.type}.call(this)`;
+    return `__ENV.${node.type}.call(self)`;
 };
 
 backend.reportListContainsItem = function(node) {
     var list = this.generateCode(node.inputs[0][0]);
     var item = this.generateCode(node.inputs[1][0]);
-    return `__ENV.${node.type}.call(this, ${list}, ${item})`;
+    return `__ENV.${node.type}.call(self, ${list}, ${item})`;
 };
 
 backend.doDeleteFromList = function(node) {
     var list = this.generateCode(node.inputs[1][0]);
     var index = this.generateCode(node.inputs[0][0]);
-    return `__ENV.${node.type}.call(this, ${index}, ${list});`;
+    return `__ENV.${node.type}.call(self, ${index}, ${list});`;
 };
 
 backend.doReplaceInList = function(node) {
     var index = this.generateCode(node.inputs[0][0]);
     var item = this.generateCode(node.inputs[0][1]);
     var list = this.generateCode(node.inputs[1][0]);
-    return `__ENV.${node.type}.call(this, ${index}, ${list}, ${item});`;
+    return `__ENV.${node.type}.call(self, ${index}, ${list}, ${item});`;
 };
 
 backend.doInsertInList = function(node) {
@@ -180,11 +185,11 @@ backend.doInsertInList = function(node) {
         listName = `'${rawList.value}'`;
     }
 
-    return `__ENV.${node.type}.call(this, ${value}, ${index}, ${listName});`;
+    return `__ENV.${node.type}.call(self, ${value}, ${index}, ${listName}, __CONTEXT);`;
 };
 
 backend.variable = function(node) {
-    return `__ENV.${node.type}.call(this, '${node.value}')`;
+    return `__ENV.${node.type}.call(self, '${node.value}', __CONTEXT)`;
 };
 
 ///////////////////// Primitives ///////////////////// 

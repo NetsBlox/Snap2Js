@@ -8,22 +8,30 @@ describe('variables', function() {
 
     describe.only('initial values', function() {
         var bin,
-            cxt;
+            cxt,
+            values;
 
         before(function(done) {
             content = fs.readFileSync(path.join(TEST_CASE_DIR, 'initial-variables.xml'));
             cxt = snap2js.newContext();
 
+            values = [];
+            cxt['bubble'] = variable => values.push(variable.value);
             snap2js.compile(content)
-                .then(_bin => bin = _bin)
+                .then(bin => {
+                    bin(cxt);
+                })
                 .nodeify(done);
         });
 
-        it('should set list to 14', function(done) {
-            cxt['bubble'] = value => {
-                if (value === 14) done();
-            };
-            bin(cxt);
+        it('should first say 14', function() {
+            assert.equal(values[0], 14);
+        });
+
+        it('should second say list 1,2,3', function() {
+            assert.equal(values[1][0], 1);
+            assert.equal(values[1][1], 2);
+            assert.equal(values[1][2], 3);
         });
     });
 

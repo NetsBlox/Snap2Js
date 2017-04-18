@@ -146,11 +146,10 @@
     Snap2Js.transpile = function(xml) {
         return Snap2Js.parse(xml)
             .then(sprites => {
-                console.log(sprites[0].scripts);
+                console.log(sprites);
 
                 // TODO: for now, we will ignore sprite var scoping
                 var code = boilerplateTpl({sprites: sprites});
-                console.log(code);
 
                 // TODO: Add context info
                 return code;
@@ -162,6 +161,7 @@
         // TODO: add script context
         return [
             '(function() {',
+            'var __CONTEXT = new VariableFrame(self.variables);',
             indent(code),
             '})()'
         ].join('\n');
@@ -169,10 +169,6 @@
 
     Snap2Js.generateScriptCode = function(root) {
         if (Snap2Js._initNodeMap[root.type]) {
-            var code = Snap2Js.generateCode(root.next);
-            console.log();
-            console.log('--- code');
-            console.log(code);
             return Snap2Js._initNodeMap[root.type](Snap2Js.generateCode(root.next), root);
         } else {
             console.error('warn: script does not start with supported init node:', root.type);

@@ -13,4 +13,13 @@ context.reportListLength = function(name) {
     return this.variables.get(name).length;
 };
 
+context.variable = function(name, context) {
+    return context.get(name);
+};
+
+context.doChangeVar = function(name, val, context) {
+    var variable = context.get(name);
+    variable.value = +variable.value + (+val);
+};
+
 module.exports = context;
