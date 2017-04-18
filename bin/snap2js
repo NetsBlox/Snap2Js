@@ -25,10 +25,10 @@ function compileFile(filename, opts, logger) {
 
     logger.debug('compiling ' + filename + ' to ' + outfile);
     return Q.ninvoke(fs, 'readFile', filename)
-        .then(contents => snap2js.compile(contents))
+        .then(contents => snap2js.transpile(contents))
         .then(fn => {
             // FIXME: make this more generic
-            var code = `(${fn.toString()})(require('./src/context/${context}'))`;
+            var code = `(function test(__EVAL) {${fn.toString()}})(require('./src/context/${context}'))`;
             return Q.ninvoke(fs, 'writeFile', outfile, code);
         })
         .then(() => logger.info('finished compiling', outfile))

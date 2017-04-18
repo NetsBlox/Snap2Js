@@ -97,7 +97,12 @@
         if (variable.l) {
             value = variable.l[0];
         } else if (variable.list) {
-            value = variable.list[0].item.map(item => parseVariableValue(item));
+            console.log(variable.list);
+            if (variable.list[0].item) {
+                value = variable.list[0].item.map(item => parseVariableValue(item));
+            } else {
+                value = [];
+            }
         }
         return value;
     };

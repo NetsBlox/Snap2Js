@@ -1,4 +1,4 @@
-describe.only('variables', function() {
+describe('variables', function() {
     let fs = require('fs'),
         path = require('path'),
         TEST_CASE_DIR = path.join(__dirname, 'test-cases'),

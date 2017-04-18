@@ -8,9 +8,15 @@ var context = _.cloneDeep(base);
 
 // Add the basic overrides
 
+///////////////////// Operators ///////////////////// 
+context.reportEquals = function(left, right) {
+    return left == right;
+};
+
 ///////////////////// Variables ///////////////////// 
-context.reportListLength = function(name) {
-    return this.variables.get(name).length;
+context.reportListLength = function(name, context) {
+    console.log(context);
+    return context.get(name).value.length;
 };
 
 context.variable = function(name, context) {
@@ -31,6 +37,13 @@ context.doDeclareVariables = function() {
     console.log('declaring', args[i]);
     for (var i = args.length; i--;) {
         context.set(args[i], 0);
+    }
+};
+
+context.doAddToList = function(value, name, context) {
+    var list = context.get(name);
+    if (name && list) {
+        list.value.push(value);
     }
 };
 

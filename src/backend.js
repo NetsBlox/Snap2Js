@@ -4,7 +4,10 @@ var backend = {};
 
 var callFnWithArgs = function(fn) {
     var inputs = Array.prototype.slice.call(arguments, 1);
-    return `__ENV.${fn}.call(self, ${inputs.join(', ')}, __CONTEXT)`;
+    if (inputs.length) {
+        return `__ENV.${fn}.call(self, ${inputs.join(', ')}, __CONTEXT)`;
+    }
+    return `__ENV.${fn}.call(self, __CONTEXT)`;
 };
 
 ///////////////////// Motion ///////////////////// 
@@ -122,7 +125,7 @@ backend.doAddToList = function(node) {
     if (rawList && rawList.type === 'variable') {
         list = `'${rawList.value}'`;
     }
-    return `__ENV.${node.type}.call(self, ${value}, ${list});`;
+    return callFnWithArgs(node.type, value, list) + ';';
 };
 
 backend.reportListLength = function(node) {
@@ -132,19 +135,19 @@ backend.reportListLength = function(node) {
         variable = node.inputs[0][0].value;
     }
 
-    return `__ENV.${node.type}.call(self, '${variable}')`;
+    return callFnWithArgs(node.type, `'${variable}'`);
 };
 
 backend.reportListItem = function(node) {
     var index = this.generateCode(node.inputs[0][0]),
         list = this.generateCode(node.inputs[1][0]);
 
-    return `__ENV.${node.type}.call(self, ${index}, ${list})`;
+    return callFnWithArgs(node.type, index, list);
 };
 
 backend.reportCDR = function(node) {
     var list = this.generateCode(node.inputs[0][0]);
-    return `__ENV.${node.type}.call(self, ${list})`;
+    return callFnWithArgs(node.type, list);
 };
 
 backend.reportNewList = function(node) {
@@ -152,26 +155,27 @@ backend.reportNewList = function(node) {
     console.log(node.inputs);
     var items = [];
     // TODO: multiple item support
-    return `__ENV.${node.type}.call(self)`;
+    return callFnWithArgs(node.type);
 };
 
 backend.reportListContainsItem = function(node) {
     var list = this.generateCode(node.inputs[0][0]);
     var item = this.generateCode(node.inputs[1][0]);
-    return `__ENV.${node.type}.call(self, ${list}, ${item})`;
+    return callFnWithArgs(node.type, list, item);
 };
 
 backend.doDeleteFromList = function(node) {
     var list = this.generateCode(node.inputs[1][0]);
     var index = this.generateCode(node.inputs[0][0]);
-    return `__ENV.${node.type}.call(self, ${index}, ${list});`;
+    return callFnWithArgs(node.type, index, list) + ';';
 };
 
 backend.doReplaceInList = function(node) {
     var index = this.generateCode(node.inputs[0][0]);
     var item = this.generateCode(node.inputs[0][1]);
     var list = this.generateCode(node.inputs[1][0]);
-    return `__ENV.${node.type}.call(self, ${index}, ${list}, ${item});`;
+
+    return callFnWithArgs(node.type, index, list, item) + ';';
 };
 
 backend.doInsertInList = function(node) {
@@ -184,11 +188,11 @@ backend.doInsertInList = function(node) {
         listName = `'${rawList.value}'`;
     }
 
-    return `__ENV.${node.type}.call(self, ${value}, ${index}, ${listName}, __CONTEXT);`;
+    return callFnWithArgs(node.type, value, index, listName) + ';';
 };
 
 backend.variable = function(node) {
-    return `__ENV.${node.type}.call(self, '${node.value}', __CONTEXT)`;
+    return callFnWithArgs(node.type, `'${node.value}'`);
 };
 
 ///////////////////// Primitives ///////////////////// 
