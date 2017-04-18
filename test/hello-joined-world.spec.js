@@ -23,7 +23,7 @@ describe('hello (joined) world', function() {
 
         it('should contain "bubble" block selector w/ nested fn', function() {
             console.log('code', code);
-            assert(/bubble\([^'"]/.test(code));
+            assert(/bubble.call\([^'"]/.test(code));
         });
 
     });

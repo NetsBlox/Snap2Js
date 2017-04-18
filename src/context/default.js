@@ -1,8 +1,9 @@
 // nop everything
-const backend = require('../backend');
-const nop = () => {};
+const base = require('./nop');
+const _ = require('lodash');
 
-var context = {};
-Object.keys(backend).forEach(key => context[key] = nop);
+var context = _.cloneDeep(base);
+
+// Add the basic overrides
 
 module.exports = context;

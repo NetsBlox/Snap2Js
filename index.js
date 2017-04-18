@@ -7,6 +7,7 @@
     const indent = require('./src/indent');
     const DefaultBackend = require('./src/backend');
     const DefaultContext = require('./src/context/default');
+    const _ = require('lodash');
 
     const parseSpriteScripts = model => {
         var scripts = model.sprite[0].scripts[0].script;
@@ -25,28 +26,28 @@
         var node,
             type;
 
-        if (!curr['$']) {
-            type = Object.keys(curr)[0];
-            if (type === 'block') {
-                console.log();
-                console.log(curr);
-                throw 'bad parsing';
-            }
-        } else {
-            type = curr['$'].s;
-        }
-        if (type === 'undefined') {
-            console.log();
-            console.log(curr);
-            throw 'bad parsing';
-        }
-
         node = {
-            type: type,
+            type: null,
             inputs: null,
             next: next || null
         };
 
+        if (!curr['$']) {
+            type = Object.keys(curr)[0];
+            if (type === 'block') {
+                throw 'bad parsing';
+            }
+        } else if (curr['$'].var) {
+            type = 'variable';
+            node.value = curr['$'].var;
+        } else {
+            type = curr['$'].s;
+        }
+        if (type === 'undefined') {
+            throw 'bad parsing';
+        }
+
+        node.type = type;
         node.inputs = Object.keys(curr)
             .filter(key => key !== '$')
             .map(key => {
@@ -68,8 +69,6 @@
             last;
 
         for (var i = blocks.length; i--;) {
-            console.log('i', i);
-            console.log(blocks[i]);
             last = createAstNode(blocks[i], last);
         }
         return last;
@@ -94,7 +93,7 @@
         console.log('------ compiling ------');
         return Snap2Js.transpile(xml)
             .then(src => {
-                src = `console.log('hey', __ENV);\n` + src 
+                console.log(src);
                 return new Function('__ENV', src);
             });
     };
@@ -135,7 +134,6 @@
         }
     };
 
-    Snap2Js.newContext = () => { return DefaultContext; };
     Snap2Js.generateCode = function(root) {
         if (!Snap2Js._backend[root.type]) {
             console.log();
@@ -146,17 +144,25 @@
             throw `Unsupported node type: ${root.type}`;
         }
 
-        console.log('-- START', root.type);
+        //console.log('-- START', root.type);
         var code = Snap2Js._backend[root.type].call(Snap2Js, root);
         if (!Snap2Js._backend[root.type].async && root.next) {
             code += '\n' + Snap2Js.generateCode(root.next);
         }
-        console.log('-- END', root.type);
+        //console.log('-- END', root.type);
         return code;
     };
 
     Snap2Js._backend = {};
     Snap2Js.setBackend = backend => Snap2Js._backend = backend;
     Snap2Js.setBackend(DefaultBackend);
+
+    Snap2Js.CONTEXT = {};
+    Snap2Js.CONTEXT.NOP = 'nop';
+    Snap2Js.CONTEXT.DEFAULT = 'default';
+    Snap2Js._contexts = {};
+    Snap2Js._contexts.default = DefaultContext;
+    Snap2Js._contexts.nop = require('./src/context/nop');
+    Snap2Js.newContext = type => _.cloneDeep(Snap2Js._contexts[type || Snap2Js.CONTEXT.DEFAULT]);
 
 })(module.exports);

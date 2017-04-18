@@ -16,13 +16,22 @@ backend.forward = function(node) {
 };
 
 ///////////////////// Control ///////////////////// 
+backend.doWarp = function(node) {
+    console.log(node);
+    // TODO
+    return `__ENV.${node.type}.call(this)`;
+};
+
+backend.doWait = function(node) {
+    var time = this.generateCode(node.inputs[0][0]);
+    return `__ENV.${node.type}.call(this, ${time})`;
+};
+
 backend.doIfElse = function(node) {
-    console.log('>>> node:', node);
     var cond = this.generateCode(node.inputs[0][0]),
         ifTrue = this.generateCode(node.inputs[1][0]),
         ifFalse = this.generateCode(node.inputs[1][1]);
 
-    console.log(ifFalse);
     return [
         `if (${cond}) {`,
         indent(ifTrue),
@@ -81,7 +90,7 @@ backend.reportJoinWords = function(node) {
 backend.doChangeVar =
 backend.doSetVar = function(node) {
     var name = this.generateCode(node.inputs[0][0]);
-    var value = this.generateCode(node.inputs[0][1]) || null;
+    var value = this.generateCode(node.inputs[0][1] || node.inputs[1][0]) || null;
 
     return `__ENV.${node.type}.call(this, ${name}, ${value});`;
 };
@@ -96,12 +105,100 @@ backend.doHideVar = function(node) {
 backend.doDeclareVariables = function(node) {
     var names = node.inputs[0][0].inputs[0]
         .map(input => this.generateCode(input));
+
     return `__ENV.${node.type}.call(this, ${names});`;
+};
+
+backend.doAddToList = function(node) {
+    var value = this.generateCode(node.inputs[0][0]),
+        rawList = node.inputs[1][0],
+        list = null;
+
+    if (rawList && rawList.type === 'variable') {
+        list = `'${rawList.value}'`;
+    }
+    return `__ENV.${node.type}.call(this, ${value}, ${list});`;
+};
+
+backend.reportListLength = function(node) {
+    var variable = null;
+
+    if (node.inputs[0][0] && node.inputs[0][0].type === 'variable') {
+        variable = node.inputs[0][0].value;
+    }
+
+    return `__ENV.${node.type}.call(this, '${variable}')`;
+};
+
+backend.reportListItem = function(node) {
+    var index = this.generateCode(node.inputs[0][0]),
+        list = this.generateCode(node.inputs[1][0]);
+
+    return `__ENV.${node.type}.call(this, ${index}, ${list})`;
+};
+
+backend.reportCDR = function(node) {
+    var list = this.generateCode(node.inputs[0][0]);
+    return `__ENV.${node.type}.call(this, ${list})`;
+};
+
+backend.reportNewList = function(node) {
+    console.log();
+    console.log(node.inputs);
+    var items = [];
+    // TODO: multiple item support
+    return `__ENV.${node.type}.call(this)`;
+};
+
+backend.reportListContainsItem = function(node) {
+    var list = this.generateCode(node.inputs[0][0]);
+    var item = this.generateCode(node.inputs[1][0]);
+    return `__ENV.${node.type}.call(this, ${list}, ${item})`;
+};
+
+backend.doDeleteFromList = function(node) {
+    var list = this.generateCode(node.inputs[1][0]);
+    var index = this.generateCode(node.inputs[0][0]);
+    return `__ENV.${node.type}.call(this, ${index}, ${list});`;
+};
+
+backend.doReplaceInList = function(node) {
+    var index = this.generateCode(node.inputs[0][0]);
+    var item = this.generateCode(node.inputs[0][1]);
+    var list = this.generateCode(node.inputs[1][0]);
+    return `__ENV.${node.type}.call(this, ${index}, ${list}, ${item});`;
+};
+
+backend.doInsertInList = function(node) {
+    var value = this.generateCode(node.inputs[0][0]);
+    var index = this.generateCode(node.inputs[0][1]);
+    var rawList = node.inputs[1][0];
+    var listName = null;
+
+    if (rawList && rawList.type === 'variable') {
+        listName = `'${rawList.value}'`;
+    }
+
+    return `__ENV.${node.type}.call(this, ${value}, ${index}, ${listName});`;
+};
+
+backend.variable = function(node) {
+    return `__ENV.${node.type}.call(this, '${node.value}')`;
 };
 
 ///////////////////// Primitives ///////////////////// 
 backend.string = function(node) {
     return `'${node.value}'`;
 };
+
+backend.option = function(node) {
+    return this.generateCode(node.inputs[0][0]);
+};
+
+//backend.bool = function(node) {
+    //console.log(node);
+    //asdf
+    //return 'asdf'
+//};
 
 module.exports = backend;
