@@ -14,16 +14,23 @@ prog
     .description('A tool to compile Snap! xml files to JavaScript')
     .argument('<files...>', 'Snap xml files to compile')
     .option('--output <dir>', 'Output directory', fileExists, '.')
+    .option('--context <type>', 'Context to use', isContext, 'default')
     .action((args, opts, logger) => {
         return Q.all(args.files.map(filename => compileFile(filename, opts, logger)));
     });
 
 function compileFile(filename, opts, logger) {
     let outfile = path.join(opts.output, path.basename(filename).replace(/\.[a-zA-Z0-9]+$/, '.js'));
+    let context = opts.context;
+
     logger.debug('compiling ' + filename + ' to ' + outfile);
     return Q.ninvoke(fs, 'readFile', filename)
         .then(contents => snap2js.compile(contents))
-        .then(fn => Q.ninvoke(fs, 'writeFile', outfile, fn.toString()))
+        .then(fn => {
+            // FIXME: make this more generic
+            var code = `(${fn.toString()})(require('./src/context/${context}'))`;
+            return Q.ninvoke(fs, 'writeFile', outfile, code);
+        })
         .then(() => logger.info('finished compiling', outfile))
         .fail(err => console.error(err));
 }
@@ -34,6 +41,19 @@ function fileExists(dir) {
         throw new Error(`Output directory not found: ${dir}`);
     }
     return dir;
+}
+
+function isContext(name) {
+    var contexts = fs.readdirSync(path.join(__dirname, '..', 'src', 'context'))
+        .map(name => name.replace(/\.js$/, ''));
+    console.log(contexts);
+    var isValid = contexts.find(filename => filename === name.toLowerCase());
+
+    if (!isValid) {
+        console.log(contexts);
+        throw new Error(`Invalid context: ${dir}. Expected ${contexts.join(', ')}`);
+    }
+    return name.toLowerCase();
 }
 
 prog.parse(process.argv);
