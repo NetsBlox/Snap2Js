@@ -195,10 +195,15 @@ backend.option = function(node) {
     return this.generateCode(node.inputs[0][0]);
 };
 
-//backend.bool = function(node) {
-    //console.log(node);
-    //asdf
-    //return 'asdf'
-//};
+backend.bool = function(node) {
+    var content = node.inputs[0][0],
+        value = 'false';
+
+    if (content && content.value === 'true') {
+        value = content.value;
+    }
+
+    return value;
+};
 
 module.exports = backend;
