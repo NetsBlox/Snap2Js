@@ -106,11 +106,11 @@
         var context = {},
             variable;
 
+        vars = vars || [];
         for (var i = vars.length; i--;) {
             variable = vars[i];
             context[variable['$'].name] = parseVariableValue(variable);
         }
-        console.log(context);
         return context;
     };
 
@@ -130,7 +130,11 @@
     Snap2Js.parse = function(content) {
         return Q.nfcall(xml2js.parseString, content).then(parsed => {
                 var sprites = parsed.project.stage[0].sprites;
-                return sprites.map(Snap2Js.parseSprite);
+                var globalVars = parseInitialVariables(parsed.project.variables[0].variable);
+                return {
+                    variables: globalVars,
+                    sprites: sprites.map(Snap2Js.parseSprite),
+                };
             });
 
     };
@@ -145,11 +149,11 @@
 
     Snap2Js.transpile = function(xml) {
         return Snap2Js.parse(xml)
-            .then(sprites => {
-                console.log(sprites);
+            .then(state => {
+                console.log(state);
 
                 // TODO: for now, we will ignore sprite var scoping
-                var code = boilerplateTpl({sprites: sprites});
+                var code = boilerplateTpl(state);
 
                 // TODO: Add context info
                 return code;

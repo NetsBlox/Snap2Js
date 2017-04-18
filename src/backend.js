@@ -78,11 +78,10 @@ backend.bubble = function(node) {
 
 ///////////////////// Operators ///////////////////// 
 backend.reportEquals = function(node) {
-    console.log('<<<< ', node);
     var left = this.generateCode(node.inputs[0][0]),
         right = this.generateCode(node.inputs[1][0]);
 
-    return `+${left} === +${right}`;
+    return callFnWithArgs(node.type, left, right);
 };
 
 backend.reportJoinWords = function(node) {
@@ -105,14 +104,14 @@ backend.doShowVar =
 backend.doHideVar = function(node) {
     var name = this.generateCode(node.inputs[0][0]);
 
-    return `__ENV.${node.type}.call(self, ${name});`;
+    return callFnWithArgs(node.type, name) + ';';
 };
 
 backend.doDeclareVariables = function(node) {
     var names = node.inputs[0][0].inputs[0]
         .map(input => this.generateCode(input));
 
-    return `__ENV.${node.type}.call(self, ${names});`;
+    return callFnWithArgs(node.type, names.join(', ')) + ';';
 };
 
 backend.doAddToList = function(node) {

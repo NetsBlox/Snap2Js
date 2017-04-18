@@ -48,6 +48,8 @@ var project = {
     variables: new VariableFrame(),
     sprites: []
 };
+<% Object.keys(variables).forEach(function(variable) { %>
+project.variables.set('<%= variable %>', JSON.parse('<%= JSON.stringify(variables[variable]) %>'));<% }) %>
 
 project.stage = new Stage(project.variables);
 

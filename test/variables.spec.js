@@ -1,4 +1,4 @@
-describe('variables', function() {
+describe.only('variables', function() {
     let fs = require('fs'),
         path = require('path'),
         TEST_CASE_DIR = path.join(__dirname, 'test-cases'),
@@ -6,7 +6,7 @@ describe('variables', function() {
         assert = require('assert'),
         content;
 
-    describe.only('initial values', function() {
+    describe('initial values', function() {
         var bin,
             cxt,
             values;
