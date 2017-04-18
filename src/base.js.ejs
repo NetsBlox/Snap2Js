@@ -1,0 +1,89 @@
+class VariableFrame {
+    constructor(parent) {
+        this.parent = parent;
+        this.vars = {};
+    }
+
+    get(name) {
+        if (this.vars[name]) {
+            return this.vars[name];
+        } else if (this.parent) {
+            return this.parent.get(name);
+        }
+    }
+}
+
+class Stage {
+    constructor(name, variables) {
+        this.name = name;
+        this.variables = new VariableFrame(variables);
+        this.isSprite = false;
+    }
+
+    onFlagPressed() {
+    }
+}
+
+class Sprite extends Stage {
+    constructor(name, variables) {
+        super(name, variables);
+        this.isClone = false;
+        this.isSprite = true;
+    }
+}
+
+__ENV = __ENV || this;
+var project = {
+    variables: new VariableFrame(),
+    sprites: []
+};
+
+project.stage = new Stage(project.variables);
+
+// for each sprite...
+var sprite;
+<% sprites.forEach(function(rawSprite) { %>
+sprite = new Sprite('<%= rawSprite.name %>', project.variables);
+
+sprite.onFlagPressed = function() {
+console.log(this.name, 'is starting!')
+<%
+rawSprite.scripts.receiveGo
+    .forEach(function(code) {
+%>
+    <%= code %>
+<%
+});
+%>
+console.log(this.name, 'finished')
+};
+
+sprite.onKeyPressed = function(key) {
+    if (key === 'l') {
+        // Add code for the given key...
+        // TODO
+    }
+};
+
+sprite.onUserEventReceived = function(event) {
+    if (event === 'fire!') {
+        // Add code for the given event...
+        // TODO
+    }
+};
+
+sprite.onEventReceived = function(event) {
+    if (event === 'clicked') {
+        // Add code for the given event...
+        // TODO
+    }
+};
+
+sprite.checkConditions = function() {
+    // TODO: add arbitrary hat block code here
+};
+
+project.sprites.push(sprite);
+<% }) %>
+project.sprites.forEach(sprite => sprite.onFlagPressed());
+project.stage.onFlagPressed();

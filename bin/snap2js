@@ -1,0 +1,39 @@
+#!/usr/bin/env node
+
+const prog = require('caporal');
+const version = require('../package.json');
+const snap2js = require('..');
+const Q = require('q');
+const path = require('path');
+const fs = require('fs');
+const exists = require('exists-file');
+
+// TODO: add context options?
+prog
+    .version(version)
+    .description('A tool to compile Snap! xml files to JavaScript')
+    .argument('<files...>', 'Snap xml files to compile')
+    .option('--output <dir>', 'Output directory', fileExists, '.')
+    .action((args, opts, logger) => {
+        return Q.all(args.files.map(filename => compileFile(filename, opts, logger)));
+    });
+
+function compileFile(filename, opts, logger) {
+    let outfile = filename.replace(/\.[a-zA-Z0-9]+$/, '.js');
+    logger.debug('compiling ' + filename + ' to ' + outfile);
+    return Q.ninvoke(fs, 'readFile', filename)
+        .then(contents => snap2js.compile(contents))
+        .then(fn => Q.ninvoke(fs, 'writeFile', outfile, fn.toString()))
+        .then(() => logger.info('finished compiling', outfile))
+        .fail(err => console.error(err));
+}
+
+function fileExists(dir) {
+    dir = path.resolve(dir);
+    if (!exists.sync(dir)) {
+        throw new Error(`Output directory not found: ${dir}`);
+    }
+    return dir;
+}
+
+prog.parse(process.argv);

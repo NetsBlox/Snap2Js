@@ -159,16 +159,20 @@
 
     Snap2Js._initNodeMap = {};
     Snap2Js._initNodeMap.receiveGo = function(code, node) {
+        // TODO: add script context
         return [
             '(function() {',
             indent(code),
             '})()'
         ].join('\n');
-        // TODO:
     };
 
     Snap2Js.generateScriptCode = function(root) {
         if (Snap2Js._initNodeMap[root.type]) {
+            var code = Snap2Js.generateCode(root.next);
+            console.log();
+            console.log('--- code');
+            console.log(code);
             return Snap2Js._initNodeMap[root.type](Snap2Js.generateCode(root.next), root);
         } else {
             console.error('warn: script does not start with supported init node:', root.type);
@@ -191,7 +195,7 @@
             code += '\n' + Snap2Js.generateCode(root.next);
         }
         //console.log('-- END', root.type);
-        return code;
+        return code.replace(/\);/g, ');\n');
     };
 
     Snap2Js._backend = {};
