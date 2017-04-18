@@ -2,6 +2,7 @@
 (function(Snap2Js) {
     const xml2js = require('xml2js');
     const Q = require('q');
+    const prettier = require('prettier');
     const fs = require('fs');
     const inputFilename = process.argv[2];
     const indent = require('./src/indent');
@@ -147,7 +148,6 @@
     Snap2Js.compile = function(xml) {
         return Snap2Js.transpile(xml)
             .then(src => {
-                console.log(src);
                 return new Function('__ENV', src);
             });
     };
@@ -161,6 +161,7 @@
                 var code = boilerplateTpl(state);
 
                 // TODO: Add context info
+                code = prettier.format(code);
                 return code;
             });
     };
