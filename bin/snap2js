@@ -19,7 +19,7 @@ prog
     });
 
 function compileFile(filename, opts, logger) {
-    let outfile = filename.replace(/\.[a-zA-Z0-9]+$/, '.js');
+    let outfile = path.join(opts.output, path.basename(filename).replace(/\.[a-zA-Z0-9]+$/, '.js'));
     logger.debug('compiling ' + filename + ' to ' + outfile);
     return Q.ninvoke(fs, 'readFile', filename)
         .then(contents => snap2js.compile(contents))
