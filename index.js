@@ -173,7 +173,7 @@
             '(function() {',
             'var __CONTEXT = new VariableFrame(self.variables);',
             indent(code),
-            '})()'
+            '})();'
         ].join('\n');
     };
 

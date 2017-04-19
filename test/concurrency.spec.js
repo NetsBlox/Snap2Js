@@ -33,28 +33,4 @@ describe('concurrency', function() {
         });
     });
 
-    describe('compile', function() {
-        var bin,
-            cxt,
-            xVal = 0;
-
-        before(function(done) {
-            cxt = snap2js.newContext();
-            cxt['setXPosition'] = v => xVal = v;
-            cxt['changeXPosition'] = v => xVal += v;
-
-            snap2js.compile(content)
-                .then(_bin => bin = _bin)
-                .nodeify(done);
-        });
-
-        it('should finish with x == 100', function(done) {
-            cxt['changeXPosition'] = v => {
-                xVal += v;
-                if (xVal === 100) done();
-            };
-            console.log(bin.toString());
-            bin(cxt);
-        });
-    });
 });
