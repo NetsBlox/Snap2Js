@@ -53,7 +53,6 @@ describe('lists', function() {
         });
 
         it('should report length of 2', function() {
-            console.log(vals);
             assert.equal(vals[0], 2)
         });
     });

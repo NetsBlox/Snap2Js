@@ -7,6 +7,64 @@ var context = _.cloneDeep(base);
 // Add the basic overrides
 // TODO: Add the sprite, stage, contexts and stuff
 
+///////////////////// Motion ///////////////////// 
+context.xPosition = function() {
+    return this.xPosition;
+};
+
+context.setXPosition = function(value) {
+    this.xPosition = value || 0;
+};
+
+context.changeXPosition = function(value) {
+    this.xPosition += (value || 0);
+};
+
+context.yPosition = function() {
+    return this.yPosition;
+};
+
+context.setYPosition = function(value) {
+    this.yPosition = value || 0;
+};
+
+context.changeYPosition = function(value) {
+    this.yPosition += (value || 0);
+};
+
+context.gotoXY = function(x, y) {
+    this.xPosition = x;
+    this.yPosition = y;
+};
+
+context.forward = function(dist) {
+    var degrees = (-1 * (this.direction - 90) + 360) % 360,
+        angle = degrees * Math.PI / 180,
+        dx, dy;
+
+    dx = Math.cos(angle) * dist;
+    dy = Math.sin(angle) * dist;
+
+    this.yPosition += dy;
+    this.xPosition += dx;
+};
+
+context.turnLeft = function(value) {
+    this.direction -= (value || 0);
+};
+
+context.turn = function(value) {
+    this.direction += (value || 0);
+};
+
+context.direction = function() {
+    return this.direction;
+};
+
+context.setHeading = function(dir) {
+    this.direction = dir || 0;
+};
+
 ///////////////////// Control ///////////////////// 
 context.doReport = function(value) {
     return value;
@@ -44,11 +102,11 @@ context.doWait = function(duration, after) {
 
 ///////////////////// Looks ///////////////////// 
 context.doThink = function(msg) {
-    console.log(msg);
+    console.error(msg);
 };
 
 context.doThinkFor = function(msg, duration, after) {
-    console.log(msg);
+    console.error(msg);
     duration = +duration || 0;
     setTimeout(after, duration*1000);
 };
@@ -69,8 +127,14 @@ context.reportEquals = function(left, right) {
 };
 
 ///////////////////// Variables ///////////////////// 
-context.reportListLength = function(name, context) {
-    return context.get(name).value.length;
+context.reportNewList = function() {
+    var items = Array.prototype.slice.call(arguments);
+    items.pop();  // (context)
+    return items;
+};
+
+context.reportListLength = function(variable, context) {
+    return variable ? variable.value.length : 0;
 };
 
 context.variable = function(name, context) {

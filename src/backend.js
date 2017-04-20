@@ -16,8 +16,9 @@ var callStatementWithArgs = function() {
 
 ///////////////////// Motion ///////////////////// 
 
-backend.turnRight =
+backend.turn =
 backend.turnLeft =
+backend.setHeading =
 backend.setXPosition =
 backend.setYPosition =
 backend.changeXPosition =
@@ -25,6 +26,39 @@ backend.changeYPosition =
 backend.forward = function(node) {
     var dist = this.generateCode(node.inputs[0][0]);
     return callStatementWithArgs(node.type, `+${dist}`);
+};
+
+backend.xPosition =
+backend.direction =
+backend.yPosition = function(node) {
+    return callFnWithArgs(node.type);
+};
+
+backend.gotoXY = function(node) {
+    var x = this.generateCode(node.inputs[0][0]);
+    var y = this.generateCode(node.inputs[0][1]);
+    return callStatementWithArgs(node.type, `+${x}`, `+${y}`);
+};
+
+backend.doFaceTowards = function(node) {
+    var target = this.generateCode(node.inputs[0][0]);
+    return callStatementWithArgs(node.type, target);
+};
+
+backend.doGotoObject = function(node) {
+    var target = this.generateCode(node.inputs[0][0]);
+    return callStatementWithArgs(node.type, target);
+};
+
+backend.doGlide = function(node) {
+    var time = this.generateCode(node.inputs[0][0]);
+    var x = this.generateCode(node.inputs[0][1]);
+    var y = this.generateCode(node.inputs[0][2]);
+    return callStatementWithArgs(node.type, x, y, `+${time}`);
+};
+
+backend.bounceOffEdge = function(node) {
+    return callStatementWithArgs(node.type);
 };
 
 ///////////////////// Control ///////////////////// 
@@ -89,7 +123,6 @@ backend.doRepeat.async = true;
 
 backend.doReport = function(node) {
     var value = this.generateCode(node.inputs[0][0]);
-    console.log('value', value);
     return 'return ' + callStatementWithArgs(node.type, value);
 };
 
@@ -130,9 +163,7 @@ backend.doThinkFor = function(node) {
 backend.doThinkFor.async = true;
 
 backend.bubble = function(node) {
-    var inputs;
-
-    inputs = this.generateCode(node.inputs[0][0]);
+    var inputs = this.generateCode(node.inputs[0][0]);
     return callStatementWithArgs(node.type, inputs);
 };
 
@@ -191,13 +222,9 @@ backend.doAddToList = function(node) {
 };
 
 backend.reportListLength = function(node) {
-    var variable = null;
+    var variable = this.generateCode(node.inputs[0][0]);
 
-    if (node.inputs[0][0] && node.inputs[0][0].type === 'variable') {
-        variable = node.inputs[0][0].value;
-    }
-
-    return callFnWithArgs(node.type, `'${variable}'`);
+    return callFnWithArgs(node.type, variable);
 };
 
 backend.reportListItem = function(node) {
@@ -213,11 +240,10 @@ backend.reportCDR = function(node) {
 };
 
 backend.reportNewList = function(node) {
-    console.log();
-    console.log(node.inputs);
-    var items = [];
-    // TODO: multiple item support
-    return callFnWithArgs(node.type);
+    var items = node.inputs[0].map(this.generateCode),
+        args = [node.type].concat(items);
+
+    return callFnWithArgs.apply(null, args);
 };
 
 backend.reportListContainsItem = function(node) {
