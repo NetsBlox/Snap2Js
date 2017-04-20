@@ -160,6 +160,13 @@ context.reportDate = function(format) {
     }
 };
 
+context.doResetTimer = function() {
+    this.resetTimer();
+};
+
+context.getTimer = function() {
+    return (Date.now() - this.getTimerStart())/1000;
+};
 ///////////////////// Operators ///////////////////// 
 context.reportEquals = function(left, right) {
     return left == right;

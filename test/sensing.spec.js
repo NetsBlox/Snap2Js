@@ -72,7 +72,7 @@ describe('sensing', function() {
 
     });
 
-    describe.only('timer', function() {
+    describe('timer', function() {
         before(function() {
             content = fs.readFileSync(path.join(TEST_CASE_DIR, 'timer.xml'));
         });
