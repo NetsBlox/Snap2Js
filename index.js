@@ -52,8 +52,6 @@
         if (!curr['$']) {
             type = Object.keys(curr)[0];
             if (type === 'block') {
-                console.log();
-                console.log(JSON.stringify(curr, null, 2));
                 throw 'bad parsing';
             }
         } else if (curr['$'].var) {
@@ -133,7 +131,6 @@
             position = {},
             dir;
 
-        console.log(rawSprite);
         position.x = rawSprite['$'].x;
         position.y = rawSprite['$'].y;
         dir = rawSprite['$'].heading;
