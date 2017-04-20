@@ -49,6 +49,7 @@ describe('change x 10x', function() {
         it('should finish with x == 100', function(done) {
             cxt['changeXPosition'] = v => {
                 xVal += v;
+                console.log('changing x to', xVal);
                 if (xVal === 100) done();
             };
             console.log(bin.toString());

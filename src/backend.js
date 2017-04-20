@@ -37,7 +37,7 @@ backend.doWarp = function(node) {
 backend.doWait = function(node) {
     var time = this.generateCode(node.inputs[0][0]),
         afterFn = `afterWait_${node.id}`,
-        body = node.next ? this.generateCode(node.next) : '// done!';
+        body = node.next ? this.generateCode(node.next) : '';
 
     return [
         `function ${afterFn} () {`,
@@ -46,7 +46,6 @@ backend.doWait = function(node) {
         callStatementWithArgs(node.type, time, afterFn)
     ].join('\n');
 };
-
 backend.doWait.async = true;
 
 backend.doIfElse = function(node) {
@@ -76,7 +75,7 @@ backend.doRepeat = function(node) {
         `if (--${node.id} > 0) {`,
         indent(recurse),
         `} else {`,
-        indent(node.next ? this.generateCode(node.next) : '// done!'),
+        indent(node.next ? this.generateCode(node.next) : ''),
         `}`,
         `}`,
          `doLoop_${node.id}(+${count});`
@@ -84,22 +83,58 @@ backend.doRepeat = function(node) {
 };
 backend.doRepeat.async = true;
 
+backend.doReport = function(node) {
+    var value = this.generateCode(node.inputs[0][0]);
+    console.log('value', value);
+    return 'return ' + callStatementWithArgs(node.type, value);
+};
+
+
 ///////////////////// Looks ///////////////////// 
 backend.getScale = function(node) {
     return callFnWithArgs(node.type);
 };
 
 backend.doSayFor = function(node) {
-    var inputs = node.inputs[0].map(this.generateCode);
-    inputs[1] = '+' + inputs[1];
-    return callStatementWithArgs(node.type, inputs.join(', '));
+    var time = '+' + this.generateCode(node.inputs[0][1]),
+        msg = this.generateCode(node.inputs[0][0]),
+        afterFn = `afterSay_${node.id}`,
+        body = node.next ? this.generateCode(node.next) : '';
+
+    return [
+        `function ${afterFn} () {`,
+        indent(body),
+        `}`,
+        callStatementWithArgs(node.type, msg, time, afterFn)
+    ].join('\n');
 };
+backend.doSayFor.async = true;
+
+backend.doThinkFor = function(node) {
+    var time = '+' + this.generateCode(node.inputs[0][1]),
+        msg = this.generateCode(node.inputs[0][0]),
+        afterFn = `afterThink_${node.id}`,
+        body = node.next ? this.generateCode(node.next) : '';
+
+    return [
+        `function ${afterFn} () {`,
+        indent(body),
+        `}`,
+        callStatementWithArgs(node.type, msg, time, afterFn)
+    ].join('\n');
+};
+backend.doThinkFor.async = true;
 
 backend.bubble = function(node) {
     var inputs;
 
     inputs = this.generateCode(node.inputs[0][0]);
     return callStatementWithArgs(node.type, inputs);
+};
+
+backend.doThink = function(node) {
+    var msg = this.generateCode(node.inputs[0][0]);
+    return callStatementWithArgs(node.type, msg);
 };
 
 ///////////////////// Operators ///////////////////// 
@@ -220,7 +255,7 @@ backend.variable = function(node) {
 
 ///////////////////// Primitives ///////////////////// 
 backend.string = function(node) {
-    return `'${node.value}'`;
+    return `'${node.value.replace(/'/g, "\\'")}'`;
 };
 
 backend.option = function(node) {

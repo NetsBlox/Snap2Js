@@ -7,6 +7,11 @@ var context = _.cloneDeep(base);
 // Add the basic overrides
 // TODO: Add the sprite, stage, contexts and stuff
 
+///////////////////// Control ///////////////////// 
+context.doReport = function(value) {
+    return value;
+};
+
 context.doYield = function(fn) {
     var args = Array.prototype.slice.call(arguments, 1),
         context = args.pop();
@@ -16,8 +21,8 @@ context.doYield = function(fn) {
     //if (isAtomic && isAtomic.value) {
     //} else {
     //}
-    args.unshift(this);
-    setTimeout(() => fn.apply(args), 5);
+    //args.unshift(this);
+    setTimeout(() => fn.apply(this, args), 5);
 };
 
 context.doWait = function(duration, after) {
@@ -29,8 +34,29 @@ context.doWait = function(duration, after) {
     if (duration === 0 && isWarping) {
         after();
     } else {
-        setTimeout(after, duration);
+        setTimeout(after, duration*1000);
     }
+};
+
+///////////////////// Looks ///////////////////// 
+context.doThink = function(msg) {
+    console.log(msg);
+};
+
+context.doThinkFor = function(msg, duration, after) {
+    console.log(msg);
+    duration = +duration || 0;
+    setTimeout(after, duration*1000);
+};
+
+context.doSayFor = function(msg, duration, after) {
+    console.log(msg);
+    duration = +duration || 0;
+    setTimeout(after, duration*1000);
+};
+
+context.bubble = function(msg) {
+    console.log(msg);
 };
 
 ///////////////////// Operators ///////////////////// 

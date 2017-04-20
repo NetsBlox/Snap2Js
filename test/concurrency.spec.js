@@ -4,6 +4,7 @@ describe('concurrency', function() {
         TEST_CASE_DIR = path.join(__dirname, 'test-cases'),
         snap2js = require('..'),
         assert = require('assert'),
+        isRightAfter = require('./utils').isRightAfter,
         content;
 
     before(function(){
@@ -45,9 +46,8 @@ describe('concurrency', function() {
                     bin(cxt);
                     setTimeout(function() {
                         totalOrder = values[1].value;
-                        console.log(totalOrder);
                         done();
-                    }, 1000);
+                    }, 1500);
                 })
                 .fail(err => console.error(err));
         });
@@ -56,15 +56,17 @@ describe('concurrency', function() {
         //  - wait block yields
         //  - end of loop yields
 
-        it.only('should yield after wait block', function() {
+        it('should yield after wait block', function() {
             assert.notEqual(totalOrder[1], '2');
             assert.notEqual(totalOrder[1], '22');
         });
 
+        it('should yield after doSayFor', function() {
+            assert(!isRightAfter(totalOrder, '13', '14'))
+        });
+
         it('should yield after repeat loop', function() {
-            // one ends on 15,16
-            var i = totalOrder.indexOf('15');
-            assert.notEqual(totalOrder[i+1], '16');
+            assert(!isRightAfter(totalOrder, '15', '16'))
         });
     });
 });
