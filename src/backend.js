@@ -18,6 +18,7 @@ var callStatementWithArgs = function() {
 
 backend.turn =
 backend.turnLeft =
+backend.setHeading =
 backend.setXPosition =
 backend.setYPosition =
 backend.changeXPosition =
@@ -31,6 +32,33 @@ backend.xPosition =
 backend.direction =
 backend.yPosition = function(node) {
     return callFnWithArgs(node.type);
+};
+
+backend.gotoXY = function(node) {
+    var x = this.generateCode(node.inputs[0][0]);
+    var y = this.generateCode(node.inputs[0][1]);
+    return callStatementWithArgs(node.type, `+${x}`, `+${y}`);
+};
+
+backend.doFaceTowards = function(node) {
+    var target = this.generateCode(node.inputs[0][0]);
+    return callStatementWithArgs(node.type, target);
+};
+
+backend.doGotoObject = function(node) {
+    var target = this.generateCode(node.inputs[0][0]);
+    return callStatementWithArgs(node.type, target);
+};
+
+backend.doGlide = function(node) {
+    var time = this.generateCode(node.inputs[0][0]);
+    var x = this.generateCode(node.inputs[0][1]);
+    var y = this.generateCode(node.inputs[0][2]);
+    return callStatementWithArgs(node.type, x, y, `+${time}`);
+};
+
+backend.bounceOffEdge = function(node) {
+    return callStatementWithArgs(node.type);
 };
 
 ///////////////////// Control ///////////////////// 
@@ -135,12 +163,7 @@ backend.doThinkFor = function(node) {
 backend.doThinkFor.async = true;
 
 backend.bubble = function(node) {
-    var inputs;
-
-    inputs = this.generateCode(node.inputs[0][0]);
-    console.log();
-    console.log(node.inputs[0][0]);
-    console.log('BUBBLE\n', inputs);
+    var inputs = this.generateCode(node.inputs[0][0]);
     return callStatementWithArgs(node.type, inputs);
 };
 

@@ -32,6 +32,23 @@ context.changeYPosition = function(value) {
     this.yPosition += (value || 0);
 };
 
+context.gotoXY = function(x, y) {
+    this.xPosition = x;
+    this.yPosition = y;
+};
+
+context.forward = function(dist) {
+    var degrees = (-1 * (this.direction - 90) + 360) % 360,
+        angle = degrees * Math.PI / 180,
+        dx, dy;
+
+    dx = Math.cos(angle) * dist;
+    dy = Math.sin(angle) * dist;
+
+    this.yPosition += dy;
+    this.xPosition += dx;
+};
+
 context.turnLeft = function(value) {
     this.direction -= (value || 0);
 };
@@ -42,6 +59,10 @@ context.turn = function(value) {
 
 context.direction = function() {
     return this.direction;
+};
+
+context.setHeading = function(dir) {
+    this.direction = dir || 0;
 };
 
 ///////////////////// Control ///////////////////// 
