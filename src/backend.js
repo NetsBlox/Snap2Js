@@ -35,9 +35,19 @@ backend.doWarp = function(node) {
 };
 
 backend.doWait = function(node) {
-    var time = this.generateCode(node.inputs[0][0]);
-    return callStatementWithArgs(node.type, time);
+    var time = this.generateCode(node.inputs[0][0]),
+        afterFn = `afterWait_${node.id}`,
+        body = node.next ? this.generateCode(node.next) : '// done!';
+
+    return [
+        `function ${afterFn} () {`,
+        indent(body),
+        `}`,
+        callStatementWithArgs(node.type, time, afterFn)
+    ].join('\n');
 };
+
+backend.doWait.async = true;
 
 backend.doIfElse = function(node) {
     var cond = this.generateCode(node.inputs[0][0]),

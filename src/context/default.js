@@ -1,5 +1,6 @@
 const base = require('./nop');
 const _ = require('lodash');
+const WARP_VAR = '__isAtomic';
 
 var context = _.cloneDeep(base);
 
@@ -11,8 +12,25 @@ context.doYield = function(fn) {
         context = args.pop();
 
     // TODO: handle the warp
+    //var isAtomic = context.get('__isAtomic');
+    //if (isAtomic && isAtomic.value) {
+    //} else {
+    //}
     args.unshift(this);
     setTimeout(() => fn.apply(args), 5);
+};
+
+context.doWait = function(duration, after) {
+    var context = arguments[arguments.length-1],
+        warpVar = context.get(WARP_VAR),
+        isWarping = warpVar && warpVar.value === true;
+
+    duration = duration || 0;
+    if (duration === 0 && isWarping) {
+        after();
+    } else {
+        setTimeout(after, duration);
+    }
 };
 
 ///////////////////// Operators ///////////////////// 
