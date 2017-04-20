@@ -52,8 +52,6 @@
         if (!curr['$']) {
             type = Object.keys(curr)[0];
             if (type === 'block') {
-                console.log();
-                console.log(JSON.stringify(curr, null, 2));
                 throw 'bad parsing';
             }
         } else if (curr['$'].var) {
@@ -133,7 +131,6 @@
             position = {},
             dir;
 
-        console.log(rawSprite);
         position.x = rawSprite['$'].x;
         position.y = rawSprite['$'].y;
         dir = rawSprite['$'].heading;
@@ -143,6 +140,8 @@
             variables: parseInitialVariables(rawSprite.variables[0].variable),
             scripts: parseSpriteScripts(raw),
             position: position,
+            costumeIdx: +rawSprite['$'].costume,
+            size: +rawSprite['$'].scale * 100,
             direction: dir
         };
         return sprite;

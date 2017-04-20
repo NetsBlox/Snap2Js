@@ -128,8 +128,42 @@ backend.doReport = function(node) {
 
 
 ///////////////////// Looks ///////////////////// 
+backend.doSwitchToCostume = function(node) {
+    var costume = this.generateCode(node.inputs[0][0]);
+    return callStatementWithArgs(node.type, costume);
+};
+
+backend.doWearNextCostume = function(node) {
+    return callStatementWithArgs(node.type);
+};
+
+backend.changeEffect =
+backend.setEffect = function(node) {
+    var effect = this.generateCode(node.inputs[0][0]);
+    var amount = this.generateCode(node.inputs[0][1]);
+    return callStatementWithArgs(node.type, effect, `+${amount}`);
+};
+
+backend.clearEffects = function(node) {
+    return callStatementWithArgs(node.type);
+};
+
+backend.goBack =
+backend.changeScale =
+backend.setScale = function(node) {
+    var amount = this.generateCode(node.inputs[0][0]);
+    return callStatementWithArgs(node.type, `+${amount}`);
+};
+
+backend.getCostumeIdx =
 backend.getScale = function(node) {
     return callFnWithArgs(node.type);
+};
+
+backend.show =
+backend.comeToFront =
+backend.hide = function(node) {
+    return callStatementWithArgs(node.type);
 };
 
 backend.doSayFor = function(node) {
