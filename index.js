@@ -75,7 +75,9 @@
 
                 if (key === 'script') {
                     return curr[key].map(parseScript);
-                } else if (curr[key][0].block){
+                } else if (curr[key][0].block && !curr[key][0]['$']){
+                    // This is a multiargmorph that is part of a larger block
+                    // (but not a standalone block)
                     if (curr[key].length > 1) {
                         throw 'Ran into something strange. Please report this case';
                     }

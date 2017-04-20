@@ -1,4 +1,4 @@
-describe('position', function() {
+describe('motion', function() {
     let fs = require('fs'),
         path = require('path'),
         TEST_CASE_DIR = path.join(__dirname, 'test-cases'),
@@ -7,16 +7,13 @@ describe('position', function() {
         utils = require('./utils'),
         content;
 
-    before(function(){
-        content = fs.readFileSync(path.join(TEST_CASE_DIR, 'initial-set-change-pos.xml'));
-    });
-
-    describe('compile', function() {
+    describe('position', function() {
         var bin,
             cxt,
             result;
 
         before(function(done) {
+            content = fs.readFileSync(path.join(TEST_CASE_DIR, 'initial-set-change-pos.xml'));
             cxt = snap2js.newContext();
             cxt['doReport'] = val => result = val;
             snap2js.compile(content)

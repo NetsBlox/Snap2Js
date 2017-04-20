@@ -138,6 +138,9 @@ backend.bubble = function(node) {
     var inputs;
 
     inputs = this.generateCode(node.inputs[0][0]);
+    console.log();
+    console.log(node.inputs[0][0]);
+    console.log('BUBBLE\n', inputs);
     return callStatementWithArgs(node.type, inputs);
 };
 
@@ -196,13 +199,9 @@ backend.doAddToList = function(node) {
 };
 
 backend.reportListLength = function(node) {
-    var variable = null;
+    var variable = this.generateCode(node.inputs[0][0]);
 
-    if (node.inputs[0][0] && node.inputs[0][0].type === 'variable') {
-        variable = node.inputs[0][0].value;
-    }
-
-    return callFnWithArgs(node.type, `'${variable}'`);
+    return callFnWithArgs(node.type, variable);
 };
 
 backend.reportListItem = function(node) {

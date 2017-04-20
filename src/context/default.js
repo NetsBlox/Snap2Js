@@ -81,11 +81,11 @@ context.doWait = function(duration, after) {
 
 ///////////////////// Looks ///////////////////// 
 context.doThink = function(msg) {
-    console.log(msg);
+    console.error(msg);
 };
 
 context.doThinkFor = function(msg, duration, after) {
-    console.log(msg);
+    console.error(msg);
     duration = +duration || 0;
     setTimeout(after, duration*1000);
 };
@@ -112,8 +112,8 @@ context.reportNewList = function() {
     return items;
 };
 
-context.reportListLength = function(name, context) {
-    return context.get(name).value.length;
+context.reportListLength = function(variable, context) {
+    return variable ? variable.value.length : 0;
 };
 
 context.variable = function(name, context) {
