@@ -74,7 +74,6 @@ context.doYield = function(fn) {
     var args = Array.prototype.slice.call(arguments, 1),
         context = args.pop();
 
-    // TODO: handle the warp
     var isAtomic = context.get(WARP_VAR);
     if (isAtomic && isAtomic.value) {
         fn.apply(this, args);
@@ -119,6 +118,26 @@ context.doSayFor = function(msg, duration, after) {
 
 context.bubble = function(msg) {
     console.log(msg);
+};
+
+context.doWearNextCostume = function() {
+    this.costumeIdx++;
+};
+
+context.changeScale = function(value) {
+    this.size += value || 0
+};
+
+context.setScale = function(value) {
+    this.size = +value;
+};
+
+context.getScale = function() {
+    return this.size;
+};
+
+context.getCostumeIdx = function() {
+    return this.costumeIdx;
 };
 
 ///////////////////// Operators ///////////////////// 

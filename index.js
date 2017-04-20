@@ -140,6 +140,8 @@
             variables: parseInitialVariables(rawSprite.variables[0].variable),
             scripts: parseSpriteScripts(raw),
             position: position,
+            costumeIdx: +rawSprite['$'].costume,
+            size: +rawSprite['$'].scale * 100,
             direction: dir
         };
         return sprite;

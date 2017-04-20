@@ -43,6 +43,8 @@ class Sprite extends Stage {
         this.xPosition = 0;
         this.yPosition = 0;
         this.direction = 90;
+        this.costume = 0;
+        this.size = 100;
     }
 }
 
@@ -63,6 +65,8 @@ sprite = new Sprite('<%= rawSprite.name %>', project.variables);
 sprite.xPosition = <%= rawSprite.position.x %>;
 sprite.yPosition = <%= rawSprite.position.y %>;
 sprite.direction = <%= rawSprite.direction %>;
+sprite.size = <%= rawSprite.size %>;
+sprite.costumeIdx = <%= rawSprite.costumeIdx %>;
 <% Object.keys(rawSprite.variables).forEach(function(variable) { %>
 sprite.variables.set('<%= variable %>', JSON.parse('<%= JSON.stringify(rawSprite.variables[variable]) %>'));<% }) %>
 

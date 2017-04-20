@@ -7,7 +7,7 @@ describe('looks', function() {
         utils = require('./utils'),
         content;
 
-    describe.only('initial values', function() {
+    describe('initial values', function() {
         var result;
 
         before(function(done) {
@@ -19,11 +19,12 @@ describe('looks', function() {
                 .nodeify(done);
         });
 
-        it('should set costume number to 3', function(done) {
-            console.log(result);
+        it('should set costume number to 3', function() {
+            assert.equal(result[1], 3)
         });
 
-        it('should set size to 170', function(done) {
+        it('should set size to 66', function() {
+            assert.equal(result[0], 66)
         });
     });
 
