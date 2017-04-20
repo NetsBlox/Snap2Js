@@ -27,6 +27,12 @@ backend.forward = function(node) {
     return callStatementWithArgs(node.type, `+${dist}`);
 };
 
+backend.xPosition =
+backend.direction =
+backend.yPosition = function(node) {
+    return callFnWithArgs(node.type);
+};
+
 ///////////////////// Control ///////////////////// 
 backend.doWarp = function(node) {
     var body = this.generateCode(node.inputs[0][0]);
@@ -89,7 +95,6 @@ backend.doRepeat.async = true;
 
 backend.doReport = function(node) {
     var value = this.generateCode(node.inputs[0][0]);
-    console.log('value', value);
     return 'return ' + callStatementWithArgs(node.type, value);
 };
 
@@ -213,11 +218,10 @@ backend.reportCDR = function(node) {
 };
 
 backend.reportNewList = function(node) {
-    console.log();
-    console.log(node.inputs);
-    var items = [];
-    // TODO: multiple item support
-    return callFnWithArgs(node.type);
+    var items = node.inputs[0].map(this.generateCode),
+        args = [node.type].concat(items);
+
+    return callFnWithArgs.apply(null, args);
 };
 
 backend.reportListContainsItem = function(node) {

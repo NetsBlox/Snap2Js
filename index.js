@@ -73,8 +73,13 @@
 
                 if (key === 'script') {
                     return curr[key].map(parseScript);
+                } else if (curr[key][0].block){
+                    if (curr[key].length > 1) {
+                        throw 'Ran into something strange. Please report this case';
+                    }
+                    return curr[key][0].block.map(item => createAstNode(item));
                 } else {
-                    return curr[key].map(createAstNode);
+                    return curr[key].map(item => createAstNode(item));
                 }
             });
 
@@ -98,7 +103,6 @@
         if (variable.l) {
             value = variable.l[0];
         } else if (variable.list) {
-            console.log(variable.list);
             if (variable.list[0].item) {
                 value = variable.list[0].item.map(item => parseVariableValue(item));
             } else {
@@ -121,18 +125,25 @@
     };
 
     Snap2Js.parseSprite = function(raw) {
-        var rawSprite = raw.sprite[0];
+        var rawSprite = raw.sprite[0],
+            position = {},
+            dir;
+
+        console.log(rawSprite);
+        position.x = rawSprite['$'].x;
+        position.y = rawSprite['$'].y;
+        dir = rawSprite['$'].heading;
         var sprite = {
             id: rawSprite['$'].collabId,
             name: rawSprite['$'].name,
             variables: parseInitialVariables(rawSprite.variables[0].variable),
-            scripts: parseSpriteScripts(raw)
+            scripts: parseSpriteScripts(raw),
+            position: position,
+            direction: dir
         };
         return sprite;
     };
 
-    // This is odd because we need different contexts for each sprite...
-    // TODO
     Snap2Js.parse = function(content) {
         return Q.nfcall(xml2js.parseString, content).then(parsed => {
                 var sprites = parsed.project.stage[0].sprites;
@@ -155,12 +166,8 @@
     Snap2Js.transpile = function(xml) {
         return Snap2Js.parse(xml)
             .then(state => {
-                console.log(state);
-
-                // TODO: for now, we will ignore sprite var scoping
                 var code = boilerplateTpl(state);
 
-                // TODO: Add context info
                 code = prettier.format(code);
                 return code;
             });
@@ -168,7 +175,6 @@
 
     Snap2Js._initNodeMap = {};
     Snap2Js._initNodeMap.receiveGo = function(code, node) {
-        // TODO: add script context
         return [
             '(function() {',
             'var __CONTEXT = new VariableFrame(self.variables);',
@@ -187,20 +193,13 @@
 
     Snap2Js.generateCode = function(root) {
         if (!Snap2Js._backend[root.type]) {
-            console.log();
-            console.log();
-            console.log(root);
-            console.log();
-            console.log();
             throw `Unsupported node type: ${root.type}`;
         }
 
-        //console.log('-- START', root.type);
         var code = Snap2Js._backend[root.type].call(Snap2Js, root);
         if (!Snap2Js._backend[root.type].async && root.next) {
             code += '\n' + Snap2Js.generateCode(root.next);
         }
-        //console.log('-- END', root.type);
         return code.replace(/\);/g, ');\n');
     };
 
