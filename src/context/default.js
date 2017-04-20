@@ -17,12 +17,16 @@ context.doYield = function(fn) {
         context = args.pop();
 
     // TODO: handle the warp
-    //var isAtomic = context.get('__isAtomic');
-    //if (isAtomic && isAtomic.value) {
-    //} else {
-    //}
-    //args.unshift(this);
-    setTimeout(() => fn.apply(this, args), 5);
+    var isAtomic = context.get(WARP_VAR);
+    if (isAtomic && isAtomic.value) {
+        fn.apply(this, args);
+    } else {
+        setTimeout(() => fn.apply(this, args), 5);
+    }
+};
+
+context.doWarp = function(isStart, context) {
+    context.set(WARP_VAR, isStart);
 };
 
 context.doWait = function(duration, after) {

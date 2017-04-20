@@ -4,7 +4,7 @@ describe('concurrency', function() {
         TEST_CASE_DIR = path.join(__dirname, 'test-cases'),
         snap2js = require('..'),
         assert = require('assert'),
-        isRightAfter = require('./utils').isRightAfter,
+        utils = require('./utils'),
         content;
 
     before(function(){
@@ -62,11 +62,15 @@ describe('concurrency', function() {
         });
 
         it('should yield after doSayFor', function() {
-            assert(!isRightAfter(totalOrder, '13', '14'))
+            assert(!utils.isRightAfter(totalOrder, '13', '14'))
         });
 
         it('should yield after repeat loop', function() {
-            assert(!isRightAfter(totalOrder, '15', '16'))
+            assert(!utils.isRightAfter(totalOrder, '15', '16'))
+        });
+
+        it('should not yield after repeat in warp', function() {
+            assert(utils.isRightBefore(totalOrder, '27.5', '28'));
         });
     });
 });

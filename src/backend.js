@@ -29,9 +29,13 @@ backend.forward = function(node) {
 
 ///////////////////// Control ///////////////////// 
 backend.doWarp = function(node) {
-    console.log(node);
-    // TODO
-    return callStatementWithArgs(node.type);
+    var body = this.generateCode(node.inputs[0][0]);
+    return [
+        callStatementWithArgs(node.type, true),
+        body,
+        callStatementWithArgs(node.type, false)
+    ].join('\n');
+
 };
 
 backend.doWait = function(node) {
