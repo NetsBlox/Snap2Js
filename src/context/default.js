@@ -6,7 +6,14 @@ var context = _.cloneDeep(base);
 // Add the basic overrides
 // TODO: Add the sprite, stage, contexts and stuff
 
-// Add the basic overrides
+context.doYield = function(fn) {
+    var args = Array.prototype.slice.call(arguments, 1),
+        context = args.pop();
+
+    // TODO: handle the warp
+    args.unshift(this);
+    setTimeout(() => fn.apply(args), 5);
+};
 
 ///////////////////// Operators ///////////////////// 
 context.reportEquals = function(left, right) {
@@ -15,7 +22,6 @@ context.reportEquals = function(left, right) {
 
 ///////////////////// Variables ///////////////////// 
 context.reportListLength = function(name, context) {
-    console.log(context);
     return context.get(name).value.length;
 };
 
@@ -25,7 +31,6 @@ context.variable = function(name, context) {
 
 context.doChangeVar = function(name, val, context) {
     var variable = context.get(name);
-    console.log('getting', name);
     variable.value = +variable.value + (+val);
 };
 
@@ -33,8 +38,6 @@ context.doDeclareVariables = function() {
     var args = Array.prototype.slice.call(arguments),
         context = args.pop();
 
-    console.log(arguments);
-    console.log('declaring', args[i]);
     for (var i = args.length; i--;) {
         context.set(args[i], 0);
     }

@@ -26,10 +26,8 @@ describe('change x 10x', function() {
             assert(/setXPosition.call\([^'"]/.test(code));
         });
 
-        it('should contain "for"', function() {
-            console.log();
-            console.log('code', code);
-            assert(/for\s*\([^'"]/.test(code));
+        it('should not contain "for"', function() {
+            assert.equal(/for\s*\(/.test(code), false);
         });
     });
 

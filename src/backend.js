@@ -10,6 +10,10 @@ var callFnWithArgs = function(fn) {
     return `__ENV.${fn}.call(self, __CONTEXT)`;
 };
 
+var callStatementWithArgs = function() {
+    return callFnWithArgs.apply(null, arguments) + ';';
+};
+
 ///////////////////// Motion ///////////////////// 
 
 backend.turnRight =
@@ -20,19 +24,19 @@ backend.changeXPosition =
 backend.changeYPosition =
 backend.forward = function(node) {
     var dist = this.generateCode(node.inputs[0][0]);
-    return callFnWithArgs(node.type, `+${dist}`) + ';';
+    return callStatementWithArgs(node.type, `+${dist}`);
 };
 
 ///////////////////// Control ///////////////////// 
 backend.doWarp = function(node) {
     console.log(node);
     // TODO
-    return callFnWithArgs(node.type) + ';';
+    return callStatementWithArgs(node.type);
 };
 
 backend.doWait = function(node) {
     var time = this.generateCode(node.inputs[0][0]);
-    return callFnWithArgs(node.type, time) + ';';
+    return callStatementWithArgs(node.type, time);
 };
 
 backend.doIfElse = function(node) {
@@ -52,14 +56,23 @@ backend.doIfElse = function(node) {
 backend.doRepeat = function(node) {
     var count = this.generateCode(node.inputs[0][0]),
         body = this.generateCode(node.inputs[1][0]),
-        iterVar = node.id;
+        iterVar = node.id,
+        recurse;
 
+    recurse = callStatementWithArgs('doYield', `doLoop_${node.id}`, node.id);
     return [
-        `for (var ${iterVar} = +${count}; ${iterVar}--;) {`,
+        `function doLoop_${node.id} (${node.id}) {`,
         indent(body),
-        `}\n`
+        `if (--${node.id} > 0) {`,
+        indent(recurse),
+        `} else {`,
+        indent(node.next ? this.generateCode(node.next) : '// done!'),
+        `}`,
+        `}`,
+         `doLoop_${node.id}(+${count});`
     ].join('\n');
 };
+backend.doRepeat.async = true;
 
 ///////////////////// Looks ///////////////////// 
 backend.getScale = function(node) {
@@ -69,14 +82,14 @@ backend.getScale = function(node) {
 backend.doSayFor = function(node) {
     var inputs = node.inputs[0].map(this.generateCode);
     inputs[1] = '+' + inputs[1];
-    return callFnWithArgs(node.type, inputs.join(', ')) + ';';
+    return callStatementWithArgs(node.type, inputs.join(', '));
 };
 
 backend.bubble = function(node) {
     var inputs;
 
     inputs = this.generateCode(node.inputs[0][0]);
-    return callFnWithArgs(node.type, inputs) + ';';
+    return callStatementWithArgs(node.type, inputs);
 };
 
 ///////////////////// Operators ///////////////////// 
@@ -100,21 +113,21 @@ backend.doSetVar = function(node) {
     var name = this.generateCode(node.inputs[0][0]);
     var value = this.generateCode(node.inputs[0][1] || node.inputs[1][0]) || null;
 
-    return callFnWithArgs(node.type, name, value) + ';';
+    return callStatementWithArgs(node.type, name, value);
 };
 
 backend.doShowVar =
 backend.doHideVar = function(node) {
     var name = this.generateCode(node.inputs[0][0]);
 
-    return callFnWithArgs(node.type, name) + ';';
+    return callStatementWithArgs(node.type, name);
 };
 
 backend.doDeclareVariables = function(node) {
     var names = node.inputs[0][0].inputs[0]
         .map(input => this.generateCode(input));
 
-    return callFnWithArgs(node.type, names.join(', ')) + ';';
+    return callStatementWithArgs(node.type, names.join(', '));
 };
 
 backend.doAddToList = function(node) {
@@ -125,7 +138,7 @@ backend.doAddToList = function(node) {
     if (rawList && rawList.type === 'variable') {
         list = `'${rawList.value}'`;
     }
-    return callFnWithArgs(node.type, value, list) + ';';
+    return callStatementWithArgs(node.type, value, list);
 };
 
 backend.reportListLength = function(node) {
@@ -167,7 +180,7 @@ backend.reportListContainsItem = function(node) {
 backend.doDeleteFromList = function(node) {
     var list = this.generateCode(node.inputs[1][0]);
     var index = this.generateCode(node.inputs[0][0]);
-    return callFnWithArgs(node.type, index, list) + ';';
+    return callStatementWithArgs(node.type, index, list);
 };
 
 backend.doReplaceInList = function(node) {
@@ -175,7 +188,7 @@ backend.doReplaceInList = function(node) {
     var item = this.generateCode(node.inputs[0][1]);
     var list = this.generateCode(node.inputs[1][0]);
 
-    return callFnWithArgs(node.type, index, list, item) + ';';
+    return callStatementWithArgs(node.type, index, list, item);
 };
 
 backend.doInsertInList = function(node) {
@@ -188,7 +201,7 @@ backend.doInsertInList = function(node) {
         listName = `'${rawList.value}'`;
     }
 
-    return callFnWithArgs(node.type, value, index, listName) + ';';
+    return callStatementWithArgs(node.type, value, index, listName);
 };
 
 backend.variable = function(node) {
