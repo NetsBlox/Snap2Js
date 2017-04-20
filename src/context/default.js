@@ -140,6 +140,33 @@ context.getCostumeIdx = function() {
     return this.costumeIdx;
 };
 
+///////////////////// Sensing ///////////////////// 
+context.reportDate = function(format) {
+    var dateMap = {
+        'year' : 'getFullYear',
+        'month' : 'getMonth',
+        'date': 'getDate',
+        'day of week' : 'getDay',
+        'hour' : 'getHours',
+        'minute' : 'getMinutes',
+        'second' : 'getSeconds',
+        'time in milliseconds' : 'getTime'
+    };
+
+    if (dateMap[format]) {
+        return new Date()[dateMap[format]]();
+    } else {
+        return '';
+    }
+};
+
+context.doResetTimer = function() {
+    this.resetTimer();
+};
+
+context.getTimer = function() {
+    return (Date.now() - this.getTimerStart())/1000;
+};
 ///////////////////// Operators ///////////////////// 
 context.reportEquals = function(left, right) {
     return left == right;

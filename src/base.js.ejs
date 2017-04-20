@@ -33,6 +33,14 @@ class Stage {
 
     onFlagPressed() {
     }
+
+    getTimerStart() {
+        return project.timerStart;
+    }
+
+    resetTimer() {
+        project.timerStart = Date.now();
+    }
 }
 
 class Sprite extends Stage {
@@ -51,6 +59,7 @@ class Sprite extends Stage {
 __ENV = __ENV || this;
 var project = {
     variables: new VariableFrame(),
+    timerStart: null,
     sprites: []
 };
 <% Object.keys(variables).forEach(function(variable) { %>
@@ -117,5 +126,6 @@ sprite.checkConditions = function() {
 
 project.sprites.push(sprite);
 <% }) %>
+project.timerStart = Date.now();
 project.sprites.forEach(sprite => sprite.onFlagPressed());
 project.stage.onFlagPressed();

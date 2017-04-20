@@ -206,6 +206,69 @@ backend.doThink = function(node) {
     return callStatementWithArgs(node.type, msg);
 };
 
+///////////////////// Sensing ///////////////////// 
+backend.doAsk = function(node) {
+    var msg = this.generateCode(node.inputs[0][0]);
+    return callStatementWithArgs(node.type, msg);
+};
+
+backend.doResetTimer = function(node) {
+    return callStatementWithArgs(node.type);
+};
+
+backend.doSetFastTracking = function(node) {
+    var bool = this.generateCode(node.inputs[0][0]);
+    return callStatementWithArgs(node.type, bool);
+};
+
+backend.reportTouchingObject = function(node) {
+    var obj = this.generateCode(node.inputs[0][0]);
+    return callFnWithArgs(node.type, obj);
+};
+
+backend.reportTouchingColor = function(node) {
+    var color = this.generateCode(node.inputs[0][0]);
+    return callFnWithArgs(node.type, color);
+};
+
+backend.reportDate =
+backend.reportURL =
+backend.reportGet = function(node) {
+    var thing = this.generateCode(node.inputs[0][0]);
+    return callFnWithArgs(node.type, thing);
+};
+
+backend.reportColorIsTouchingColor = function(node) {
+    var first = this.generateCode(node.inputs[0][0]);
+    var second = this.generateCode(node.inputs[0][1]);
+    return callFnWithArgs(node.type, first, second);
+};
+
+backend.reportAttributeOf = function(node) {
+    var attr = this.generateCode(node.inputs[0][0]);
+    var obj = this.generateCode(node.inputs[0][1]);
+    return callFnWithArgs(node.type, attr, obj);
+};
+
+backend.reportIsFastTracking =
+backend.getTimer =
+backend.reportMouseX =
+backend.reportMouseY =
+backend.reportMouseDown =
+backend.getLastAnswer = function(node) {
+    return callFnWithArgs(node.type);
+};
+
+backend.reportKeyPressed = function(node) {
+    var key = this.generateCode(node.inputs[0][0]);
+    return callFnWithArgs(node.type, key);
+};
+
+backend.reportDistanceTo = function(node) {
+    var obj = this.generateCode(node.inputs[0][0]);
+    return callFnWithArgs(node.type, obj);
+};
+
 ///////////////////// Operators ///////////////////// 
 backend.reportEquals = function(node) {
     var left = this.generateCode(node.inputs[0][0]),
