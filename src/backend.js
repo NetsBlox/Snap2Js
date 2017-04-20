@@ -16,7 +16,7 @@ var callStatementWithArgs = function() {
 
 ///////////////////// Motion ///////////////////// 
 
-backend.turnRight =
+backend.turn =
 backend.turnLeft =
 backend.setXPosition =
 backend.setYPosition =

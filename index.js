@@ -52,6 +52,8 @@
         if (!curr['$']) {
             type = Object.keys(curr)[0];
             if (type === 'block') {
+                console.log();
+                console.log(JSON.stringify(curr, null, 2));
                 throw 'bad parsing';
             }
         } else if (curr['$'].var) {
@@ -208,11 +210,13 @@
     Snap2Js.setBackend(DefaultBackend);
 
     Snap2Js.CONTEXT = {};
+    Snap2Js._contexts = {};
+
     Snap2Js.CONTEXT.NOP = 'nop';
     Snap2Js.CONTEXT.DEFAULT = 'default';
-    Snap2Js._contexts = {};
     Snap2Js._contexts.default = DefaultContext;
     Snap2Js._contexts.nop = require('./src/context/nop');
+
     Snap2Js.newContext = type => _.cloneDeep(Snap2Js._contexts[type || Snap2Js.CONTEXT.DEFAULT]);
 
 })(module.exports);

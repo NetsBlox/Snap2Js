@@ -36,7 +36,7 @@ context.turnLeft = function(value) {
     this.direction -= (value || 0);
 };
 
-context.turnRight = function(value) {
+context.turn = function(value) {
     this.direction += (value || 0);
 };
 
