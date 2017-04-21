@@ -1,6 +1,7 @@
 // We will be generating JavaScript code which will call the primitive fns
 (function(Snap2Js) {
-    const xml2js = require('xml2js');
+    //const xml2js = require('xml2js');
+    const XML_Element = require('./src/snap/xml');
     const Q = require('q');
     const prettier = require('prettier');
     const fs = require('fs');
@@ -13,8 +14,7 @@
     const boilerplateTpl = _.template(boilerplate);
 
     const parseSpriteScripts = model => {
-        var rawScripts = model.sprite[0].scripts[0].script,
-            asts = rawScripts.map(parseScript),
+        var asts = model.children.map(parseScript),
             eventHandlers = {},
             code;
 
@@ -30,8 +30,19 @@
         return eventHandlers;
     };
 
+    var createNode = {};
+    //createNode.reportNewList = curr => {
+        //console.log(JSON.stringify(curr.list[0], null, 2));
+        //console.log(JSON.stringify(curr.list[1], null, 2));
+        //asdf;
+        //// The ordering is lost... this sucks...
+        //return {
+            //id: curr['$'].collabId,
+            //inputs: curr.list
+        //};
+    //};
+
     const createAstNode = (curr, next) => {
-        // TODO: Parse input blocks
         if (typeof curr !== 'object') {
             return {
                 type: typeof curr,
@@ -49,48 +60,68 @@
             next: next || null
         };
 
-        if (!curr['$']) {
+        if (!curr.attributes) {
             type = Object.keys(curr)[0];
             if (type === 'block') {
                 throw 'bad parsing';
             }
-        } else if (curr['$'].var) {
+        } else if (curr.attributes.var) {
             type = 'variable';
-            node.value = curr['$'].var;
+            node.value = curr.attributes.var;
         } else {
-            type = curr['$'].s;
-            node.id = curr['$'].collabId;
+            type = curr.attributes.s;
+            node.id = curr.attributes.collabId;
         }
         if (type === 'undefined') {
             throw 'bad parsing';
         }
 
+        console.log();
         node.type = type;
-        node.inputs = Object.keys(curr)
-            .filter(key => key !== '$')
-            .map(key => {
-                var is2dArray = curr[key][0] instanceof Array;
+        node.inputs = curr.children
+            .map(child => {
+                var key = child.tag;
 
-                if (key === 'script') {
-                    return curr[key].map(parseScript);
-                } else if (curr[key][0].block && !curr[key][0]['$']){
-                    // This is a multiargmorph that is part of a larger block
-                    // (but not a standalone block)
-                    if (curr[key].length > 1) {
-                        throw 'Ran into something strange. Please report this case';
-                    }
-                    return curr[key][0].block.map(item => createAstNode(item));
-                } else {
-                    return curr[key].map(item => createAstNode(item));
+                console.log();
+                console.log(key);
+                console.log(child);
+
+                if (key === 'l') {
+                    console.log(type);
+                    console.log('---');
                 }
+
+                if (key === 'l') {
+                    if (child.children.length) {
+                        return child.children.map(createAstNode);
+                    }
+                    return createAstNode(child.contents)
+                }
+                return createAstNode(child);
+                //if (key === 'script') {
+                    //adsf;
+                    //return curr[key].map(parseScript);
+                ////} else if (curr[key][0].block && !curr[key][0]['$']){
+                    ////// This is a multiargmorph that is part of a larger block
+                    ////// (but not a standalone block)
+                    ////if (curr[key].length > 1) {
+                        ////throw 'Ran into something strange. Please report this case';
+                    ////}
+                    ////return curr[key][0].block.map(item => createAstNode(item));
+                //} else {
+                    //return createAstNode(child);
+                //}
             });
 
+        console.log();
+        console.log('node');
+        console.log(JSON.stringify(node, null, 2));
         return node;
     };
 
     const parseScript = script => {
         var rootNode,
-            blocks = script.block,
+            blocks = script.children,
             last;
 
         for (var i = blocks.length; i--;) {
@@ -100,18 +131,17 @@
     };
 
     parseVariableValue = function(variable) {
-        var value = 0;
 
-        if (variable.l) {
-            value = variable.l[0];
-        } else if (variable.list) {
-            if (variable.list[0].item) {
-                value = variable.list[0].item.map(item => parseVariableValue(item));
-            } else {
-                value = [];
-            }
+        if (variable.tag === 'bool') {
+            return variable.contents === 'true';
+        } else if (variable.tag === 'l') {
+            return variable.contents;
+        } else if (variable.tag === 'list') {
+            return variable.children.map(child => {
+                return parseVariableValue(child.children[0]);
+            });
         }
-        return value;
+        return 0;
     };
 
     parseInitialVariables = function(vars) {
@@ -121,61 +151,58 @@
         vars = vars || [];
         for (var i = vars.length; i--;) {
             variable = vars[i];
-            context[variable['$'].name] = parseVariableValue(variable);
+            context[variable.attributes.name] = parseVariableValue(variable.children[0]);
         }
         return context;
     };
 
-    Snap2Js.parseSprite = function(raw) {
-        var rawSprite = raw.sprite[0],
-            position = {},
+    Snap2Js.parseSprite = function(model) {
+        var position = {},
             dir;
 
-        position.x = rawSprite['$'].x;
-        position.y = rawSprite['$'].y;
-        dir = rawSprite['$'].heading;
-        var sprite = {
-            id: rawSprite['$'].collabId,
-            name: rawSprite['$'].name,
-            variables: parseInitialVariables(rawSprite.variables[0].variable),
-            scripts: parseSpriteScripts(raw),
+        position.x = model.attributes.x;
+        position.y = model.attributes.y;
+        dir = model.attributes.heading;
+        return {
+            id: model.attributes.collabId,
+            name: model.attributes.name,
+            variables: parseInitialVariables(model.childNamed('variables').children),
+            scripts: parseSpriteScripts(model.childNamed('scripts')),
             position: position,
-            costumeIdx: +rawSprite['$'].costume,
-            size: +rawSprite['$'].scale * 100,
+            costumeIdx: +model.attributes.costume,
+            size: +model.attributes.scale * 100,
             direction: dir
         };
-        return sprite;
     };
 
     Snap2Js.parse = function(content) {
-        return Q.nfcall(xml2js.parseString, content).then(parsed => {
-                var sprites = parsed.project.stage[0].sprites;
-                var globalVars = parseInitialVariables(parsed.project.variables[0].variable);
-                var tempo = +parsed.project.stage[0]['$'].tempo;
-                return {
-                    variables: globalVars,
-                    tempo: tempo,
-                    sprites: sprites.map(Snap2Js.parseSprite),
-                };
-            });
+        var element = new XML_Element();
+        element.parseString(content.toString());
+
+        var stage = element.childNamed('stage');
+        var sprites = stage.childNamed('sprites').childrenNamed('sprite');
+
+        var globalVars = parseInitialVariables(element.childNamed('variables').children);
+        var tempo = +stage.attributes.tempo;
+        return {
+            variables: globalVars,
+            tempo: tempo,
+            sprites: sprites.map(Snap2Js.parseSprite),
+        };
 
     };
 
     Snap2Js.compile = function(xml) {
-        return Snap2Js.transpile(xml)
-            .then(src => {
-                return new Function('__ENV', src);
-            });
+        var code = Snap2Js.transpile(xml)
+        return new Function('__ENV', code);
     };
 
     Snap2Js.transpile = function(xml) {
-        return Snap2Js.parse(xml)
-            .then(state => {
-                var code = boilerplateTpl(state);
+        var state = Snap2Js.parse(xml);
+        var code = boilerplateTpl(state);
 
-                code = prettier.format(code);
-                return code;
-            });
+        code = prettier.format(code);
+        return code;
     };
 
     Snap2Js._initNodeMap = {};
@@ -198,6 +225,7 @@
 
     Snap2Js.generateCode = function(root) {
         if (!Snap2Js._backend[root.type]) {
+            console.log(JSON.stringify(root, null, 2));
             throw `Unsupported node type: ${root.type}`;
         }
 

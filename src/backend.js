@@ -197,7 +197,7 @@ backend.doThinkFor = function(node) {
 backend.doThinkFor.async = true;
 
 backend.bubble = function(node) {
-    var inputs = this.generateCode(node.inputs[0][0]);
+    var inputs = this.generateCode(node.inputs[0]);
     return callStatementWithArgs(node.type, inputs);
 };
 
@@ -347,8 +347,8 @@ backend.changeSize = function(node) {
 ///////////////////// Variables ///////////////////// 
 backend.doChangeVar =
 backend.doSetVar = function(node) {
-    var name = this.generateCode(node.inputs[0][0]);
-    var value = this.generateCode(node.inputs[0][1] || node.inputs[1][0]) || null;
+    var name = this.generateCode(node.inputs[0]);
+    var value = this.generateCode(node.inputs[1]) || '';
 
     return callStatementWithArgs(node.type, name, value);
 };
@@ -372,6 +372,7 @@ backend.doAddToList = function(node) {
         rawList = node.inputs[1][0],
         list = null;
 
+    // FIXME
     if (rawList && rawList.type === 'variable') {
         list = `'${rawList.value}'`;
     }

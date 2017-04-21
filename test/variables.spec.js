@@ -6,22 +6,19 @@ describe('variables', function() {
         assert = require('assert'),
         content;
 
-    describe('initial values', function() {
+    describe.only('initial values', function() {
         var bin,
             cxt,
             values;
 
-        before(function(done) {
+        before(function() {
             content = fs.readFileSync(path.join(TEST_CASE_DIR, 'initial-variables.xml'));
             cxt = snap2js.newContext();
 
             values = [];
             cxt['bubble'] = variable => values.push(variable.value);
-            snap2js.compile(content)
-                .then(bin => {
-                    bin(cxt);
-                })
-                .nodeify(done);
+            bin = snap2js.compile(content);
+            bin(cxt);
         });
 
         it('should first say 14', function() {
@@ -81,6 +78,44 @@ describe('variables', function() {
                 };
                 bin(cxt);
             });
+        });
+    });
+
+    describe('nested lists', function() {
+        var result;
+
+        before(function(done) {
+            content = fs.readFileSync(path.join(TEST_CASE_DIR, 'nested-lists.xml'));
+            snap2js.compile(content)
+                .then(bin => {
+                    cxt['doReport'] = val => result = val;
+                    bin(cxt);
+                })
+                .nodeify(done);
+        });
+
+        it('should correctly parse the nested lists', function(done) {
+            console.log(result);
+        });
+    });
+
+    describe('all blocks', function() {
+        var result,
+            cxt;
+
+        before(function(done) {
+            content = fs.readFileSync(path.join(TEST_CASE_DIR, 'all-variables.xml'));
+            snap2js.compile(content)
+                .then(bin => {
+                    cxt = snap2js.newContext();
+                    cxt['doReport'] = val => result = val;
+                    bin(cxt);
+                })
+                .nodeify(done);
+        });
+
+        it('should change hue by 10', function(done) {
+            console.log(result);
         });
     });
 });
