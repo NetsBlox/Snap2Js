@@ -21,10 +21,6 @@ describe('motion', function() {
                 .nodeify(done);
         });
 
-        // Things to check:
-        //  - wait block yields
-        //  - end of loop yields
-
         it('should have x position of 100', function() {
             assert.equal(result[0], 100);
         });
