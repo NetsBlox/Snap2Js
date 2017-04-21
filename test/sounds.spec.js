@@ -4,6 +4,7 @@ describe('sounds', function() {
         TEST_CASE_DIR = path.join(__dirname, 'test-cases'),
         snap2js = require('..'),
         assert = require('assert'),
+        checkBlockValue = require('./utils').checkBlockValue,
         content;
 
     describe('all blocks', function() {
@@ -56,16 +57,6 @@ describe('sounds', function() {
             bin(cxt);
         });
 
-        function checkBlockValue(bin, fn, val, done) {
-            var cxt = snap2js.newContext('nop');
-            cxt[fn] = arg => {
-                assert.equal(arg, val);
-                done();
-            };
-            bin(cxt);
-        };
-
     });
-
 });
 
