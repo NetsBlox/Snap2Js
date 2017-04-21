@@ -69,7 +69,7 @@
             type = 'variable';
             node.value = curr.attributes.var;
         } else {
-            type = curr.attributes.s;
+            type = curr.attributes.s || curr.tag;
             node.id = curr.attributes.collabId;
         }
         if (type === 'undefined') {
@@ -82,25 +82,17 @@
             .map(child => {
                 var key = child.tag;
 
-                console.log();
-                console.log(key);
-                console.log(child);
-
-                if (key === 'l') {
-                    console.log(type);
-                    console.log('---');
-                }
-
-                if (key === 'l') {
+                if (key === 'script') {
+                    return parseScript(child);
+                } else if (key === 'l') {
                     if (child.children.length) {
                         return child.children.map(createAstNode);
                     }
                     return createAstNode(child.contents)
+                } else if (key === 'color') {
+                    return createAstNode(child.contents)
                 }
                 return createAstNode(child);
-                //if (key === 'script') {
-                    //adsf;
-                    //return curr[key].map(parseScript);
                 ////} else if (curr[key][0].block && !curr[key][0]['$']){
                     ////// This is a multiargmorph that is part of a larger block
                     ////// (but not a standalone block)
@@ -113,9 +105,6 @@
                 //}
             });
 
-        console.log();
-        console.log('node');
-        console.log(JSON.stringify(node, null, 2));
         return node;
     };
 

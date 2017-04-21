@@ -63,7 +63,7 @@ backend.bounceOffEdge = function(node) {
 
 ///////////////////// Control ///////////////////// 
 backend.doWarp = function(node) {
-    var body = this.generateCode(node.inputs[0][0]);
+    var body = this.generateCode(node.inputs[0]);
     return [
         callStatementWithArgs(node.type, true),
         body,
@@ -73,7 +73,7 @@ backend.doWarp = function(node) {
 };
 
 backend.doWait = function(node) {
-    var time = this.generateCode(node.inputs[0][0]),
+    var time = this.generateCode(node.inputs[0]),
         afterFn = `afterWait_${node.id}`,
         body = node.next ? this.generateCode(node.next) : '';
 
@@ -88,8 +88,8 @@ backend.doWait.async = true;
 
 backend.doIfElse = function(node) {
     var cond = this.generateCode(node.inputs[0][0]),
-        ifTrue = this.generateCode(node.inputs[1][0]),
-        ifFalse = this.generateCode(node.inputs[1][1]);
+        ifTrue = this.generateCode(node.inputs[1]),
+        ifFalse = this.generateCode(node.inputs[2]);
 
     return [
         `if (${cond}) {`,
@@ -101,8 +101,8 @@ backend.doIfElse = function(node) {
 };
 
 backend.doRepeat = function(node) {
-    var count = this.generateCode(node.inputs[0][0]),
-        body = this.generateCode(node.inputs[1][0]),
+    var count = this.generateCode(node.inputs[0]),
+        body = this.generateCode(node.inputs[1]),
         iterVar = node.id,
         recurse;
 
@@ -122,7 +122,7 @@ backend.doRepeat = function(node) {
 backend.doRepeat.async = true;
 
 backend.doReport = function(node) {
-    var value = this.generateCode(node.inputs[0][0]);
+    var value = this.generateCode(node.inputs[0]);
     return 'return ' + callStatementWithArgs(node.type, value);
 };
 
@@ -167,8 +167,8 @@ backend.hide = function(node) {
 };
 
 backend.doSayFor = function(node) {
-    var time = '+' + this.generateCode(node.inputs[0][1]),
-        msg = this.generateCode(node.inputs[0][0]),
+    var time = '+' + this.generateCode(node.inputs[1]),
+        msg = this.generateCode(node.inputs[0]),
         afterFn = `afterSay_${node.id}`,
         body = node.next ? this.generateCode(node.next) : '';
 
@@ -322,25 +322,25 @@ backend.clear = function(node) {
 };
 
 backend.setColor = function(node) {
-    var color = this.generateCode(node.inputs[0][0]);
+    var color = this.generateCode(node.inputs[0]);
     return callStatementWithArgs(node.type, color);
 };
 
 backend.setHue =
 backend.changeHue = function(node) {
-    var hue = this.generateCode(node.inputs[0][0]);
+    var hue = this.generateCode(node.inputs[0]);
     return callStatementWithArgs(node.type, hue);
 };
 
 backend.setBrightness =
 backend.changeBrightness = function(node) {
-    var brightness = this.generateCode(node.inputs[0][0]);
+    var brightness = this.generateCode(node.inputs[0]);
     return callStatementWithArgs(node.type, brightness);
 };
 
 backend.setSize =
 backend.changeSize = function(node) {
-    var size = this.generateCode(node.inputs[0][0]);
+    var size = this.generateCode(node.inputs[0]);
     return callStatementWithArgs(node.type, size);
 };
 
@@ -355,21 +355,21 @@ backend.doSetVar = function(node) {
 
 backend.doShowVar =
 backend.doHideVar = function(node) {
-    var name = this.generateCode(node.inputs[0][0]);
+    var name = this.generateCode(node.inputs[0]);
 
     return callStatementWithArgs(node.type, name);
 };
 
 backend.doDeclareVariables = function(node) {
-    var names = node.inputs[0][0].inputs[0]
+    var names = node.inputs[0].inputs
         .map(input => this.generateCode(input));
 
     return callStatementWithArgs(node.type, names.join(', '));
 };
 
 backend.doAddToList = function(node) {
-    var value = this.generateCode(node.inputs[0][0]),
-        rawList = node.inputs[1][0],
+    var value = this.generateCode(node.inputs[0]),
+        rawList = node.inputs[1],
         list = null;
 
     // FIXME
@@ -398,7 +398,7 @@ backend.reportCDR = function(node) {
 };
 
 backend.reportNewList = function(node) {
-    var items = node.inputs[0].map(this.generateCode),
+    var items = node.inputs.map(this.generateCode),
         args = [node.type].concat(items);
 
     return callFnWithArgs.apply(null, args);
@@ -447,11 +447,11 @@ backend.string = function(node) {
 };
 
 backend.option = function(node) {
-    return this.generateCode(node.inputs[0][0]);
+    return this.generateCode(node.inputs[0]);
 };
 
 backend.bool = function(node) {
-    var content = node.inputs[0][0],
+    var content = node.inputs[0],
         value = 'false';
 
     if (content && content.value === 'true') {

@@ -1,4 +1,4 @@
-describe('concurrency', function() {
+describe.only('concurrency', function() {
     let fs = require('fs'),
         path = require('path'),
         TEST_CASE_DIR = path.join(__dirname, 'test-cases'),
@@ -14,13 +14,8 @@ describe('concurrency', function() {
     describe('transpile', function() {
         var code;
 
-        before(function(done) {
-            snap2js.transpile(content)
-                .then(js => {
-                    console.log('code is', js);
-                    code = js;
-                })
-                .nodeify(done);
+        before(function() {
+            code = snap2js.transpile(content)
         });
 
         it('should contain "doWarp"', function() {
@@ -41,15 +36,12 @@ describe('concurrency', function() {
         before(function(done) {
             cxt = snap2js.newContext();
             cxt['bubble'] = val => values.push(val);
-            snap2js.compile(content)
-                .then(bin => {
-                    bin(cxt);
-                    setTimeout(function() {
-                        totalOrder = values[1].value;
-                        done();
-                    }, 1500);
-                })
-                .fail(err => console.error(err));
+            bin = snap2js.compile(content);
+            bin(cxt);
+            setTimeout(function() {
+                totalOrder = values[1].value;
+                done();
+            }, 1500);
         });
 
         // Things to check:
