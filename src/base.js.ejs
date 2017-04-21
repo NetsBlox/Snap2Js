@@ -41,6 +41,14 @@ class Stage {
     resetTimer() {
         project.timerStart = Date.now();
     }
+
+    getTempo() {
+        return project.tempo;
+    }
+
+    setTempo(bpm) {
+        return project.tempo = Math.max(20, (+bpm || 0));
+    }
 }
 
 class Sprite extends Stage {
@@ -60,6 +68,7 @@ __ENV = __ENV || this;
 var project = {
     variables: new VariableFrame(),
     timerStart: null,
+    tempo: <%= tempo %>,
     sprites: []
 };
 <% Object.keys(variables).forEach(function(variable) { %>

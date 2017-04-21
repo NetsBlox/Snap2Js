@@ -1,4 +1,4 @@
-describe.only('sounds', function() {
+describe('sounds', function() {
     let fs = require('fs'),
         path = require('path'),
         TEST_CASE_DIR = path.join(__dirname, 'test-cases'),
@@ -48,7 +48,7 @@ describe.only('sounds', function() {
         });
 
         it('should have a tempo of 80', function(done) {
-            cxt = snap2js.newContext('nop');
+            cxt = snap2js.newContext();
             cxt['doReport'] = tempo => {
                 assert.equal(tempo, 80);
                 done();

@@ -151,8 +151,10 @@
         return Q.nfcall(xml2js.parseString, content).then(parsed => {
                 var sprites = parsed.project.stage[0].sprites;
                 var globalVars = parseInitialVariables(parsed.project.variables[0].variable);
+                var tempo = +parsed.project.stage[0]['$'].tempo;
                 return {
                     variables: globalVars,
+                    tempo: tempo,
                     sprites: sprites.map(Snap2Js.parseSprite),
                 };
             });
