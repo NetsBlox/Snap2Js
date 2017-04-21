@@ -28,7 +28,7 @@ function compileFile(filename, opts, logger) {
         .then(contents => snap2js.transpile(contents))
         .then(fn => {
             // FIXME: make this more generic
-            var code = `(function test(__EVAL) {${fn.toString()}})(require('./src/context/${context}'))`;
+            var code = `(function test(__ENV) {${fn.toString()}})(require('./src/context/${context}'))`;
             return Q.ninvoke(fs, 'writeFile', outfile, code);
         })
         .then(() => logger.info('finished compiling', outfile))

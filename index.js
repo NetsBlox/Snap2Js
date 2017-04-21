@@ -50,6 +50,9 @@
             };
         }
 
+        if (curr.tag === 'color' || curr.tag === 'option')
+            return createAstNode(curr.contents)
+
         var node,
             type;
 
@@ -72,11 +75,10 @@
             type = curr.attributes.s || curr.tag;
             node.id = curr.attributes.collabId;
         }
-        if (type === 'undefined') {
+        if (!type) {
             throw 'bad parsing';
         }
 
-        console.log();
         node.type = type;
         node.inputs = curr.children
             .map(child => {
@@ -85,11 +87,12 @@
                 if (key === 'script') {
                     return parseScript(child);
                 } else if (key === 'l') {
+                    console.log();
+                    console.log('---');
+                    console.log(child);
                     if (child.children.length) {
                         return child.children.map(createAstNode);
                     }
-                    return createAstNode(child.contents)
-                } else if (key === 'color') {
                     return createAstNode(child.contents)
                 }
                 return createAstNode(child);
@@ -218,6 +221,7 @@
             throw `Unsupported node type: ${root.type}`;
         }
 
+        console.log(root.type);
         var code = Snap2Js._backend[root.type].call(Snap2Js, root);
         if (!Snap2Js._backend[root.type].async && root.next) {
             code += '\n' + Snap2Js.generateCode(root.next);

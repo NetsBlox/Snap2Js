@@ -13,13 +13,8 @@ describe('change x 10x', function() {
     describe('transpile', function() {
         var code;
 
-        before(function(done) {
-            snap2js.transpile(content)
-                .then(js => {
-                    console.log('code is', js);
-                    code = js;
-                })
-                .nodeify(done);
+        before(function() {
+            code = snap2js.transpile(content);
         });
 
         it('should contain "setXPosition"', function() {
@@ -36,23 +31,19 @@ describe('change x 10x', function() {
             cxt,
             xVal = 0;
 
-        before(function(done) {
+        before(function() {
             cxt = snap2js.newContext();
             cxt['setXPosition'] = v => xVal = v;
             cxt['changeXPosition'] = v => xVal += v;
 
-            snap2js.compile(content)
-                .then(_bin => bin = _bin)
-                .nodeify(done);
+            bin = snap2js.compile(content);
         });
 
         it('should finish with x == 100', function(done) {
             cxt['changeXPosition'] = v => {
                 xVal += v;
-                console.log('changing x to', xVal);
                 if (xVal === 100) done();
             };
-            console.log(bin.toString());
             bin(cxt);
         });
     });

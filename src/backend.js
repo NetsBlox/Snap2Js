@@ -24,7 +24,7 @@ backend.setYPosition =
 backend.changeXPosition =
 backend.changeYPosition =
 backend.forward = function(node) {
-    var dist = this.generateCode(node.inputs[0][0]);
+    var dist = this.generateCode(node.inputs[0]);
     return callStatementWithArgs(node.type, `+${dist}`);
 };
 
@@ -380,20 +380,25 @@ backend.doAddToList = function(node) {
 };
 
 backend.reportListLength = function(node) {
-    var variable = this.generateCode(node.inputs[0][0]);
+    var variable = this.generateCode(node.inputs[0]);
 
     return callFnWithArgs(node.type, variable);
 };
 
 backend.reportListItem = function(node) {
+    console.log();
+    console.log(node.inputs);
     var index = this.generateCode(node.inputs[0][0]),
-        list = this.generateCode(node.inputs[1][0]);
+        list = this.generateCode(node.inputs[1]);
 
+    console.log();
+    console.log(index);
+    console.log(list);
     return callFnWithArgs(node.type, index, list);
 };
 
 backend.reportCDR = function(node) {
-    var list = this.generateCode(node.inputs[0][0]);
+    var list = this.generateCode(node.inputs[0]);
     return callFnWithArgs(node.type, list);
 };
 
@@ -405,21 +410,21 @@ backend.reportNewList = function(node) {
 };
 
 backend.reportListContainsItem = function(node) {
-    var list = this.generateCode(node.inputs[0][0]);
-    var item = this.generateCode(node.inputs[1][0]);
+    var list = this.generateCode(node.inputs[0]);
+    var item = this.generateCode(node.inputs[1]);
     return callFnWithArgs(node.type, list, item);
 };
 
 backend.doDeleteFromList = function(node) {
-    var list = this.generateCode(node.inputs[1][0]);
-    var index = this.generateCode(node.inputs[0][0]);
+    var list = this.generateCode(node.inputs[1]);
+    var index = this.generateCode(node.inputs[0]);
     return callStatementWithArgs(node.type, index, list);
 };
 
 backend.doReplaceInList = function(node) {
-    var index = this.generateCode(node.inputs[0][0]);
-    var item = this.generateCode(node.inputs[0][1]);
-    var list = this.generateCode(node.inputs[1][0]);
+    var index = this.generateCode(node.inputs[0]);
+    var item = this.generateCode(node.inputs[2]);
+    var list = this.generateCode(node.inputs[1]);
 
     return callStatementWithArgs(node.type, index, list, item);
 };
