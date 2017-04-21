@@ -312,6 +312,38 @@ backend.reportJoinWords = function(node) {
     return `[${inputs.join(',')}].join('')`;
 };
 
+///////////////////// Pen ///////////////////// 
+backend.up =
+backend.down =
+backend.doStamp =
+backend.floodFill =
+backend.clear = function(node) {
+    return callStatementWithArgs(node.type);
+};
+
+backend.setColor = function(node) {
+    var color = this.generateCode(node.inputs[0][0]);
+    return callStatementWithArgs(node.type, color);
+};
+
+backend.setHue =
+backend.changeHue = function(node) {
+    var hue = this.generateCode(node.inputs[0][0]);
+    return callStatementWithArgs(node.type, hue);
+};
+
+backend.setBrightness =
+backend.changeBrightness = function(node) {
+    var brightness = this.generateCode(node.inputs[0][0]);
+    return callStatementWithArgs(node.type, brightness);
+};
+
+backend.setSize =
+backend.changeSize = function(node) {
+    var size = this.generateCode(node.inputs[0][0]);
+    return callStatementWithArgs(node.type, size);
+};
+
 ///////////////////// Variables ///////////////////// 
 backend.doChangeVar =
 backend.doSetVar = function(node) {
