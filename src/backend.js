@@ -269,6 +269,34 @@ backend.reportDistanceTo = function(node) {
     return callFnWithArgs(node.type, obj);
 };
 
+///////////////////// Sounds ///////////////////// 
+backend.doSetTempo =
+backend.doChangeTempo =
+backend.playSound =
+backend.doPlaySoundUntilDone = function(node) {
+    var sound = this.generateCode(node.inputs[0][0]);
+    return callStatementWithArgs(node.type, sound);
+};
+
+backend.doStopAllSounds = function(node) {
+    return callStatementWithArgs(node.type);
+};
+
+backend.doRest = function(node) {
+    var duration = this.generateCode(node.inputs[0][0]);
+    return callStatementWithArgs(node.type, `+${duration}`);
+};
+
+backend.doPlayNote = function(node) {
+    var note = this.generateCode(node.inputs[0][0]);
+    var duration = this.generateCode(node.inputs[0][1]);
+    return callStatementWithArgs(node.type, `+${note}`, `+${duration}`);
+};
+
+backend.getTempo = function(node) {
+    return callFnWithArgs(node.type);
+};
+
 ///////////////////// Operators ///////////////////// 
 backend.reportEquals = function(node) {
     var left = this.generateCode(node.inputs[0][0]),

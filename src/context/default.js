@@ -167,6 +167,20 @@ context.doResetTimer = function() {
 context.getTimer = function() {
     return (Date.now() - this.getTimerStart())/1000;
 };
+
+///////////////////// Sounds ///////////////////// 
+context.doSetTempo = function(bpm) {
+    this.setTempo(bpm);
+};
+
+context.doChangeTempo = function(val) {
+    this.setTempo(this.getTempo() + (+val || 0));
+};
+
+context.getTempo = function() {
+    return this.getTempo();
+};
+
 ///////////////////// Operators ///////////////////// 
 context.reportEquals = function(left, right) {
     return left == right;
