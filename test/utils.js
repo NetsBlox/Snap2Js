@@ -29,9 +29,21 @@ function getCompiledVersionOf(projectName) {
     return snap2js.compile(content);
 }
 
+function compileAndRun(projectName) {
+    let content = fs.readFileSync(path.join(TEST_CASE_DIR, projectName + '.xml'));
+    let cxt = snap2js.newContext();
+    let result;
+
+    cxt['doReport'] = val => result = val;
+    bin = getCompiledVersionOf(projectName);
+    bin(cxt);
+    return result;
+}
+
 module.exports = {
     isRightAfter,
     isRightBefore,
     getCompiledVersionOf,
+    compileAndRun,
     checkBlockValue
 };

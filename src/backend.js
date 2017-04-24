@@ -302,6 +302,7 @@ backend.reportModulus =
 backend.reportQuotient =
 backend.reportProduct =
 backend.reportDifference =
+backend.reportRandom =
 backend.reportSum = function(node) {
     var left = this.generateCode(node.inputs[0]),
         right = this.generateCode(node.inputs[1]);
@@ -315,6 +316,9 @@ backend.reportRound = function(node) {
     return callFnWithArgs(node.type, `+${number}`);
 };
 
+backend.reportTextSplit =
+backend.reportGreaterThan =
+backend.reportLessThan =
 backend.reportEquals = function(node) {
     var left = this.generateCode(node.inputs[0]),
         right = this.generateCode(node.inputs[1]);
@@ -327,6 +331,12 @@ backend.reportJoinWords = function(node) {
         inputs = listInput.inputs.map(this.generateCode);
 
     return `[${inputs.join(',')}].join('')`;
+};
+
+backend.reportStringSize = function(node) {
+    var str = this.generateCode(node.inputs[0]);
+    
+    return callFnWithArgs(node.type, str);
 };
 
 ///////////////////// Pen ///////////////////// 
@@ -444,19 +454,15 @@ backend.doReplaceInList = function(node) {
 backend.doInsertInList = function(node) {
     var value = this.generateCode(node.inputs[0]);
     var index = this.generateCode(node.inputs[1]);
-    var rawList = node.inputs[2];
-    var listName = null;
+    var list = this.generateCode(node.inputs[2]);
 
-    if (rawList && rawList.type === 'variable') {
-        listName = `'${rawList.value}'`;
-    }
-
-    return callStatementWithArgs(node.type, value, index, listName);
+    return callStatementWithArgs(node.type, value, index, list);
 };
 
 backend.reportCONS = function(node) {
-    var list = this.generateCode(node.inputs[0]);
-    return callFnWithArgs(node.type, list);
+    var head = this.generateCode(node.inputs[0]);
+    var list = this.generateCode(node.inputs[1]);
+    return callFnWithArgs(node.type, head, list);
 };
 
 backend.variable = function(node) {

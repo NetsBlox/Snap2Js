@@ -1,14 +1,17 @@
-describe.only('operators', function() {
+describe('operators', function() {
+    let result;
     const utils = require('./utils');
     const snap2js = require('..');
     const assert = require('assert');
+    const createTest = (pair, index) => {
+        it('should ' + pair[0] + ' correctly', function() {
+            assert.equal(result[index], pair[1]);
+        });
+    };
 
     describe('basic math', function() {
         before(function() {
-            let cxt = snap2js.newContext();
-            cxt['doReport'] = val => result = val;
-            bin = utils.getCompiledVersionOf('basic-math');
-            bin(cxt);
+            result = utils.compileAndRun('basic-math');
         });
 
         it('should add numbers', function() {
@@ -37,14 +40,55 @@ describe.only('operators', function() {
     });
 
     describe('random', function() {
-        // TODO
+        before(function() {
+            result = utils.compileAndRun('random');
+        });
+
+        it('should not generate equal random numbers', function() {
+            var areSame = !result.find(v => v !== result[0]);
+            assert(result[0] !== undefined);
+            assert(!areSame);
+        });
+
+    });
+
+    describe('comparisons', function() {
+        before(function() {
+            result = utils.compileAndRun('comparisons');
+        });
+
+        [
+            ['2 < 3', true],
+            ['11 < 3', false],
+            ['2 > 3', false],
+            ['2 > 1', true],
+            ['3 == 11', false],
+            ['11 == 11.0', true]
+        ].forEach(createTest);
     });
 
     describe('text', function() {
-        // TODO
+        before(function() {
+            result = utils.compileAndRun('string-ops');
+        });
+
+        it('should join words "hello", "world", "there"', function() {
+            assert.equal(result[0], 'hello world there');
+        });
+
+        it('should split words "hello world"', function() {
+            assert.equal(result[1][0], 'hello');
+            assert.equal(result[1][1], 'world');
+        });
+
+        it('should get the length of "world"', function() {
+            assert.equal(result[2], 5);
+        });
+
     });
 
     describe('boolean', function() {
         // TODO
     });
+
 });
