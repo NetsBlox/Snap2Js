@@ -13,12 +13,8 @@ describe('lists', function() {
     describe('transpile', function() {
         var code;
 
-        before(function(done) {
-            snap2js.transpile(content)
-                .then(js => {
-                    code = js;
-                })
-                .nodeify(done);
+        before(function() {
+            code = snap2js.transpile(content);
         });
 
         it('should contain "reportListLength"', function() {
@@ -43,13 +39,12 @@ describe('lists', function() {
         // should report ['world']
         // should report true
         // should report true
-        before(function(done) {
+        before(function() {
             cxt = snap2js.newContext();
             cxt['bubble'] = v => vals.push(v);
 
-            snap2js.compile(content)
-                .then(bin => bin(cxt))
-                .nodeify(done);
+            bin = snap2js.compile(content);
+            bin(cxt);
         });
 
         it('should report length of 2', function() {

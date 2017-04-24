@@ -10,13 +10,12 @@ describe('looks', function() {
     describe('initial values', function() {
         var result;
 
-        before(function(done) {
+        before(function() {
             content = fs.readFileSync(path.join(TEST_CASE_DIR, 'costume-size.xml'));
             cxt = snap2js.newContext();
             cxt['doReport'] = val => result = val;
-            snap2js.compile(content)
-                .then(bin => bin(cxt))
-                .nodeify(done);
+            bin = snap2js.compile(content);
+            bin(cxt);
         });
 
         it('should set costume number to 3', function() {
@@ -32,11 +31,9 @@ describe('looks', function() {
         var bin,
             cxt;
 
-        before(function(done) {
+        before(function() {
             content = fs.readFileSync(path.join(TEST_CASE_DIR, 'all-looks.xml'));
-            snap2js.compile(content)
-                .then(_bin => bin = _bin)
-                .nodeify(done);
+            bin = snap2js.compile(content);
         });
 
         it('should switch to Turtle costume', function(done) {

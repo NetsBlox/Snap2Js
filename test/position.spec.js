@@ -12,13 +12,12 @@ describe('motion', function() {
             cxt,
             result;
 
-        before(function(done) {
+        before(function() {
             content = fs.readFileSync(path.join(TEST_CASE_DIR, 'initial-set-change-pos.xml'));
             cxt = snap2js.newContext();
             cxt['doReport'] = val => result = val;
-            snap2js.compile(content)
-                .then(bin => bin(cxt))
-                .nodeify(done);
+            bin = snap2js.compile(content);
+            bin(cxt);
         });
 
         it('should have x position of 100', function() {
@@ -39,13 +38,12 @@ describe('motion', function() {
             cxt,
             result;
 
-        before(function(done) {
+        before(function() {
             content = fs.readFileSync(path.join(TEST_CASE_DIR, 'forward-angle.xml'));
             cxt = snap2js.newContext();
             cxt['doReport'] = val => result = val;
-            snap2js.compile(content)
-                .then(bin => bin(cxt))
-                .nodeify(done);
+            bin = snap2js.compile(content);
+            bin(cxt);
         });
 
         it('should update x,y after angled move forward', function() {
@@ -59,9 +57,8 @@ describe('motion', function() {
             content = fs.readFileSync(path.join(TEST_CASE_DIR, 'all-motion.xml'));
         });
 
-        it('should compile without error', function(done) {
-            snap2js.compile(content)
-                .nodeify(done);
+        it('should compile without error', function() {
+            snap2js.compile(content);
         });
     });
 });

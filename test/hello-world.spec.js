@@ -13,12 +13,8 @@ describe('hello world', function() {
     describe('transpile', function() {
         var code;
 
-        before(function(done) {
-            snap2js.transpile(content)
-                .then(js => {
-                    code = js;
-                })
-                .nodeify(done);
+        before(function() {
+            code = snap2js.transpile(content);
         });
 
         it('should generate js code', function() {
@@ -32,14 +28,12 @@ describe('hello world', function() {
     });
 
     it('should call "bubble" with "Hello world!"', function(done) {
-        snap2js.compile(content)
-            .then(bin => {
-                var cxt = snap2js.newContext();
-                cxt['bubble'] = function(str) {
-                    assert.equal(str, 'Hello world!');
-                    done();
-                };
-                bin(cxt);
-            });
+        var cxt = snap2js.newContext();
+        var bin = snap2js.compile(content);
+        cxt['bubble'] = function(str) {
+            assert.equal(str, 'Hello world!');
+            done();
+        };
+        bin(cxt);
     });
 });

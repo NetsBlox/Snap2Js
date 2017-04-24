@@ -11,17 +11,14 @@ describe('variables', function() {
             cxt,
             values;
 
-        before(function(done) {
+        before(function() {
             content = fs.readFileSync(path.join(TEST_CASE_DIR, 'initial-variables.xml'));
             cxt = snap2js.newContext();
 
             values = [];
             cxt['bubble'] = variable => values.push(variable.value);
-            snap2js.compile(content)
-                .then(bin => {
-                    bin(cxt);
-                })
-                .nodeify(done);
+            bin = snap2js.compile(content);
+            bin(cxt);
         });
 
         it('should first say 14', function() {
@@ -43,12 +40,8 @@ describe('variables', function() {
         describe('transpile', function() {
             var code;
 
-            before(function(done) {
-                snap2js.transpile(content)
-                    .then(js => {
-                        code = js;
-                    })
-                    .nodeify(done);
+            before(function() {
+                code = snap2js.transpile(content);
             });
 
             it('should contain "doSetVar"', function() {
@@ -65,14 +58,12 @@ describe('variables', function() {
                 cxt,
                 xVal = 0;
 
-            before(function(done) {
+            before(function() {
                 cxt = snap2js.newContext();
                 cxt['setXPosition'] = v => xVal = v;
                 cxt['changeXPosition'] = v => xVal += v;
 
-                snap2js.compile(content)
-                    .then(_bin => bin = _bin)
-                    .nodeify(done);
+                bin = snap2js.compile(content);
             });
 
             it('should set a to 12', function(done) {
@@ -81,6 +72,38 @@ describe('variables', function() {
                 };
                 bin(cxt);
             });
+        });
+    });
+
+    describe.skip('nested lists', function() {
+        var result;
+
+        before(function() {
+            content = fs.readFileSync(path.join(TEST_CASE_DIR, 'nested-lists.xml'));
+            var bin = snap2js.compile(content);
+            cxt['doReport'] = val => result = val;
+            bin(cxt);
+        });
+
+        it('should correctly parse the nested lists', function(done) {
+            console.log(result);
+        });
+    });
+
+    describe.skip('all blocks', function() {
+        var result,
+            cxt;
+
+        before(function() {
+            content = fs.readFileSync(path.join(TEST_CASE_DIR, 'all-variables.xml'));
+            var bin = snap2js.compile(content)
+            cxt = snap2js.newContext();
+            cxt['doReport'] = val => result = val;
+            bin(cxt);
+        });
+
+        it('should change hue by 10', function(done) {
+            console.log(result);
         });
     });
 });

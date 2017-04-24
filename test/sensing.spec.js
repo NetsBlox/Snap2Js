@@ -11,11 +11,9 @@ describe('sensing', function() {
         var bin,
             cxt;
 
-        before(function(done) {
+        before(function() {
             content = fs.readFileSync(path.join(TEST_CASE_DIR, 'all-sensing.xml'));
-            snap2js.compile(content)
-                .then(_bin => bin = _bin)
-                .nodeify(done);
+            bin = snap2js.compile(content);
         });
 
         it('should ask "what\'s your name?"', function(done) {
@@ -85,10 +83,8 @@ describe('sensing', function() {
                 assert(time >= 0.05);
                 done();
             };
-            snap2js.compile(content)
-                .then(bin => {
-                    bin(cxt)
-                });
+            bin = snap2js.compile(content);
+            bin(cxt);
         });
 
     });
@@ -101,14 +97,15 @@ describe('sensing', function() {
         before(function(done) {
             content = fs.readFileSync(path.join(TEST_CASE_DIR, 'date.xml'));
             var cxt = snap2js.newContext();
-            cxt['doReport'] = res => result = res;
-            snap2js.compile(content)
-                .then(bin => {
-                    startTime = new Date();
-                    bin(cxt)
-                    endTime = new Date();
-                })
-                .nodeify(done);
+            cxt['doReport'] = res => {
+                result = res;
+                console.log(result);
+                endTime = new Date();
+                done();
+            };
+            bin = snap2js.compile(content);
+            startTime = new Date();
+            bin(cxt);
         });
 
         it('should return the correct date', function() {

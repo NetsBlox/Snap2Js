@@ -13,13 +13,11 @@ describe('context', function() {
         });
 
         fs.readdirSync(TEST_CASE_DIR)
-            .filter(filename => filename === 'lists.xml')
             .forEach(filename => {
-                it(`should nop every operation in ${filename}`, function(done) {
+                it(`should nop every operation in ${filename}`, function() {
                     var content = fs.readFileSync((path.join(TEST_CASE_DIR, filename)), 'utf8');
-                    snap2js.compile(content)
-                        .then(bin => bin(context))
-                        .nodeify(done);
+                    var bin = snap2js.compile(content)
+                    bin(context);
                 });
 
             });

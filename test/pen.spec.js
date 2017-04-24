@@ -11,11 +11,9 @@ describe('pen', function() {
         var bin,
             cxt;
 
-        before(function(done) {
+        before(function() {
             content = fs.readFileSync(path.join(TEST_CASE_DIR, 'all-pen.xml'));
-            snap2js.compile(content)
-                .then(_bin => bin = _bin)
-                .nodeify(done);
+            bin = snap2js.compile(content);
         });
 
         it('should set pen color to reddish', function(done) {

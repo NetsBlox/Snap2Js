@@ -67,6 +67,7 @@ context.setHeading = function(dir) {
 
 ///////////////////// Control ///////////////////// 
 context.doReport = function(value) {
+    console.log('calling doReport with', value);
     return value;
 };
 
@@ -187,10 +188,8 @@ context.reportEquals = function(left, right) {
 };
 
 ///////////////////// Variables ///////////////////// 
-context.reportNewList = function() {
-    var items = Array.prototype.slice.call(arguments);
-    items.pop();  // (context)
-    return items;
+context.reportNewList = function(list) {
+    return list;
 };
 
 context.reportListLength = function(variable, context) {

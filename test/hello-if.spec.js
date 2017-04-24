@@ -13,12 +13,8 @@ describe('hello if-else', function() {
     describe('transpile', function() {
         var code;
 
-        before(function(done) {
-            snap2js.transpile(content)
-                .then(js => {
-                    code = js;
-                })
-                .nodeify(done);
+        before(function() {
+            code = snap2js.transpile(content);
         });
 
         it('should contain "bubble" block selector w/ nested fn', function() {
@@ -30,10 +26,8 @@ describe('hello if-else', function() {
     describe('compile', function() {
         var bin;
 
-        before(function(done) {
-            snap2js.compile(content)
-                .then(_bin => bin = _bin)
-                .nodeify(done);
+        before(function() {
+            bin = snap2js.compile(content);
         });
 
         it('should call "bubble" if "getScale" != 50', function(done) {

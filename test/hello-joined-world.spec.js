@@ -13,12 +13,8 @@ describe('hello (joined) world', function() {
     describe('transpile', function() {
         var code;
 
-        before(function(done) {
-            snap2js.transpile(content)
-                .then(js => {
-                    code = js;
-                })
-                .nodeify(done);
+        before(function() {
+            code = snap2js.transpile(content);
         });
 
         it('should contain "bubble" block selector w/ nested fn', function() {
@@ -29,15 +25,13 @@ describe('hello (joined) world', function() {
     });
 
     it('should call "bubble" with "Hello world!"', function(done) {
-        snap2js.compile(content)
-            .then(bin => {
-                var cxt = snap2js.newContext();
-                cxt['bubble'] = function(str) {
-                    assert.equal(str, 'hello world!');
-                    done();
-                };
-                bin(cxt);
-            })
-            .fail(err => done(err));
+        var cxt = snap2js.newContext();
+
+        bin = snap2js.compile(content);
+        cxt['bubble'] = function(str) {
+            assert.equal(str, 'hello world!');
+            done();
+        };
+        bin(cxt);
     });
 });
