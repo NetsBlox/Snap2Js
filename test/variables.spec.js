@@ -117,7 +117,7 @@ describe('variables', function() {
 
     });
 
-    describe.skip('all blocks', function() {
+    describe('all blocks', function() {
         var result,
             cxt;
 
@@ -129,8 +129,27 @@ describe('variables', function() {
             bin(cxt);
         });
 
-        it('should change hue by 10', function(done) {
-            console.log(result);
+        it('should set cat to 11', function() {
+            assert.equal(result[5], 11);
+        });
+
+        it('should return length of list', function() {
+            assert.equal(result[4], 4);
+        });
+
+        it('should check list containment', function() {
+            assert.equal(result[3], true);
+        });
+
+        it('should get cdr', function() {
+            var cdr = result[2];
+            assert.equal(cdr[0], 4);
+            assert.equal(cdr[1], 5);
+            assert.equal(cdr[2], 3);
+        });
+
+        it('should item by index', function() {
+            assert.equal(result[1], 2);
         });
     });
 });

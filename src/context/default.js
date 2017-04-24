@@ -206,6 +206,27 @@ context.reportListLength = function(list, context) {
     return list ? list.length : 0;
 };
 
+context.doDeleteFromList = function(index, list) {
+    list.splice(index-1, 1);
+};
+
+context.doReplaceInList = function(index, list, item, context) {
+    list[index-1] = item;
+};
+
+context.doInsertInList = function(item, index, list) {
+    list.splice(index-1, 0, item);
+};
+
+context.reportListItem = function(index, list) {
+    return list[index-1];
+};
+
+context.reportListContainsItem = function(list, item) {
+    list = list || [];
+    return list.includes(item);
+};
+
 context.variable = function(name, context) {
     var variable = context.get(name);
     return variable && variable.value;
