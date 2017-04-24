@@ -13,6 +13,19 @@
     const boilerplate = fs.readFileSync('./src/base.js.ejs', 'utf8');
     const boilerplateTpl = _.template(boilerplate);
 
+    const omit = function(obj) {  // for debugging
+        var keys = Object.keys(obj);
+        var omitted = Array.prototype.slice.call(arguments, 1);
+        var newObj = {};
+
+        for (var i = keys.length; i--;) {
+            if (!omitted.includes(keys[i])) {
+                newObj[keys[i]] = obj[keys[i]];
+            }
+        }
+        return newObj;
+    };
+
     const parseSpriteScripts = model => {
         var asts = model.children.map(parseScript),
             eventHandlers = {},
@@ -29,18 +42,6 @@
         }
         return eventHandlers;
     };
-
-    var createNode = {};
-    //createNode.reportNewList = curr => {
-        //console.log(JSON.stringify(curr.list[0], null, 2));
-        //console.log(JSON.stringify(curr.list[1], null, 2));
-        //asdf;
-        //// The ordering is lost... this sucks...
-        //return {
-            //id: curr['$'].collabId,
-            //inputs: curr.list
-        //};
-    //};
 
     const createAstNode = (curr, next) => {
         if (typeof curr !== 'object') {
@@ -87,42 +88,16 @@
                 if (key === 'script') {
                     return parseScript(child);
                 } else if (key === 'l') {
-                    console.log();
-                    console.log('---');
-                    console.log(child);
-                    console.log(node.type);
-                    console.log(child.children.length);
-
-                    //if (node.type === 'reportListItem') {
-                        //asdf;
-                    //}
-
-                    if (child.children.length) {
+                    if (child.children.length === 1) {
+                        return createAstNode(child.children[0]);
+                    } else if (child.children.length) {
                         return child.children.map(createAstNode);
                     }
-                    return createAstNode(child.contents)
+                    return createAstNode(child.contents);
                 }
                 return createAstNode(child);
-                ////} else if (curr[key][0].block && !curr[key][0]['$']){
-                    ////// This is a multiargmorph that is part of a larger block
-                    ////// (but not a standalone block)
-                    ////if (curr[key].length > 1) {
-                        ////throw 'Ran into something strange. Please report this case';
-                    ////}
-                    ////return curr[key][0].block.map(item => createAstNode(item));
-                //} else {
-                    //return createAstNode(child);
-                //}
             });
 
-        if (node.type === 'reportListItem') {
-            console.log();
-            console.log();
-            console.log('<<< reportListItem');
-            console.log(JSON.stringify(node, null, 2));
-            console.log();
-            console.log(curr.children[0]);
-        }
         return node;
     };
 
@@ -237,7 +212,6 @@
             throw `Unsupported node type: ${root.type}`;
         }
 
-        console.log(root.type);
         var code = Snap2Js._backend[root.type].call(Snap2Js, root);
         if (!Snap2Js._backend[root.type].async && root.next) {
             code += '\n' + Snap2Js.generateCode(root.next);

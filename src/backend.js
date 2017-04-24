@@ -386,14 +386,9 @@ backend.reportListLength = function(node) {
 };
 
 backend.reportListItem = function(node) {
-    console.log();
-    console.log(node.inputs);
     var index = this.generateCode(node.inputs[0]),
         list = this.generateCode(node.inputs[1]);
 
-    console.log();
-    console.log(index);
-    console.log(list);
     return callFnWithArgs(node.type, index, list);
 };
 
@@ -430,9 +425,9 @@ backend.doReplaceInList = function(node) {
 };
 
 backend.doInsertInList = function(node) {
-    var value = this.generateCode(node.inputs[0][0]);
-    var index = this.generateCode(node.inputs[0][1]);
-    var rawList = node.inputs[1][0];
+    var value = this.generateCode(node.inputs[0]);
+    var index = this.generateCode(node.inputs[1]);
+    var rawList = node.inputs[2];
     var listName = null;
 
     if (rawList && rawList.type === 'variable') {
@@ -464,6 +459,11 @@ backend.bool = function(node) {
     }
 
     return value;
+};
+
+backend.list = function(node) {
+    var inputs = node.inputs.map(this.generateCode);
+    return `[${inputs.join(', ')}]`;
 };
 
 module.exports = backend;
