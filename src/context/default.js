@@ -187,6 +187,30 @@ context.reportEquals = function(left, right) {
     return left == right;
 };
 
+context.reportRound = function(number) {
+    return Math.round(number);
+};
+
+context.reportModulus = function(left, right) {
+    return left % right;
+};
+
+context.reportProduct = function(left, right) {
+    return left * right;
+};
+
+context.reportQuotient = function (left, right) {
+    return left/right;
+};
+
+context.reportDifference = function (left, right) {
+    return left - right;
+};
+
+context.reportSum = function(left, right) {
+    return left + right;
+};
+
 ///////////////////// Variables ///////////////////// 
 context.reportNewList = function(list) {
     return list;

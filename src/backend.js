@@ -298,6 +298,23 @@ backend.getTempo = function(node) {
 };
 
 ///////////////////// Operators ///////////////////// 
+backend.reportModulus =
+backend.reportQuotient =
+backend.reportProduct =
+backend.reportDifference =
+backend.reportSum = function(node) {
+    var left = this.generateCode(node.inputs[0]),
+        right = this.generateCode(node.inputs[1]);
+
+    return callFnWithArgs(node.type, `+${left}`, `+${right}`);
+};
+
+backend.reportRound = function(node) {
+    var number = this.generateCode(node.inputs[0]);
+
+    return callFnWithArgs(node.type, `+${number}`);
+};
+
 backend.reportEquals = function(node) {
     var left = this.generateCode(node.inputs[0]),
         right = this.generateCode(node.inputs[1]);

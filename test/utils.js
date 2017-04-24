@@ -1,5 +1,8 @@
 const snap2js = require('..');
 const assert = require('assert');
+const fs = require('fs');
+const path = require('path');
+const TEST_CASE_DIR = path.join(__dirname, 'test-cases');
 
 // Helpers
 function isRightAfter(list, a, b) {
@@ -21,8 +24,14 @@ function checkBlockValue(bin, fn, val, done) {
     bin(cxt);
 }
 
+function getCompiledVersionOf(projectName) {
+    var content = fs.readFileSync(path.join(TEST_CASE_DIR, projectName + '.xml'));
+    return snap2js.compile(content);
+}
+
 module.exports = {
     isRightAfter,
     isRightBefore,
+    getCompiledVersionOf,
     checkBlockValue
 };
