@@ -23,15 +23,12 @@ describe('say and think', function() {
                 console.log('reporting', arguments);
                 totalOrder = val.value;
             };
-            snap2js.compile(content)
-                .then(bin => {
-                    bin(cxt);
-                    setTimeout(function() {
-                        console.log(totalOrder);
-                        done();
-                    }, 1000);
-                })
-                .fail(err => console.error(err));
+            bin = snap2js.compile(content);
+            bin(cxt);
+            setTimeout(function() {
+                console.log(totalOrder);
+                done();
+            }, 1000);
         });
 
         it('should not yield w/ doSay', function() {

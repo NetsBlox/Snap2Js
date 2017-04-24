@@ -98,6 +98,9 @@
                 return createAstNode(child);
             });
 
+        if (curr.contents) {
+            node.value = curr.contents;
+        }
         return node;
     };
 

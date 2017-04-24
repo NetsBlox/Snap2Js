@@ -456,14 +456,7 @@ backend.option = function(node) {
 };
 
 backend.bool = function(node) {
-    var content = node.inputs[0],
-        value = 'false';
-
-    if (content && content.value === 'true') {
-        value = content.value;
-    }
-
-    return value;
+    return node.value;
 };
 
 backend.list = function(node) {

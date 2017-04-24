@@ -1,4 +1,4 @@
-describe.only('context', function() {
+describe('context', function() {
     let fs = require('fs'),
         snap2js = require('..'),
         path = require('path'),
