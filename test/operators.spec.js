@@ -88,7 +88,38 @@ describe('operators', function() {
     });
 
     describe('boolean', function() {
-        // TODO
+        before(function() {
+            result = utils.compileAndRun('boolean');
+        });
+
+        it('should support AND', function() {
+            assert.equal(result[0], true);
+        });
+
+        it('should support OR', function() {
+            assert.equal(result[1], false);
+        });
+
+        it('should support NOT', function() {
+            assert.equal(result[2], false);
+        });
+
+        it('should support nested NOT', function() {
+            assert.equal(result[3], true);
+        });
+
+        it('should support "identical to"', function() {
+            assert.equal(result[4], false);
+        });
+
+        it('should support "is a number"', function() {
+            assert.equal(result[6], true);
+        });
+
+        it('should support creating js fns', function() {
+            assert.equal(typeof result[7], 'function');
+        });
+
     });
 
 });

@@ -185,6 +185,7 @@ context.getTempo = function() {
 };
 
 ///////////////////// Operators ///////////////////// 
+context.reportIsIdentical =
 context.reportEquals = function(a, b) {
     if (a instanceof Array || (b instanceof Array)) {
         if (a instanceof Array && (b instanceof Array)) {
@@ -200,10 +201,6 @@ context.reportEquals = function(a, b) {
         i,
         specials = [true, false, ''];
 
-    // "zum Schneckengang verdorben, was Adlerflug geworden wäre"
-    // collecting edge-cases that somebody complained about
-    // on Github. Folks, take it easy and keep it fun, okay?
-    // Shit like this is patently ugly and slows Snap down. Tnx!
     for (i = 9; i <= 13; i += 1) {
         specials.push(String.fromCharCode(i));
     }
@@ -223,6 +220,20 @@ context.reportEquals = function(a, b) {
     }
 
     return x === y;
+};
+
+context.reportJSFunction = function(args, body) {
+    return Function.apply(
+        null,
+        args.concat([body])
+    );
+};
+
+context.reportIsA = function(thing, type) {
+    if (type === 'number' && typeof thing === 'string') {
+        return !isNaN(+thing);
+    }
+    return typeof thing === type;
 };
 
 context.reportRound = function(number) {
@@ -326,6 +337,17 @@ context.reportStringSize = function (data) {
     return data ? data.toString().length : 0;
 };
 
+context.reportOr = function (left, right) {
+    return left || right;
+};
+
+context.reportNot = function (bool) {
+    return !bool;
+};
+
+context.reportAnd = function (left, right) {
+    return left && right;
+};
 
 ///////////////////// Variables ///////////////////// 
 context.reportCDR = function(list) {

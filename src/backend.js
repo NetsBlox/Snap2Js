@@ -316,6 +316,10 @@ backend.reportRound = function(node) {
     return callFnWithArgs(node.type, `+${number}`);
 };
 
+backend.reportIsIdentical =
+backend.reportIsA =
+backend.reportAnd =
+backend.reportOr =
 backend.reportTextSplit =
 backend.reportGreaterThan =
 backend.reportLessThan =
@@ -333,10 +337,22 @@ backend.reportJoinWords = function(node) {
     return `[${inputs.join(',')}].join('')`;
 };
 
+backend.reportNot =
 backend.reportStringSize = function(node) {
     var str = this.generateCode(node.inputs[0]);
     
     return callFnWithArgs(node.type, str);
+};
+
+backend.reportBoolean = function(node) {
+    return this.generateCode(node.inputs[0]);
+};
+
+backend.reportJSFunction = function(node) {
+    var args = this.generateCode(node.inputs[0]),
+        body = this.generateCode(node.inputs[1]);
+
+    return callFnWithArgs(node.type, args, body);
 };
 
 ///////////////////// Pen ///////////////////// 
