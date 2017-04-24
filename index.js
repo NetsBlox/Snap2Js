@@ -1,6 +1,6 @@
 // We will be generating JavaScript code which will call the primitive fns
 (function(Snap2Js) {
-    const XML_Element = require('./src/snap/xml');
+    const XML_Element = require('./lib/snap/xml');
     const Q = require('q');
     const prettier = require('prettier');
     const fs = require('fs');
