@@ -16,7 +16,7 @@ describe('variables', function() {
             cxt = snap2js.newContext();
 
             values = [];
-            cxt['bubble'] = variable => values.push(variable.value);
+            cxt['bubble'] = value => values.push(value);
             bin = snap2js.compile(content);
             bin(cxt);
         });
@@ -75,19 +75,46 @@ describe('variables', function() {
         });
     });
 
-    describe.skip('nested lists', function() {
+    describe('nested lists', function() {
         var result;
 
         before(function() {
             content = fs.readFileSync(path.join(TEST_CASE_DIR, 'nested-lists.xml'));
+            var cxt = snap2js.newContext();
             var bin = snap2js.compile(content);
             cxt['doReport'] = val => result = val;
             bin(cxt);
         });
 
-        it('should correctly parse the nested lists', function(done) {
-            console.log(result);
+        it('should parse string value', function() {
+            assert.equal(result[0], '1');
         });
+
+        it('should parse nested list values', function() {
+            assert.equal(result[1][0], '2');
+            assert.equal(result[1][1], '3');
+        });
+
+        it('should parse nested x2 list values', function() {
+            assert.equal(result[1][2][0], '4');
+        });
+    });
+
+    describe('cons/cdr', function() {
+        before(function() {
+            content = fs.readFileSync(path.join(TEST_CASE_DIR, 'cons-cdr.xml'));
+            var cxt = snap2js.newContext();
+            var bin = snap2js.compile(content);
+            cxt['doReport'] = val => result = val;
+            bin(cxt);
+        });
+
+        it('should parse cdr', function() {
+            assert.equal(result[0], '5');
+            assert.equal(result[1], '6');
+            assert.equal(result[2], '7');
+        });
+
     });
 
     describe.skip('all blocks', function() {

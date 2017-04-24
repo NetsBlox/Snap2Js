@@ -438,8 +438,9 @@ backend.doInsertInList = function(node) {
 };
 
 backend.reportCONS = function(node) {
-    var list = this.generateCode(node.inputs[0]);
-    return callFnWithArgs(node.type, list);
+    var head = this.generateCode(node.inputs[0]);
+    var list = this.generateCode(node.inputs[1]);
+    return callFnWithArgs(node.type, head, list);
 };
 
 backend.variable = function(node) {
