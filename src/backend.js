@@ -35,25 +35,25 @@ backend.yPosition = function(node) {
 };
 
 backend.gotoXY = function(node) {
-    var x = this.generateCode(node.inputs[0][0]);
-    var y = this.generateCode(node.inputs[0][1]);
+    var x = this.generateCode(node.inputs[0]);
+    var y = this.generateCode(node.inputs[1]);
     return callStatementWithArgs(node.type, `+${x}`, `+${y}`);
 };
 
 backend.doFaceTowards = function(node) {
-    var target = this.generateCode(node.inputs[0][0]);
+    var target = this.generateCode(node.inputs[0]);
     return callStatementWithArgs(node.type, target);
 };
 
 backend.doGotoObject = function(node) {
-    var target = this.generateCode(node.inputs[0][0]);
+    var target = this.generateCode(node.inputs[0]);
     return callStatementWithArgs(node.type, target);
 };
 
 backend.doGlide = function(node) {
-    var time = this.generateCode(node.inputs[0][0]);
-    var x = this.generateCode(node.inputs[0][1]);
-    var y = this.generateCode(node.inputs[0][2]);
+    var time = this.generateCode(node.inputs[0]);
+    var x = this.generateCode(node.inputs[1]);
+    var y = this.generateCode(node.inputs[2]);
     return callStatementWithArgs(node.type, x, y, `+${time}`);
 };
 
@@ -87,7 +87,7 @@ backend.doWait = function(node) {
 backend.doWait.async = true;
 
 backend.doIfElse = function(node) {
-    var cond = this.generateCode(node.inputs[0][0]),
+    var cond = this.generateCode(node.inputs[0]),
         ifTrue = this.generateCode(node.inputs[1]),
         ifFalse = this.generateCode(node.inputs[2]);
 
@@ -129,7 +129,7 @@ backend.doReport = function(node) {
 
 ///////////////////// Looks ///////////////////// 
 backend.doSwitchToCostume = function(node) {
-    var costume = this.generateCode(node.inputs[0][0]);
+    var costume = this.generateCode(node.inputs[0]);
     return callStatementWithArgs(node.type, costume);
 };
 
@@ -139,8 +139,8 @@ backend.doWearNextCostume = function(node) {
 
 backend.changeEffect =
 backend.setEffect = function(node) {
-    var effect = this.generateCode(node.inputs[0][0]);
-    var amount = this.generateCode(node.inputs[0][1]);
+    var effect = this.generateCode(node.inputs[0]);
+    var amount = this.generateCode(node.inputs[1]);
     return callStatementWithArgs(node.type, effect, `+${amount}`);
 };
 
@@ -151,7 +151,7 @@ backend.clearEffects = function(node) {
 backend.goBack =
 backend.changeScale =
 backend.setScale = function(node) {
-    var amount = this.generateCode(node.inputs[0][0]);
+    var amount = this.generateCode(node.inputs[0]);
     return callStatementWithArgs(node.type, `+${amount}`);
 };
 
@@ -182,8 +182,8 @@ backend.doSayFor = function(node) {
 backend.doSayFor.async = true;
 
 backend.doThinkFor = function(node) {
-    var time = '+' + this.generateCode(node.inputs[0][1]),
-        msg = this.generateCode(node.inputs[0][0]),
+    var time = '+' + this.generateCode(node.inputs[1]),
+        msg = this.generateCode(node.inputs[0]),
         afterFn = `afterThink_${node.id}`,
         body = node.next ? this.generateCode(node.next) : '';
 
@@ -202,13 +202,13 @@ backend.bubble = function(node) {
 };
 
 backend.doThink = function(node) {
-    var msg = this.generateCode(node.inputs[0][0]);
+    var msg = this.generateCode(node.inputs[0]);
     return callStatementWithArgs(node.type, msg);
 };
 
 ///////////////////// Sensing ///////////////////// 
 backend.doAsk = function(node) {
-    var msg = this.generateCode(node.inputs[0][0]);
+    var msg = this.generateCode(node.inputs[0]);
     return callStatementWithArgs(node.type, msg);
 };
 
@@ -217,36 +217,36 @@ backend.doResetTimer = function(node) {
 };
 
 backend.doSetFastTracking = function(node) {
-    var bool = this.generateCode(node.inputs[0][0]);
+    var bool = this.generateCode(node.inputs[0]);
     return callStatementWithArgs(node.type, bool);
 };
 
 backend.reportTouchingObject = function(node) {
-    var obj = this.generateCode(node.inputs[0][0]);
+    var obj = this.generateCode(node.inputs[0]);
     return callFnWithArgs(node.type, obj);
 };
 
 backend.reportTouchingColor = function(node) {
-    var color = this.generateCode(node.inputs[0][0]);
+    var color = this.generateCode(node.inputs[0]);
     return callFnWithArgs(node.type, color);
 };
 
 backend.reportDate =
 backend.reportURL =
 backend.reportGet = function(node) {
-    var thing = this.generateCode(node.inputs[0][0]);
+    var thing = this.generateCode(node.inputs[0]);
     return callFnWithArgs(node.type, thing);
 };
 
 backend.reportColorIsTouchingColor = function(node) {
-    var first = this.generateCode(node.inputs[0][0]);
-    var second = this.generateCode(node.inputs[0][1]);
+    var first = this.generateCode(node.inputs[0]);
+    var second = this.generateCode(node.inputs[1]);
     return callFnWithArgs(node.type, first, second);
 };
 
 backend.reportAttributeOf = function(node) {
-    var attr = this.generateCode(node.inputs[0][0]);
-    var obj = this.generateCode(node.inputs[0][1]);
+    var attr = this.generateCode(node.inputs[0]);
+    var obj = this.generateCode(node.inputs[1]);
     return callFnWithArgs(node.type, attr, obj);
 };
 
@@ -260,12 +260,12 @@ backend.getLastAnswer = function(node) {
 };
 
 backend.reportKeyPressed = function(node) {
-    var key = this.generateCode(node.inputs[0][0]);
+    var key = this.generateCode(node.inputs[0]);
     return callFnWithArgs(node.type, key);
 };
 
 backend.reportDistanceTo = function(node) {
-    var obj = this.generateCode(node.inputs[0][0]);
+    var obj = this.generateCode(node.inputs[0]);
     return callFnWithArgs(node.type, obj);
 };
 
@@ -274,7 +274,7 @@ backend.doSetTempo =
 backend.doChangeTempo =
 backend.playSound =
 backend.doPlaySoundUntilDone = function(node) {
-    var sound = this.generateCode(node.inputs[0][0]);
+    var sound = this.generateCode(node.inputs[0]);
     return callStatementWithArgs(node.type, sound);
 };
 
@@ -283,13 +283,13 @@ backend.doStopAllSounds = function(node) {
 };
 
 backend.doRest = function(node) {
-    var duration = this.generateCode(node.inputs[0][0]);
+    var duration = this.generateCode(node.inputs[0]);
     return callStatementWithArgs(node.type, `+${duration}`);
 };
 
 backend.doPlayNote = function(node) {
-    var note = this.generateCode(node.inputs[0][0]);
-    var duration = this.generateCode(node.inputs[0][1]);
+    var note = this.generateCode(node.inputs[0]);
+    var duration = this.generateCode(node.inputs[1]);
     return callStatementWithArgs(node.type, `+${note}`, `+${duration}`);
 };
 
@@ -299,15 +299,15 @@ backend.getTempo = function(node) {
 
 ///////////////////// Operators ///////////////////// 
 backend.reportEquals = function(node) {
-    var left = this.generateCode(node.inputs[0][0]),
-        right = this.generateCode(node.inputs[1][0]);
+    var left = this.generateCode(node.inputs[0]),
+        right = this.generateCode(node.inputs[1]);
 
     return callFnWithArgs(node.type, left, right);
 };
 
 backend.reportJoinWords = function(node) {
-    var listInput = node.inputs[0][0],
-        inputs = listInput.inputs[0].map(this.generateCode);
+    var listInput = node.inputs[0],
+        inputs = listInput.inputs.map(this.generateCode);
 
     return `[${inputs.join(',')}].join('')`;
 };

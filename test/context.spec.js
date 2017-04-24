@@ -13,7 +13,7 @@ describe.only('context', function() {
         });
 
         fs.readdirSync(TEST_CASE_DIR)
-            .filter(filename => filename === 'say-and-think.xml')
+            //.filter(filename => filename === 'forward-angle.xml')
             .forEach(filename => {
                 it(`should nop every operation in ${filename}`, function() {
                     var content = fs.readFileSync((path.join(TEST_CASE_DIR, filename)), 'utf8');
