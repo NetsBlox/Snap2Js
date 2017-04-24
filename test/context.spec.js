@@ -13,7 +13,8 @@ describe.only('context', function() {
         });
 
         fs.readdirSync(TEST_CASE_DIR)
-            .filter(filename => filename === 'lists.xml')
+            //.filter(filename => filename === 'lists.xml')
+            .filter(filename => filename === 'report-list-item.xml')
             .forEach(filename => {
                 it(`should nop every operation in ${filename}`, function() {
                     var content = fs.readFileSync((path.join(TEST_CASE_DIR, filename)), 'utf8');

@@ -388,7 +388,7 @@ backend.reportListLength = function(node) {
 backend.reportListItem = function(node) {
     console.log();
     console.log(node.inputs);
-    var index = this.generateCode(node.inputs[0][0]),
+    var index = this.generateCode(node.inputs[0]),
         list = this.generateCode(node.inputs[1]);
 
     console.log();

@@ -90,6 +90,13 @@
                     console.log();
                     console.log('---');
                     console.log(child);
+                    console.log(node.type);
+                    console.log(child.children.length);
+
+                    //if (node.type === 'reportListItem') {
+                        //asdf;
+                    //}
+
                     if (child.children.length) {
                         return child.children.map(createAstNode);
                     }
@@ -108,6 +115,14 @@
                 //}
             });
 
+        if (node.type === 'reportListItem') {
+            console.log();
+            console.log();
+            console.log('<<< reportListItem');
+            console.log(JSON.stringify(node, null, 2));
+            console.log();
+            console.log(curr.children[0]);
+        }
         return node;
     };
 
@@ -119,6 +134,7 @@
         for (var i = blocks.length; i--;) {
             last = createAstNode(blocks[i], last);
         }
+        //adf;
         return last;
     };
 
