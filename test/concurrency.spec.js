@@ -39,7 +39,7 @@ describe('concurrency', function() {
             bin = snap2js.compile(content);
             bin(cxt);
             setTimeout(function() {
-                totalOrder = values[1].value;
+                totalOrder = values[1];
                 done();
             }, 1500);
         });

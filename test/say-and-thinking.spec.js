@@ -21,7 +21,7 @@ describe('say and think', function() {
             cxt = snap2js.newContext();
             cxt['doReport'] = function(val) {
                 console.log('reporting', arguments);
-                totalOrder = val.value;
+                totalOrder = val;
             };
             bin = snap2js.compile(content);
             bin(cxt);

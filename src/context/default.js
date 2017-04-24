@@ -188,16 +188,53 @@ context.reportEquals = function(left, right) {
 };
 
 ///////////////////// Variables ///////////////////// 
+context.reportCDR = function(list) {
+    return list.slice(1);
+};
+
+context.reportCONS = function(head, list) {
+    var newList = list.slice();
+    newList.unshift(head);
+    return newList;
+};
+
 context.reportNewList = function(list) {
     return list;
 };
 
-context.reportListLength = function(variable, context) {
-    return variable ? variable.value.length : 0;
+context.reportListLength = function(list, context) {
+    return list ? list.length : 0;
+};
+
+context.doDeleteFromList = function(index, list) {
+    list.splice(index-1, 1);
+};
+
+context.doReplaceInList = function(index, list, item, context) {
+    list[index-1] = item;
+};
+
+context.doInsertInList = function(item, index, list) {
+    list.splice(index-1, 0, item);
+};
+
+context.reportListItem = function(index, list) {
+    return list[index-1];
+};
+
+context.reportListContainsItem = function(list, item) {
+    list = list || [];
+    return list.includes(item);
 };
 
 context.variable = function(name, context) {
-    return context.get(name);
+    var variable = context.get(name);
+    return variable && variable.value;
+};
+
+context.doSetVar = function(name, val, context) {
+    var variable = context.get(name);
+    variable.value = val;
 };
 
 context.doChangeVar = function(name, val, context) {

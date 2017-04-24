@@ -427,19 +427,15 @@ backend.doReplaceInList = function(node) {
 backend.doInsertInList = function(node) {
     var value = this.generateCode(node.inputs[0]);
     var index = this.generateCode(node.inputs[1]);
-    var rawList = node.inputs[2];
-    var listName = null;
+    var list = this.generateCode(node.inputs[2]);
 
-    if (rawList && rawList.type === 'variable') {
-        listName = `'${rawList.value}'`;
-    }
-
-    return callStatementWithArgs(node.type, value, index, listName);
+    return callStatementWithArgs(node.type, value, index, list);
 };
 
 backend.reportCONS = function(node) {
-    var list = this.generateCode(node.inputs[0]);
-    return callFnWithArgs(node.type, list);
+    var head = this.generateCode(node.inputs[0]);
+    var list = this.generateCode(node.inputs[1]);
+    return callFnWithArgs(node.type, head, list);
 };
 
 backend.variable = function(node) {
