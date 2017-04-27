@@ -124,9 +124,22 @@ describe('operators', function() {
 
     describe('functions', function() {
         // TODO: add tests for anonymous functions
-        // TODO: js functions
         // TODO: reporter rings
         // TODO: pred rings
+
+        describe('js', function() {
+            before(function() {
+                result = utils.compileAndRun('js-fn');
+            });
+
+            it('should return a fn', function() {
+                assert.equal(typeof result, 'function');
+            });
+
+            it('should eval correctly (add 5 to input)', function() {
+                assert.equal(result(3), 8);
+            });
+        });
 
         describe('cmd-ring', function() {
             var bin;
