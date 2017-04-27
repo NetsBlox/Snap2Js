@@ -16,6 +16,17 @@ describe('custom blocks', function() {
 
     });
 
+    describe.only('all inputs', function() {
+        before(function() {
+            result = utils.compileAndRun('custom-block-inputs');
+        });
+
+        it('should evaluate custom block correctly', function() {
+            assert.equal(result, 7);
+        });
+
+    });
+
     describe('local sum numbers', function() {
         describe('sprite', function() {
             before(function() {
