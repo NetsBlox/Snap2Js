@@ -298,6 +298,31 @@ backend.getTempo = function(node) {
 };
 
 ///////////////////// Operators ///////////////////// 
+backend.reportModulus =
+backend.reportQuotient =
+backend.reportProduct =
+backend.reportDifference =
+backend.reportRandom =
+backend.reportSum = function(node) {
+    var left = this.generateCode(node.inputs[0]),
+        right = this.generateCode(node.inputs[1]);
+
+    return callFnWithArgs(node.type, `+${left}`, `+${right}`);
+};
+
+backend.reportRound = function(node) {
+    var number = this.generateCode(node.inputs[0]);
+
+    return callFnWithArgs(node.type, `+${number}`);
+};
+
+backend.reportIsIdentical =
+backend.reportIsA =
+backend.reportAnd =
+backend.reportOr =
+backend.reportTextSplit =
+backend.reportGreaterThan =
+backend.reportLessThan =
 backend.reportEquals = function(node) {
     var left = this.generateCode(node.inputs[0]),
         right = this.generateCode(node.inputs[1]);
@@ -310,6 +335,53 @@ backend.reportJoinWords = function(node) {
         inputs = listInput.inputs.map(this.generateCode);
 
     return `[${inputs.join(',')}].join('')`;
+};
+
+backend.reportNot =
+backend.reportStringSize = function(node) {
+    var str = this.generateCode(node.inputs[0]);
+    
+    return callFnWithArgs(node.type, str);
+};
+
+backend.reportBoolean = function(node) {
+    return this.generateCode(node.inputs[0]);
+};
+
+backend.reportJSFunction = function(node) {
+    var args = this.generateCode(node.inputs[0]),
+        body = this.generateCode(node.inputs[1]);
+
+    return callFnWithArgs(node.type, args, body);
+};
+
+backend.reifyReporter =
+backend.reifyPredicate =
+backend.reifyScript = function(node) {
+    var body = this.generateCode(node.inputs[0]),
+        args = node.inputs[1].inputs
+            .map(this.generateCode);
+
+    return [
+        `function(${args.map((e, i) => `a${i}`).join(', ')}) {`,
+        indent(`var context = new VariableFrame(__CONTEXT);`),
+        indent(args.map((arg, index) => `context.set(${arg}, a${index});`).join('\n')),
+        indent(`__CONTEXT = context;`),
+        indent(body),
+        `}`
+    ].join('\n');
+};
+
+backend.autolambda = function(node) {
+    var body = this.generateCode(node.inputs[0]);
+    return `return ${body};`;
+};
+
+backend.doRun = function(node) {
+    var fn = this.generateCode(node.inputs[0]),
+        args = node.inputs[1].inputs.map(this.generateCode);
+
+    return callStatementWithArgs(node.type, fn, args);
 };
 
 ///////////////////// Pen ///////////////////// 

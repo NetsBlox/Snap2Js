@@ -1,6 +1,8 @@
 const base = require('./nop');
 const _ = require('lodash');
 const WARP_VAR = '__isAtomic';
+const isString = val => typeof val === 'string';
+const isNil = val => val === undefined || val === null;
 
 var context = _.cloneDeep(base);
 
@@ -183,8 +185,174 @@ context.getTempo = function() {
 };
 
 ///////////////////// Operators ///////////////////// 
-context.reportEquals = function(left, right) {
-    return left == right;
+context.reportIsIdentical =
+context.reportEquals = function(a, b) {
+    if (a instanceof Array || (b instanceof Array)) {
+        if (a instanceof Array && (b instanceof Array)) {
+            return a.reduce((isEqual, item, index) => {
+                return isEqual && context.reportEquals(item, b[index]);
+            }, true)
+        }
+        return false;
+    }
+
+    var x = +a,
+        y = +b,
+        i,
+        specials = [true, false, ''];
+
+    for (i = 9; i <= 13; i += 1) {
+        specials.push(String.fromCharCode(i));
+    }
+    specials.push(String.fromCharCode(160));
+
+    // check for special values before coercing to numbers
+    if (isNaN(x) || isNaN(y) ||
+            [a, b].some(function (any) {return specials.includes(any) ||
+                  (isString(any) && (any.indexOf(' ') > -1)); })) {
+        x = a;
+        y = b;
+    }
+
+    // handle text comparison case-insensitive.
+    if (isString(x) && isString(y)) {
+        return x.toLowerCase() === y.toLowerCase();
+    }
+
+    return x === y;
+};
+
+context.doRun = function(fn) {
+    var args = Array.prototype.slice.call(arguments, 1, arguments.length-1);
+    
+    return fn.apply(this, args);
+};
+
+context.reportJSFunction = function(args, body) {
+    return Function.apply(
+        null,
+        args.concat([body])
+    );
+};
+
+context.reportIsA = function(thing, type) {
+    if (type === 'number' && typeof thing === 'string') {
+        return !isNaN(+thing);
+    }
+    return typeof thing === type;
+};
+
+context.reportRound = function(number) {
+    return Math.round(number);
+};
+
+context.reportModulus = function(left, right) {
+    return left % right;
+};
+
+context.reportProduct = function(left, right) {
+    return left * right;
+};
+
+context.reportRandom = function(min, max) {
+    var floor = +min,
+        ceil = +max;
+    if ((floor % 1 !== 0) || (ceil % 1 !== 0)) {
+        return Math.random() * (ceil - floor) + floor;
+    }
+    return Math.floor(Math.random() * (ceil - floor + 1)) + floor;
+};
+
+context.reportQuotient = function (left, right) {
+    return left/right;
+};
+
+context.reportDifference = function (left, right) {
+    return left - right;
+};
+
+context.reportSum = function(left, right) {
+    return left + right;
+};
+
+context.reportGreaterThan = function(a, b) {
+    var x = +a,
+        y = +b;
+    if (isNaN(x) || isNaN(y)) {
+        x = a;
+        y = b;
+    }
+    return x > y;
+};
+
+context.reportLessThan = function(a, b) {
+    var x = +a,
+        y = +b;
+
+    if (isNaN(x) || isNaN(y)) {
+        x = a;
+        y = b;
+    }
+    return x < y;
+};
+
+context.reportTextSplit = function(string, delimiter) {
+    var types = ['string', 'number'],
+        strType = typeof string,
+        delType = typeof delimiter,
+        str,
+        del;
+
+    if (!types.includes(strType)) {
+        throw new Error('expecting text instead of a ' + strType);
+    }
+    if (!types.includes(delType)) {
+        throw new Error('expecting a text delimiter instead of a ' + delType);
+    }
+    str = isNil(string) ? '' : string.toString();
+    switch (delimiter) {
+    case 'line':
+        // Unicode compliant line splitting (platform independent)
+        // http://www.unicode.org/reports/tr18/#Line_Boundaries
+        del = /\r\n|[\n\v\f\r\x85\u2028\u2029]/;
+        break;
+    case 'tab':
+        del = '\t';
+        break;
+    case 'cr':
+        del = '\r';
+        break;
+    case 'whitespace':
+        str = str.trim();
+        del = /\s+/;
+        break;
+    case 'letter':
+        del = '';
+        break;
+    default:
+        del = isNil(delimiter) ? '' : delimiter.toString();
+    }
+    return str.split(del);
+};
+
+context.reportStringSize = function (data) {
+    if (data instanceof Array) { // catch a common user error
+        return data.length();
+    }
+
+    return data ? data.toString().length : 0;
+};
+
+context.reportOr = function (left, right) {
+    return left || right;
+};
+
+context.reportNot = function (bool) {
+    return !bool;
+};
+
+context.reportAnd = function (left, right) {
+    return left && right;
 };
 
 ///////////////////// Variables ///////////////////// 
