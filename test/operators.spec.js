@@ -122,4 +122,42 @@ describe('operators', function() {
 
     });
 
+    describe('functions', function() {
+        // TODO: add tests for anonymous functions
+        // TODO: js functions
+        // TODO: reporter rings
+        // TODO: pred rings
+
+        describe('cmd-ring', function() {
+            var bin;
+
+            before(function() {
+                bin = utils.getCompiledVersionOf('cmd-ring');
+            });
+
+            it('should return a fn', function() {
+                result = utils.compileAndRun('cmd-ring');
+                assert.equal(typeof result, 'function', result.toString());
+            });
+
+            it('should move forward by 100', function(done) {
+                var cxt = snap2js.newContext();
+                cxt['forward'] = value => {
+                    assert.equal(value, 100);
+                    done();
+                };
+                bin(cxt);
+            });
+
+            it('should turn 45 degrees', function(done) {
+                var cxt = snap2js.newContext();
+                cxt['turn'] = value => {
+                    assert.equal(value, 45);
+                    done();
+                };
+                bin(cxt);
+            });
+        });
+    });
+
 });

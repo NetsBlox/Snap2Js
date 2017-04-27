@@ -355,6 +355,30 @@ backend.reportJSFunction = function(node) {
     return callFnWithArgs(node.type, args, body);
 };
 
+backend.reifyScript = function(node) {
+    var body = this.generateCode(node.inputs[0]),
+        args = node.inputs[1].inputs
+            .map(this.generateCode)
+            .map(arg => arg.replace(/^['"]/, ''))
+            .map(arg => arg.replace(/['"]$/, ''));
+
+    return [
+        `function(${args.join(', ')}) {`,
+        indent(`var context = new VariableFrame(__CONTEXT);`),
+        indent(args.map(arg => `context.set('${arg}', ${arg});`).join('\n')),
+        indent(`__CONTEXT = context;`),
+        indent(body),
+        `}`
+    ].join('\n');
+};
+
+backend.doRun = function(node) {
+    var fn = this.generateCode(node.inputs[0]),
+        args = node.inputs[1].inputs.map(this.generateCode);
+
+    return callStatementWithArgs(node.type, fn, args);
+};
+
 ///////////////////// Pen ///////////////////// 
 backend.up =
 backend.down =

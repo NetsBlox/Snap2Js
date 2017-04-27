@@ -222,6 +222,12 @@ context.reportEquals = function(a, b) {
     return x === y;
 };
 
+context.doRun = function(fn) {
+    var args = Array.prototype.slice.call(arguments, 1, arguments.length-1);
+    
+    return fn.apply(this, args);
+};
+
 context.reportJSFunction = function(args, body) {
     return Function.apply(
         null,
