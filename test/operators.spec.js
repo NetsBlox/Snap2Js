@@ -124,6 +124,7 @@ describe('operators', function() {
 
     describe('functions', function() {
         // TODO: add tests for anonymous functions
+        // TODO: invalid js names for fn inputs...
         // TODO: reporter rings
         // TODO: pred rings
 
@@ -138,6 +139,20 @@ describe('operators', function() {
 
             it('should eval correctly (add 5 to input)', function() {
                 assert.equal(result(3), 8);
+            });
+        });
+
+        describe.only('reporter-ring', function() {
+            before(function() {
+                result = utils.compileAndRun('reporter-ring');
+            });
+
+            it('should return a fn', function() {
+                assert.equal(typeof result, 'function');
+            });
+
+            it('should eval correctly (sum inputs)', function() {
+                assert.equal(result(3, 5), 8);
             });
         });
 

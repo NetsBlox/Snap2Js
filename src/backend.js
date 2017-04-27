@@ -355,6 +355,7 @@ backend.reportJSFunction = function(node) {
     return callFnWithArgs(node.type, args, body);
 };
 
+backend.reifyReporter =
 backend.reifyScript = function(node) {
     var body = this.generateCode(node.inputs[0]),
         args = node.inputs[1].inputs
@@ -370,6 +371,11 @@ backend.reifyScript = function(node) {
         indent(body),
         `}`
     ].join('\n');
+};
+
+backend.autolambda = function(node) {
+    var body = this.generateCode(node.inputs[0]);
+    return `return ${body};`;
 };
 
 backend.doRun = function(node) {
