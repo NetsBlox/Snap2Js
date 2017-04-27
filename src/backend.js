@@ -356,17 +356,16 @@ backend.reportJSFunction = function(node) {
 };
 
 backend.reifyReporter =
+backend.reifyPredicate =
 backend.reifyScript = function(node) {
     var body = this.generateCode(node.inputs[0]),
         args = node.inputs[1].inputs
-            .map(this.generateCode)
-            .map(arg => arg.replace(/^['"]/, ''))
-            .map(arg => arg.replace(/['"]$/, ''));
+            .map(this.generateCode);
 
     return [
-        `function(${args.join(', ')}) {`,
+        `function(${args.map((e, i) => `a${i}`).join(', ')}) {`,
         indent(`var context = new VariableFrame(__CONTEXT);`),
-        indent(args.map(arg => `context.set('${arg}', ${arg});`).join('\n')),
+        indent(args.map((arg, index) => `context.set(${arg}, a${index});`).join('\n')),
         indent(`__CONTEXT = context;`),
         indent(body),
         `}`

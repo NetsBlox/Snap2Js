@@ -123,10 +123,6 @@ describe('operators', function() {
     });
 
     describe('functions', function() {
-        // TODO: add tests for anonymous functions
-        // TODO: invalid js names for fn inputs...
-        // TODO: reporter rings
-        // TODO: pred rings
 
         describe('js', function() {
             before(function() {
@@ -142,7 +138,35 @@ describe('operators', function() {
             });
         });
 
-        describe.only('reporter-ring', function() {
+        describe('invalid js names', function() {
+            before(function() {
+                result = utils.compileAndRun('fn-names');
+            });
+
+            it('should return a fn', function() {
+                assert.equal(typeof result, 'function');
+            });
+
+            it('should eval correctly (and+and+not)', function() {
+            });
+        });
+
+        describe('predicate-ring', function() {
+            before(function() {
+                result = utils.compileAndRun('predicate-ring');
+            });
+
+            it('should return a fn', function() {
+                assert.equal(typeof result, 'function');
+            });
+
+            it('should eval correctly (and+and+not)', function() {
+                assert.equal(result(true, true, false), true);
+                assert.equal(result(true, true, true), false);
+            });
+        });
+
+        describe('reporter-ring', function() {
             before(function() {
                 result = utils.compileAndRun('reporter-ring');
             });
