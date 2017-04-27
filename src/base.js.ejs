@@ -91,7 +91,9 @@ sprite.yPosition = <%= rawSprite.position.y %>;
 sprite.direction = <%= rawSprite.direction %>;
 sprite.size = <%= rawSprite.size %>;
 sprite.costumeIdx = <%= rawSprite.costumeIdx %>;
-// TODO: Define the custom blocks
+<% rawSprite.customBlocks.forEach(function(def) { %>
+sprite.customBlocks.set('<%= def.name %>', <%= def.code %>);
+<% }) %>
 <% Object.keys(rawSprite.variables).forEach(function(variable) { %>
 sprite.variables.set('<%= variable %>', JSON.parse('<%= JSON.stringify(rawSprite.variables[variable]) %>'));<% }) %>
 

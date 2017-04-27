@@ -67,6 +67,11 @@
             type = 'evaluateCustomBlock';
             node.value = curr.attributes.s;
             node.id = curr.attributes.collabId;
+
+            // remove receiver if not a global block
+            if (curr.children[curr.children.length-1].tag === 'receiver') {
+                curr.children.pop();
+            }
         } else if (!curr.attributes) {
             type = Object.keys(curr)[0];
             if (type === 'block') {
@@ -147,16 +152,19 @@
 
     Snap2Js.parseSprite = function(model) {
         var position = {},
+            blocks,
             dir;
 
         position.x = model.attributes.x;
         position.y = model.attributes.y;
         dir = model.attributes.heading;
+        blocks = model.childNamed('blocks').children;
         return {
             id: model.attributes.collabId,
             name: model.attributes.name,
             variables: parseInitialVariables(model.childNamed('variables').children),
             scripts: parseSpriteScripts(model.childNamed('scripts')),
+            customBlocks: blocks.map(Snap2Js.parseBlockDefinition),
             position: position,
             costumeIdx: +model.attributes.costume,
             size: +model.attributes.scale * 100,
