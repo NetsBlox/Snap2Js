@@ -172,6 +172,18 @@
         };
     };
 
+    Snap2Js.parseStage = function(model) {
+        let blocks = model.childNamed('blocks').children;
+
+        return {
+            customBlocks: blocks.map(Snap2Js.parseBlockDefinition),
+            scripts: parseSpriteScripts(model.childNamed('scripts')),
+            width: model.attributes.width,
+            height: model.attributes.height,
+            name: model.attributes.name
+        };
+    };
+
     const DEFAULT_BLOCK_FN_TYPE = 'reifyScript';
     const parseSpec = function (spec) {
         var parts = [], word = '', i, quoted = false, c;
@@ -263,6 +275,7 @@
             variables: globalVars,
             tempo: tempo,
             sprites: sprites.map(Snap2Js.parseSprite),
+            stage: Snap2Js.parseStage(stage),
             customBlocks: blocks.map(Snap2Js.parseBlockDefinition)
         };
 

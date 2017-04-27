@@ -17,14 +17,25 @@ describe('custom blocks', function() {
     });
 
     describe('local sum numbers', function() {
-        before(function() {
-            result = utils.compileAndRun('local-custom-sum');
+        describe('sprite', function() {
+            before(function() {
+                result = utils.compileAndRun('local-custom-sum');
+            });
+
+            it('should evaluate custom block correctly', function() {
+                assert.equal(result, 11);
+            });
         });
 
-        it('should evaluate custom block correctly', function() {
-            assert.equal(result, 11);
-        });
+        describe('stage', function() {
+            before(function() {
+                result = utils.compileAndRun('stage-custom-sum');
+            });
 
+            it('should evaluate custom block correctly', function() {
+                assert.equal(result, 6);
+            });
+        });
     });
 
 });

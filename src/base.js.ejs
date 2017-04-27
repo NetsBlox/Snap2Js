@@ -80,7 +80,25 @@ project.variables.set('<%= variable %>', JSON.parse('<%= JSON.stringify(variable
 project.customBlocks.set('<%= def.name %>', <%= def.code %>);
 <% }) %>
 
-project.stage = new Stage('Stage', project.variables, project.customBlocks);  // FIXME: use the stage name
+project.stage = new Stage('<%= stage.name %>', project.variables, project.customBlocks);
+
+<% stage.customBlocks.forEach(function(def) { %>
+project.stage.customBlocks.set('<%= def.name %>', <%= def.code %>);
+<% }) %>
+
+project.stage.onFlagPressed = function() {
+    var self = this;
+<%
+(stage.scripts.receiveGo || [])
+    .forEach(function(code) {
+%>
+    <%= code %>
+
+<%
+});
+%>
+};
+
 
 // for each sprite...
 var sprite;
@@ -100,7 +118,7 @@ sprite.variables.set('<%= variable %>', JSON.parse('<%= JSON.stringify(rawSprite
 sprite.onFlagPressed = function() {
     var self = this;
 <%
-rawSprite.scripts.receiveGo
+(rawSprite.scripts.receiveGo || [])
     .forEach(function(code) {
 %>
     <%= code %>
