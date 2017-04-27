@@ -1,5 +1,6 @@
 // Generating the js code from the ast nodes (indexed by node type)
 const indent = require('./indent');
+const CALLER = '__SELF';
 var backend = {};
 
 var callFnWithArgs = function(fn) {
@@ -364,7 +365,8 @@ backend.reifyScript = function(node) {
 
     return [
         `function(${args.map((e, i) => `a${i}`).join(', ')}) {`,
-        indent(`var context = new VariableFrame(__CONTEXT);`),
+        indent(`var context = new VariableFrame(arguments[${args.length}] || __CONTEXT);`),
+        indent(`var self = context.get('${CALLER}').value;`),
         indent(args.map((arg, index) => `context.set(${arg}, a${index});`).join('\n')),
         indent(`__CONTEXT = context;`),
         indent(body),
@@ -512,6 +514,14 @@ backend.reportCONS = function(node) {
 
 backend.variable = function(node) {
     return callFnWithArgs(node.type, `'${node.value}'`);
+};
+
+backend.evaluateCustomBlock = function(node) {
+    var name = node.value,
+        args = node.inputs.map(this.generateCode),
+        fn = `self.customBlocks.get('${name}')`;
+
+    return callFnWithArgs(node.type, `'${name}'`, fn, args);
 };
 
 ///////////////////// Primitives ///////////////////// 

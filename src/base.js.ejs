@@ -25,10 +25,12 @@ class VariableFrame {
 }
 
 class Stage {
-    constructor(name, variables) {
+    constructor(name, variables, customBlocks) {
         this.name = name;
         this.variables = new VariableFrame(variables);
+        this.customBlocks = new VariableFrame(project.customBlocks);
         this.isSprite = false;
+        this.variables.set('__SELF', this);
     }
 
     onFlagPressed() {
@@ -52,8 +54,8 @@ class Stage {
 }
 
 class Sprite extends Stage {
-    constructor(name, variables) {
-        super(name, variables);
+    constructor(name, variables, customBlocks) {
+        super(name, variables, customBlocks);
         this.isClone = false;
         this.isSprite = true;
         this.xPosition = 0;
@@ -67,24 +69,29 @@ class Sprite extends Stage {
 __ENV = __ENV || this;
 var project = {
     variables: new VariableFrame(),
+    customBlocks: new VariableFrame(),
     timerStart: null,
     tempo: <%= tempo %>,
     sprites: []
 };
 <% Object.keys(variables).forEach(function(variable) { %>
 project.variables.set('<%= variable %>', JSON.parse('<%= JSON.stringify(variables[variable]) %>'));<% }) %>
+<% customBlocks.forEach(function(def) { %>
+project.customBlocks.set('<%= def.name %>', <%= def.code %>);
+<% }) %>
 
-project.stage = new Stage(project.variables);
+project.stage = new Stage('Stage', project.variables, project.customBlocks);  // FIXME: use the stage name
 
 // for each sprite...
 var sprite;
 <% sprites.forEach(function(rawSprite) { %>
-sprite = new Sprite('<%= rawSprite.name %>', project.variables);
+sprite = new Sprite('<%= rawSprite.name %>', project.variables, project.customBlocks);
 sprite.xPosition = <%= rawSprite.position.x %>;
 sprite.yPosition = <%= rawSprite.position.y %>;
 sprite.direction = <%= rawSprite.direction %>;
 sprite.size = <%= rawSprite.size %>;
 sprite.costumeIdx = <%= rawSprite.costumeIdx %>;
+// TODO: Define the custom blocks
 <% Object.keys(rawSprite.variables).forEach(function(variable) { %>
 sprite.variables.set('<%= variable %>', JSON.parse('<%= JSON.stringify(rawSprite.variables[variable]) %>'));<% }) %>
 
