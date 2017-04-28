@@ -13,7 +13,7 @@ describe('context', function() {
         });
 
         fs.readdirSync(TEST_CASE_DIR)
-            .filter('all-control')
+            .filter(filename => !filename.includes('all-control'))
             .forEach(filename => {
                 it(`should nop every operation in ${filename}`, function() {
                     var content = fs.readFileSync((path.join(TEST_CASE_DIR, filename)), 'utf8');

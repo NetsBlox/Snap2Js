@@ -200,7 +200,7 @@ backend.doUntil = function(node) {
     recurse = callStatementWithArgs('doYield', `doLoop_${node.id}`, node.id);
     return [
         `function doLoop_${node.id} (${node.id}) {`,
-        `if (${cond}) {`,
+        `if (!${cond}) {`,
         indent(body),
         indent(recurse),
         `} else {`,
