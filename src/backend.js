@@ -153,9 +153,9 @@ backend.fork = function(node) {
         args = argInputs.map(this.generateCode);
 
     if (args.length) {
-        return callStatementWithArgs(node.type, fn, args);
+        return callStatementWithArgs('doYield', fn, args);
     }
-    return callStatementWithArgs(node.type, fn);
+    return callStatementWithArgs('doYield', fn);
 };
 
 backend.doRepeat = function(node) {
