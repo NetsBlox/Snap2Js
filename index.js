@@ -8,9 +8,9 @@
     const utils = require('./src/utils');
     const indent = utils.indent;
     const DefaultBackend = require('./src/backend');
-    const DefaultContext = require('./src/context/default');
+    const DefaultContext = require('./src/context/basic');
     const _ = require('lodash');
-    const boilerplate = fs.readFileSync('./src/base.js.ejs', 'utf8');
+    const boilerplate = fs.readFileSync('./src/basic.js.ejs', 'utf8');
     const boilerplateTpl = _.template(boilerplate);
 
     const omit = function(obj) {  // for debugging
@@ -121,7 +121,6 @@
         for (var i = blocks.length; i--;) {
             last = createAstNode(blocks[i], last);
         }
-        //adf;
         return last;
     };
 
@@ -291,6 +290,18 @@
         ].join('\n');
     };
 
+    Snap2Js._initNodeMap.receiveKey = function(code, node) {
+        var key = Snap2Js.generateCode(node.inputs[0]),
+            cond = key === "'any key'" ? 'true' : `key === ${key}`;
+
+        return [
+            `if (${cond}) {`,
+            'let __CONTEXT = new VariableFrame(self.variables);',
+            indent(code),
+            '}'
+        ].join('\n');
+    };
+
     Snap2Js.generateScriptCode = function(root) {
         if (Snap2Js._initNodeMap[root.type]) {
             return Snap2Js._initNodeMap[root.type](Snap2Js.generateCode(root.next), root);
@@ -320,8 +331,8 @@
     Snap2Js._contexts = {};
 
     Snap2Js.CONTEXT.NOP = 'nop';
-    Snap2Js.CONTEXT.DEFAULT = 'default';
-    Snap2Js._contexts.default = DefaultContext;
+    Snap2Js.CONTEXT.DEFAULT = 'basic';
+    Snap2Js._contexts.basic = DefaultContext;
     Snap2Js._contexts.nop = require('./src/context/nop');
 
     Snap2Js.newContext = type => _.cloneDeep(Snap2Js._contexts[type || Snap2Js.CONTEXT.DEFAULT]);

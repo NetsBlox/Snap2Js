@@ -4,6 +4,9 @@ const nop = () => {};
 
 var context = {};
 Object.keys(backend).forEach(key => context[key] = nop);
-context.doYield = nop;  // special case
+
+// special cases
+context.doYield = nop;
+context.__start = nop;
 
 module.exports = context;

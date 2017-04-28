@@ -1,10 +1,11 @@
 const base = require('./nop');
-const _ = require('lodash');
+const clone = require('../utils').clone;
+
 const WARP_VAR = '__isAtomic';
 const isString = val => typeof val === 'string';
 const isNil = val => val === undefined || val === null;
 
-var context = _.cloneDeep(base);
+var context = clone(base);
 
 ///////////////////// Motion ///////////////////// 
 context.xPosition = function() {
