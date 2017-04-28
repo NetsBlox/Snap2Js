@@ -516,10 +516,60 @@ backend.variable = function(node) {
     return callFnWithArgs(node.type, `'${node.value}'`);
 };
 
+    const parseSpec = function (spec) {
+        var parts = [], word = '', i, quoted = false, c;
+        for (i = 0; i < spec.length; i += 1) {
+            c = spec[i];
+            if (c === "'") {
+                quoted = !quoted;
+            } else if (c === ' ' && !quoted) {
+                parts.push(word);
+                word = '';
+            } else {
+                word = word.concat(c);
+            }
+        }
+        parts.push(word);
+        return parts;
+    };
+
+const inputNames = function (spec) {
+    var vNames = [],
+        parts = parseSpec(spec);
+
+    parts.forEach(function (part) {
+        if (part[0] === '%' && part.length > 1) {
+            vNames.push(part.slice(1));
+        }
+    });
+    return vNames;
+};
+
 backend.evaluateCustomBlock = function(node) {
     var name = node.value,
-        args = node.inputs.map(this.generateCode),
-        fn = `self.customBlocks.get('${name}')`;
+        args = [],
+        fn = `self.customBlocks.get('${name}')`,
+        types = inputNames(name);
+
+    args = node.inputs
+        .map((input, index) => {
+            var type = types[index];
+            if (type === 'cs') {  // cslots should be wrapped in fn
+                return {
+                    type: 'reifyScript',
+                    inputs: [
+                        input,
+                        {
+                            type: 'list',
+                            inputs: []
+                        }
+                    ]
+                };
+            }
+            return input;
+            
+        })
+        .map(this.generateCode);
 
     return callFnWithArgs(node.type, `'${name}'`, fn, args);
 };
