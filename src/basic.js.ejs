@@ -156,6 +156,8 @@ sprite = new Sprite('<%= rawSprite.name %>', project.variables, project.customBl
 sprite.xPosition = <%= rawSprite.position.x %>;
 sprite.yPosition = <%= rawSprite.position.y %>;
 sprite.direction = <%= rawSprite.direction %>;
+sprite.draggable = <%= rawSprite.draggable %>;
+sprite.rotation = <%= rawSprite.rotation %>;
 sprite.size = <%= rawSprite.size %>;
 sprite.costumeIdx = <%= rawSprite.costumeIdx %>;
 <% rawSprite.customBlocks.forEach(function(def) { %>
