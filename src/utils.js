@@ -27,9 +27,19 @@ const inputNames = function (spec) {
 };
 
 const indent = lines => '  ' + lines.replace(/\n/g, '  ');
+const clone = obj => {
+    var newObj = {},
+        keys = Object.keys(obj);
+
+    for (var i = keys.length; i--;) {
+        newObj[keys[i]] = obj[keys[i]];
+    }
+    return newObj;
+};
 
 module.exports = {
     indent: indent,
+    clone: clone,
     parseSpec: parseSpec,
     inputNames: inputNames
 };
