@@ -167,6 +167,8 @@
             scripts: parseSpriteScripts(model.childNamed('scripts')),
             customBlocks: blocks.map(Snap2Js.parseBlockDefinition),
             position: position,
+            draggable: model.attributes.draggable === 'true',
+            rotation: model.attributes.rotation,
             costumeIdx: +model.attributes.costume,
             size: +model.attributes.scale * 100,
             direction: dir
