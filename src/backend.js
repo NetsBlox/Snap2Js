@@ -101,6 +101,62 @@ backend.doIfElse = function(node) {
     ].join('\n');
 };
 
+backend.doReport = function(node) {
+    var value = this.generateCode(node.inputs[0]);
+    return 'return ' + callStatementWithArgs(node.type, value);
+};
+
+backend.removeClone =
+backend.doPauseAll = function(node) {
+    return callStatementWithArgs(node.type);
+};
+
+backend.createClone =
+backend.doStopThis =
+backend.doStopOthers =
+backend.doWaitUntil =
+backend.doBroadcast =
+backend.doBroadcastAndWait = function(node) {
+    var event = this.generateCode(node.inputs[0]);
+    return callStatementWithArgs(node.type, event);
+};
+
+backend.reportCallCC =
+backend.evaluate = function(node) {
+    console.log();
+    console.log(node.inputs);
+    var fn = this.generateCode(node.inputs[0]),
+        argInputs = node.inputs[1] ? node.inputs[1].inputs : [],
+        args = argInputs.map(this.generateCode);
+
+    if (args.length) {
+        return callFnWithArgs(node.type, fn, args);
+    }
+    return callFnWithArgs(node.type, fn);
+};
+
+backend.doCallCC = function(node) {
+    var fn = this.generateCode(node.inputs[0]),
+        argInputs = node.inputs[1] ? node.inputs[1].inputs : [],
+        args = argInputs.map(this.generateCode);
+
+    if (args.length) {
+        return callStatementWithArgs(node.type, fn, args);
+    }
+    return callStatementWithArgs(node.type, fn);
+};
+
+backend.fork = function(node) {
+    var fn = this.generateCode(node.inputs[0]),
+        argInputs = node.inputs[1] ? node.inputs[1].inputs : [],
+        args = argInputs.map(this.generateCode);
+
+    if (args.length) {
+        return callStatementWithArgs(node.type, fn, args);
+    }
+    return callStatementWithArgs(node.type, fn);
+};
+
 backend.doRepeat = function(node) {
     var count = this.generateCode(node.inputs[0]),
         body = this.generateCode(node.inputs[1]),
@@ -122,11 +178,39 @@ backend.doRepeat = function(node) {
 };
 backend.doRepeat.async = true;
 
-backend.doReport = function(node) {
-    var value = this.generateCode(node.inputs[0]);
-    return 'return ' + callStatementWithArgs(node.type, value);
+backend.doForever = function(node) {
+    var recurse = callStatementWithArgs('doYield', `doForever_${node.id}`),
+        body = this.generateCode(node.inputs[0]);
+
+    return [
+        `function doForever_${node.id} () {`,
+        indent(body),
+        indent(recurse),
+        `}`,
+         `doForever_${node.id}();`
+    ].join('\n');
 };
 
+backend.doUntil = function(node) {
+    var cond = this.generateCode(node.inputs[0]),
+        body = this.generateCode(node.inputs[1]),
+        iterVar = node.id,
+        recurse;
+
+    recurse = callStatementWithArgs('doYield', `doLoop_${node.id}`, node.id);
+    return [
+        `function doLoop_${node.id} (${node.id}) {`,
+        `if (${cond}) {`,
+        indent(body),
+        indent(recurse),
+        `} else {`,
+        indent(node.next ? this.generateCode(node.next) : ''),
+        `}`,
+        `}`,
+         `doLoop_${node.id}();`
+    ].join('\n');
+};
+backend.doUntil.async = true;
 
 ///////////////////// Looks ///////////////////// 
 backend.doSwitchToCostume = function(node) {
@@ -359,9 +443,13 @@ backend.reportJSFunction = function(node) {
 backend.reifyReporter =
 backend.reifyPredicate =
 backend.reifyScript = function(node) {
-    var body = this.generateCode(node.inputs[0]),
+    var body = '',
         args = node.inputs[1].inputs
             .map(this.generateCode);
+
+    if (node.inputs[0]) {
+        body = this.generateCode(node.inputs[0]);
+    }
 
     return [
         `function(${args.map((e, i) => `a${i}`).join(', ')}) {`,
