@@ -96,9 +96,6 @@ var project = {
     tempo: <%= tempo %>,
     sprites: []
 };
-//<!--project.emit = (event, wait) => {-->
-    //<!--event.-->
-//<!--};-->
 <% Object.keys(variables).forEach(function(variable) { %>
 project.variables.set('<%= variable %>', JSON.parse('<%= JSON.stringify(variables[variable]) %>'));<% }) %>
 <% customBlocks.forEach(function(def) { %>
@@ -115,6 +112,33 @@ project.stage.onFlagPressed = function() {
     var self = this;
 <%
 (stage.scripts.receiveGo || [])
+    .forEach(function(code) {
+%>
+    <%= code %>
+
+<%
+});
+%>
+};
+
+project.stage.onUserEventReceived = function(event) {
+    var self = this;
+
+<%
+(stage.scripts.receiveMessage || [])
+    .forEach(function(code) {
+%>
+    <%= code %>
+
+<%
+});
+%>
+};
+
+project.stage.onKeyPressed = function(key) {
+    var self = this;
+<%
+(stage.scripts.receiveKey || [])
     .forEach(function(code) {
 %>
     <%= code %>
@@ -155,10 +179,15 @@ sprite.onFlagPressed = function() {
 
 sprite.onKeyPressed = function(key) {
     var self = this;
-    if (key === 'l') {
-        // Add code for the given key...
-        // TODO
-    }
+<%
+(rawSprite.scripts.receiveKey || [])
+    .forEach(function(code) {
+%>
+    <%= code %>
+
+<%
+});
+%>
 };
 
 sprite.onUserEventReceived = function(event) {
@@ -207,5 +236,6 @@ sprite.checkConditions = function() {
 project.sprites.push(sprite);
 <% }) %>
 project.timerStart = Date.now();
+__ENV.__start(project);
 project.sprites.forEach(sprite => sprite.onFlagPressed());
 project.stage.onFlagPressed();
