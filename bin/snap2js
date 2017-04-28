@@ -7,32 +7,95 @@ const Q = require('q');
 const path = require('path');
 const fs = require('fs');
 const exists = require('exists-file');
+const browserify = require('browserify');
+const BROWSERIFY_OPTS = {
+    noParse: [ undefined ],
+    extensions: [],
+    ignoreTransform: [],
+    entries: [ 'hello-cli.js.tmp' ],
+    fullPaths: false,
+    builtins: false,
+    commondir: false,
+    bundleExternal: true,
+    basedir: undefined,
+    browserField: false,
+    transformKey: undefined,
+    dedupe: true,
+    detectGlobals: true,
+    insertGlobals: false,
+    insertGlobalVars:
+    {
+        process: undefined,
+        global: undefined,
+        'Buffer.isBuffer': undefined,
+        Buffer: undefined
+    },
+    ignoreMissing: false,
+    debug: false,
+    standalone: undefined
+};
 
-// TODO: add context options?
 prog
     .version(version)
     .description('A tool to compile Snap! xml files to JavaScript')
     .argument('<files...>', 'Snap xml files to compile')
+    .option('-i,--interpret')
     .option('--output <dir>', 'Output directory', fileExists, '.')
-    .option('--context <type>', 'Context to use', isContext, 'default')
+    .option('--context <type>', 'Context to use', isContext, 'basic')
     .action((args, opts, logger) => {
-        return Q.all(args.files.map(filename => compileFile(filename, opts, logger)));
+        if (opts.interpret) {
+            if (args.files.length > 1) logger.warn(`Only interpretting ${args.files[0]}`)
+            return interpretFile(args.files[0], opts, logger);
+        } else {
+            return Q.all(args.files.map(filename => saveToFile(filename, opts, logger)));
+        }
     });
 
 function compileFile(filename, opts, logger) {
+    return Q.ninvoke(fs, 'readFile', filename)
+        .then(contents => snap2js.transpile(contents))
+        .fail(err => console.error(err));
+}
+
+function saveToFile(filename, opts, logger) {
     let outfile = path.join(opts.output, path.basename(filename).replace(/\.[a-zA-Z0-9]+$/, '.js'));
+    let tmpfile = outfile + '.tmp';
     let context = opts.context;
 
     logger.debug('compiling ' + filename + ' to ' + outfile);
-    return Q.ninvoke(fs, 'readFile', filename)
-        .then(contents => snap2js.transpile(contents))
+    return compileFile(filename, opts, logger)
         .then(fn => {
-            // FIXME: make this more generic
-            var code = `(function test(__ENV) {${fn.toString()}})(require('./src/context/${context}'))`;
-            return Q.ninvoke(fs, 'writeFile', outfile, code);
+            var relPath = path.resolve(`${path.dirname(__dirname)}/src/context/${context}`);
+            var contextPath = path.relative(path.resolve(opts.output), relPath);
+            var code = `(function (__ENV) {${fn.toString()}})(require('./${contextPath}'))`;
+            return Q.ninvoke(fs, 'writeFile', tmpfile, code);
         })
-        .then(() => logger.info('finished compiling', outfile))
+        .then(() => {
+            var b = browserify([tmpfile], BROWSERIFY_OPTS),
+                outputStream = fs.createWriteStream(outfile);
+
+            b.bundle().pipe(outputStream);
+            outputStream.on('error',
+                err => logger.warn(err));
+
+            outputStream.on('close', () => {
+                logger.debug('finished compiling ' + outfile);
+                logger.debug('removing ' + tmpfile);
+                fs.unlinkSync(tmpfile);
+            });
+        })
         .fail(err => console.error(err));
+}
+
+function interpretFile(filename, opts, logger) {
+    let context = opts.context;
+    return compileFile(filename, opts, logger)
+        .then(code => {
+            var fn = new Function('__ENV', code),
+                env = require(`../src/context/${context}`);
+
+            return fn(env);
+        });
 }
 
 function fileExists(dir) {

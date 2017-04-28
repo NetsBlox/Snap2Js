@@ -12,6 +12,7 @@
     "mocha": "^3.2.0"
   },
   "dependencies": {
+    "browserify": "^14.3.0",
     "caporal": "^0.5.0",
     "exists-file": "^3.0.0",
     "keypress": "^0.2.1",
