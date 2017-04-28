@@ -5,7 +5,8 @@
     const prettier = require('prettier');
     const fs = require('fs');
     const inputFilename = process.argv[2];
-    const indent = require('./src/indent');
+    const utils = require('./src/utils');
+    const indent = utils.indent;
     const DefaultBackend = require('./src/backend');
     const DefaultContext = require('./src/context/default');
     const _ = require('lodash');
@@ -185,38 +186,9 @@
     };
 
     const DEFAULT_BLOCK_FN_TYPE = 'reifyScript';
-    const parseSpec = function (spec) {
-        var parts = [], word = '', i, quoted = false, c;
-        for (i = 0; i < spec.length; i += 1) {
-            c = spec[i];
-            if (c === "'") {
-                quoted = !quoted;
-            } else if (c === ' ' && !quoted) {
-                parts.push(word);
-                word = '';
-            } else {
-                word = word.concat(c);
-            }
-        }
-        parts.push(word);
-        return parts;
-    };
-    const inputNames = function (spec) {
-        var vNames = [],
-            parts = parseSpec(spec);
-
-        parts.forEach(function (part) {
-            if (part[0] === '%' && part.length > 1) {
-                vNames.push(part.slice(1));
-            }
-        });
-        return vNames;
-    };
-
-
     Snap2Js.parseBlockDefinition = function(block) {
         var spec = block.attributes.s,
-            inputs = inputNames(spec).map(createAstNode),
+            inputs = utils.inputNames(spec).map(createAstNode),
             ast = parseScript(block.childNamed('script')),
             blockType = block.attributes.type,
             inputTypes,
@@ -236,7 +208,7 @@
         inputTypes = block.childNamed('inputs').children
             .map(child => child.attributes.type);
 
-        name = parseSpec(spec).map(part => {
+        name = utils.parseSpec(spec).map(part => {
             if (part[0] === '%' && part.length > 1) {
                 return inputTypes.shift();
             }
@@ -295,12 +267,25 @@
     };
 
     Snap2Js._initNodeMap = {};
+    // TODO: move this to the backend...
+    Snap2Js._initNodeMap.receiveOnClone =
     Snap2Js._initNodeMap.receiveGo = function(code, node) {
         return [
             '(function() {',
             'var __CONTEXT = new VariableFrame(self.variables);',
             indent(code),
             '})();'
+        ].join('\n');
+    };
+
+    Snap2Js._initNodeMap.receiveMessage = function(code, node) {
+        var event = Snap2Js.generateCode(node.inputs[0]),
+            cond = event === "'any message'" ? 'true' : `event === ${event}`;
+        return [
+            `if (${cond}) {`,
+            'let __CONTEXT = new VariableFrame(self.variables);',
+            indent(code),
+            '}'
         ].join('\n');
     };
 

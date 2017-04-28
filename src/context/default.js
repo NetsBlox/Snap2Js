@@ -86,6 +86,14 @@ context.doWarp = function(isStart, context) {
     context.set(WARP_VAR, isStart);
 };
 
+context.doBroadcast = function(event) {
+    this.emit(event);
+};
+
+context.doBroadcastAndWait = function(event) {
+    this.emit(event, true);
+};
+
 context.doWait = function(duration, after) {
     var context = arguments[arguments.length-1],
         warpVar = context.get(WARP_VAR),
@@ -97,6 +105,14 @@ context.doWait = function(duration, after) {
     } else {
         setTimeout(after, duration*1000);
     }
+};
+
+context.createClone = function(name) {
+    var sprite = this;
+    if (name !== 'myself') {
+        sprite = this.project.sprites.find(sprite => sprite.name === name);
+    }
+    sprite.clone();
 };
 
 ///////////////////// Looks ///////////////////// 
