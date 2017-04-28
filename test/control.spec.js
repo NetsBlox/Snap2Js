@@ -34,8 +34,23 @@ describe('control', function() {
             assert.equal(iterCount, 16);
         });
     });
+
+    describe.skip('broadcast', function() {
+        it('should trigger given hat block', function(done) {
+            let cxt = snap2js.newContext();
+
+            cxt['doReport'] = val => {
+                assert.equal(val, 'success!');
+                done();
+            };
+            bin = utils.getCompiledVersionOf('broadcast');
+            bin(cxt);
+        });
+        // TODO: test broadcast and wait
+        // TODO: test broadcast to 'any message'
+    });
+
     // Test:
-    //  - doUntil
     //  - cloning
     //  - pausing
     //  - broadcasting
