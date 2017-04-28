@@ -267,12 +267,24 @@
     };
 
     Snap2Js._initNodeMap = {};
+    // TODO: move this to the backend...
     Snap2Js._initNodeMap.receiveGo = function(code, node) {
         return [
             '(function() {',
             'var __CONTEXT = new VariableFrame(self.variables);',
             indent(code),
             '})();'
+        ].join('\n');
+    };
+
+    Snap2Js._initNodeMap.receiveMessage = function(code, node) {
+        var event = Snap2Js.generateCode(node.inputs[0]),
+            cond = event === "'any message'" ? 'true' : `event === ${event}`;
+        return [
+            `if (${cond}) {`,
+            'let __CONTEXT = new VariableFrame(self.variables);',
+            indent(code),
+            '}'
         ].join('\n');
     };
 

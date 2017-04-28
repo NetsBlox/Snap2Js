@@ -36,6 +36,21 @@ class Stage {
     onFlagPressed() {
     }
 
+    onUserEventReceived (event) {
+    }
+
+    emit(event, wait) {
+        if (wait) {
+            project.sprites.concat([project.stage])
+                .forEach(obj => obj.onUserEventReceived(event));
+        } else {
+            setTimeout(() => {
+                project.sprites.concat([project.stage])
+                    .forEach(obj => obj.onUserEventReceived(event));
+            }, 0);
+        }
+    }
+
     getTimerStart() {
         return project.timerStart;
     }
@@ -74,6 +89,9 @@ var project = {
     tempo: <%= tempo %>,
     sprites: []
 };
+//<!--project.emit = (event, wait) => {-->
+    //<!--event.-->
+//<!--};-->
 <% Object.keys(variables).forEach(function(variable) { %>
 project.variables.set('<%= variable %>', JSON.parse('<%= JSON.stringify(variables[variable]) %>'));<% }) %>
 <% customBlocks.forEach(function(def) { %>
@@ -139,10 +157,16 @@ sprite.onKeyPressed = function(key) {
 sprite.onUserEventReceived = function(event) {
     var self = this;
 
-    if (event === 'fire!') {
-        // Add code for the given event...
-        // TODO
-    }
+<%
+(rawSprite.scripts.receiveMessage || [])
+    .forEach(function(code) {
+%>
+    <%= code %>
+
+<%
+});
+%>
+
 };
 
 sprite.onEventReceived = function(event) {

@@ -35,7 +35,7 @@ describe('control', function() {
         });
     });
 
-    describe.skip('broadcast', function() {
+    describe('broadcast', function() {
         it('should trigger given hat block', function(done) {
             let cxt = snap2js.newContext();
 
@@ -46,8 +46,30 @@ describe('control', function() {
             bin = utils.getCompiledVersionOf('broadcast');
             bin(cxt);
         });
-        // TODO: test broadcast and wait
-        // TODO: test broadcast to 'any message'
+
+        it('should trigger given hat block w/ any-msg', function(done) {
+            let cxt = snap2js.newContext();
+
+            cxt['doReport'] = val => {
+                assert.equal(val, 'success!');
+                done();
+            };
+            bin = utils.getCompiledVersionOf('broadcast-any-msg');
+            bin(cxt);
+        });
+
+        it('should support broadcast and wait', function(done) {
+            let cxt = snap2js.newContext();
+
+            cxt['doReport'] = list => {
+                list.forEach((el, i) => {
+                    assert.equal(i+1, el);
+                });
+                done();
+            };
+            bin = utils.getCompiledVersionOf('broadcast-wait');
+            bin(cxt);
+        });
     });
 
     // Test:

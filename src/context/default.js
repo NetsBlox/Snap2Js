@@ -86,6 +86,14 @@ context.doWarp = function(isStart, context) {
     context.set(WARP_VAR, isStart);
 };
 
+context.doBroadcast = function(event) {
+    this.emit(event);
+};
+
+context.doBroadcastAndWait = function(event) {
+    this.emit(event, true);
+};
+
 context.doWait = function(duration, after) {
     var context = arguments[arguments.length-1],
         warpVar = context.get(WARP_VAR),
