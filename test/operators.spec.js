@@ -10,8 +10,10 @@ describe('operators', function() {
     };
 
     describe('basic math', function() {
-        before(function() {
-            result = utils.compileAndRun('basic-math');
+        before(function(done) {
+            utils.compileAndRun('basic-math')
+                .then(res => result = res)
+                .nodeify(done);
         });
 
         it('should add numbers', function() {
@@ -40,8 +42,10 @@ describe('operators', function() {
     });
 
     describe('random', function() {
-        before(function() {
-            result = utils.compileAndRun('random');
+        before(function(done) {
+            utils.compileAndRun('random')
+                .then(res => result = res)
+                .nodeify(done);
         });
 
         it('should not generate equal random numbers', function() {
@@ -53,8 +57,10 @@ describe('operators', function() {
     });
 
     describe('comparisons', function() {
-        before(function() {
-            result = utils.compileAndRun('comparisons');
+        before(function(done) {
+            utils.compileAndRun('comparisons')
+                .then(res => result = res)
+                .nodeify(done);
         });
 
         [
@@ -68,8 +74,10 @@ describe('operators', function() {
     });
 
     describe('text', function() {
-        before(function() {
-            result = utils.compileAndRun('string-ops');
+        before(function(done) {
+            utils.compileAndRun('string-ops')
+                .then(res => result = res)
+                .nodeify(done);
         });
 
         it('should join words "hello", "world", "there"', function() {
@@ -88,8 +96,10 @@ describe('operators', function() {
     });
 
     describe('boolean', function() {
-        before(function() {
-            result = utils.compileAndRun('boolean');
+        before(function(done) {
+            utils.compileAndRun('boolean')
+                .then(res => result = res)
+                .nodeify(done);
         });
 
         it('should support AND', function() {
@@ -125,8 +135,10 @@ describe('operators', function() {
     describe('functions', function() {
 
         describe('js', function() {
-            before(function() {
-                result = utils.compileAndRun('js-fn');
+            before(function(done) {
+                utils.compileAndRun('js-fn')
+                    .then(res => result = res)
+                    .nodeify(done);
             });
 
             it('should return a fn', function() {
@@ -139,8 +151,10 @@ describe('operators', function() {
         });
 
         describe('invalid js names', function() {
-            before(function() {
-                result = utils.compileAndRun('fn-names');
+            before(function(done) {
+                utils.compileAndRun('fn-names')
+                    .then(res => result = res)
+                    .nodeify(done);
             });
 
             it('should return a fn', function() {
@@ -152,8 +166,10 @@ describe('operators', function() {
         });
 
         describe('predicate-ring', function() {
-            before(function() {
-                result = utils.compileAndRun('predicate-ring');
+            before(function(done) {
+                utils.compileAndRun('predicate-ring')
+                    .then(res => result = res)
+                    .nodeify(done);
             });
 
             it('should return a fn', function() {
@@ -167,8 +183,10 @@ describe('operators', function() {
         });
 
         describe('reporter-ring', function() {
-            before(function() {
-                result = utils.compileAndRun('reporter-ring');
+            before(function(done) {
+                utils.compileAndRun('reporter-ring')
+                    .then(res => result = res)
+                    .nodeify(done);
             });
 
             it('should return a fn', function() {
@@ -187,9 +205,12 @@ describe('operators', function() {
                 bin = utils.getCompiledVersionOf('cmd-ring');
             });
 
-            it('should return a fn', function() {
-                result = utils.compileAndRun('cmd-ring');
-                assert.equal(typeof result, 'function', result.toString());
+            it('should return a fn', function(done) {
+                utils.compileAndRun('cmd-ring')
+                    .then(result => {
+                        assert.equal(typeof result, 'function', result.toString());
+                    })
+                    .nodeify(done);
             });
 
             it('should move forward by 100', function(done) {

@@ -1,6 +1,7 @@
 const snap2js = require('..');
 const assert = require('assert');
 const fs = require('fs');
+const Q = require('q');
 const path = require('path');
 const TEST_CASE_DIR = path.join(__dirname, 'test-cases');
 
@@ -30,14 +31,14 @@ function getCompiledVersionOf(projectName) {
 }
 
 function compileAndRun(projectName) {
+    let deferred = Q.defer();
     let content = fs.readFileSync(path.join(TEST_CASE_DIR, projectName + '.xml'));
     let cxt = snap2js.newContext();
-    let result;
 
-    cxt['doReport'] = val => result = val;
+    cxt['doReport'] = val => deferred.resolve(val);
     bin = getCompiledVersionOf(projectName);
     bin(cxt);
-    return result;
+    return deferred.promise;
 }
 
 module.exports = {

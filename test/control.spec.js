@@ -36,45 +36,40 @@ describe('control', function() {
     });
 
     describe('broadcast', function() {
-        it('should trigger given hat block', function(done) {
-            let cxt = snap2js.newContext();
 
-            cxt['doReport'] = val => {
-                assert.equal(val, 'success!');
-                done();
-            };
-            bin = utils.getCompiledVersionOf('broadcast');
-            bin(cxt);
+        it('should trigger given hat block', function(done) {
+            utils.compileAndRun('broadcast-any-msg')
+                .then(result => {
+                    assert.equal(result, 'success!');
+                })
+                .nodeify(done);
         });
 
         it('should trigger given hat block w/ any-msg', function(done) {
-            let cxt = snap2js.newContext();
-
-            cxt['doReport'] = val => {
-                assert.equal(val, 'success!');
-                done();
-            };
-            bin = utils.getCompiledVersionOf('broadcast-any-msg');
-            bin(cxt);
+            utils.compileAndRun('broadcast-any-msg')
+                .then(result => {
+                    assert.equal(result, 'success!');
+                })
+                .nodeify(done);
         });
 
         it('should support broadcast and wait', function(done) {
-            let cxt = snap2js.newContext();
-
-            cxt['doReport'] = list => {
-                list.forEach((el, i) => {
-                    assert.equal(i+1, el);
-                });
-                done();
-            };
-            bin = utils.getCompiledVersionOf('broadcast-wait');
-            bin(cxt);
+            utils.compileAndRun('broadcast-wait')
+                .then(list => {
+                    list.forEach((el, i) => {
+                        assert.equal(i+1, el);
+                    });
+                })
+                .nodeify(done);
         });
     });
+
+    //describe('cloning', function() {
+        //it('should support broadcast and wait', function(done) {
+    //});
 
     // Test:
     //  - cloning
     //  - pausing
-    //  - broadcasting
     //  - fork
 });

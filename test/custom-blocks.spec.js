@@ -5,8 +5,10 @@ describe('custom blocks', function() {
     const assert = require('assert');
 
     describe('sum numbers', function() {
-        before(function() {
-            result = utils.compileAndRun('custom-block');
+        before(function(done) {
+            utils.compileAndRun('custom-block')
+                .then(res => result = res)
+                .nodeify(done);
         });
 
         it('should evaluate custom block correctly', function() {
@@ -16,8 +18,10 @@ describe('custom blocks', function() {
     });
 
     describe('all inputs', function() {
-        before(function() {
-            result = utils.compileAndRun('custom-block-inputs');
+        before(function(done) {
+            utils.compileAndRun('custom-block-inputs')
+                .then(res => result = res)
+                .nodeify(done);
         });
 
         [
@@ -121,8 +125,10 @@ describe('custom blocks', function() {
 
     describe('local sum numbers', function() {
         describe('sprite', function() {
-            before(function() {
-                result = utils.compileAndRun('local-custom-sum');
+            before(function(done) {
+                utils.compileAndRun('local-custom-sum')
+                    .then(res => result = res)
+                    .nodeify(done);
             });
 
             it('should evaluate custom block correctly', function() {
@@ -131,8 +137,10 @@ describe('custom blocks', function() {
         });
 
         describe('stage', function() {
-            before(function() {
-                result = utils.compileAndRun('stage-custom-sum');
+            before(function(done) {
+                utils.compileAndRun('stage-custom-sum')
+                    .then(res => result = res)
+                    .nodeify(done);
             });
 
             it('should evaluate custom block correctly', function() {
