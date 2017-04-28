@@ -100,6 +100,23 @@ describe('custom blocks', function() {
             });
         });
 
+        describe('cslot', function() {
+            before(function() {
+                bin = utils.getCompiledVersionOf('custom-block-cslot');
+            });
+
+            it('should move 5 times', function(done) {
+                var cxt = snap2js.newContext(),
+                    count = 0;
+
+                cxt['forward'] = () => {
+                    count++;
+                    if (count === 5) done();
+                };
+                bin(cxt);
+            });
+        });
+
     });
 
     describe('local sum numbers', function() {

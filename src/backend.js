@@ -383,7 +383,10 @@ backend.doRun = function(node) {
     var fn = this.generateCode(node.inputs[0]),
         args = node.inputs[1].inputs.map(this.generateCode);
 
-    return callStatementWithArgs(node.type, fn, args);
+    if (args.length) {
+        return callStatementWithArgs(node.type, fn, args);
+    }
+    return callStatementWithArgs(node.type, fn);
 };
 
 ///////////////////// Pen ///////////////////// 
