@@ -124,8 +124,6 @@ backend.doBroadcastAndWait = function(node) {
 
 backend.reportCallCC =
 backend.evaluate = function(node) {
-    console.log();
-    console.log(node.inputs);
     var fn = this.generateCode(node.inputs[0]),
         argInputs = node.inputs[1] ? node.inputs[1].inputs : [],
         args = argInputs.map(this.generateCode);
