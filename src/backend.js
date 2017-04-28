@@ -1,5 +1,6 @@
 // Generating the js code from the ast nodes (indexed by node type)
 const indent = require('./indent');
+const CALLER = '__SELF';
 var backend = {};
 
 var callFnWithArgs = function(fn) {
@@ -364,7 +365,8 @@ backend.reifyScript = function(node) {
 
     return [
         `function(${args.map((e, i) => `a${i}`).join(', ')}) {`,
-        indent(`var context = new VariableFrame(__CONTEXT);`),
+        indent(`var context = new VariableFrame(arguments[${args.length}] || __CONTEXT);`),
+        indent(`var self = context.get('${CALLER}').value;`),
         indent(args.map((arg, index) => `context.set(${arg}, a${index});`).join('\n')),
         indent(`__CONTEXT = context;`),
         indent(body),
@@ -381,7 +383,10 @@ backend.doRun = function(node) {
     var fn = this.generateCode(node.inputs[0]),
         args = node.inputs[1].inputs.map(this.generateCode);
 
-    return callStatementWithArgs(node.type, fn, args);
+    if (args.length) {
+        return callStatementWithArgs(node.type, fn, args);
+    }
+    return callStatementWithArgs(node.type, fn);
 };
 
 ///////////////////// Pen ///////////////////// 
@@ -512,6 +517,64 @@ backend.reportCONS = function(node) {
 
 backend.variable = function(node) {
     return callFnWithArgs(node.type, `'${node.value}'`);
+};
+
+    const parseSpec = function (spec) {
+        var parts = [], word = '', i, quoted = false, c;
+        for (i = 0; i < spec.length; i += 1) {
+            c = spec[i];
+            if (c === "'") {
+                quoted = !quoted;
+            } else if (c === ' ' && !quoted) {
+                parts.push(word);
+                word = '';
+            } else {
+                word = word.concat(c);
+            }
+        }
+        parts.push(word);
+        return parts;
+    };
+
+const inputNames = function (spec) {
+    var vNames = [],
+        parts = parseSpec(spec);
+
+    parts.forEach(function (part) {
+        if (part[0] === '%' && part.length > 1) {
+            vNames.push(part.slice(1));
+        }
+    });
+    return vNames;
+};
+
+backend.evaluateCustomBlock = function(node) {
+    var name = node.value,
+        args = [],
+        fn = `self.customBlocks.get('${name}')`,
+        types = inputNames(name);
+
+    args = node.inputs
+        .map((input, index) => {
+            var type = types[index];
+            if (type === 'cs') {  // cslots should be wrapped in fn
+                return {
+                    type: 'reifyScript',
+                    inputs: [
+                        input,
+                        {
+                            type: 'list',
+                            inputs: []
+                        }
+                    ]
+                };
+            }
+            return input;
+            
+        })
+        .map(this.generateCode);
+
+    return callFnWithArgs(node.type, `'${name}'`, fn, args);
 };
 
 ///////////////////// Primitives ///////////////////// 

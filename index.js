@@ -63,7 +63,16 @@
             next: next || null
         };
 
-        if (!curr.attributes) {
+        if (curr.tag === 'custom-block') {
+            type = 'evaluateCustomBlock';
+            node.value = curr.attributes.s;
+            node.id = curr.attributes.collabId;
+
+            // remove receiver if not a global block
+            if (curr.children[curr.children.length-1].tag === 'receiver') {
+                curr.children.pop();
+            }
+        } else if (!curr.attributes) {
             type = Object.keys(curr)[0];
             if (type === 'block') {
                 throw 'bad parsing';
@@ -143,20 +152,112 @@
 
     Snap2Js.parseSprite = function(model) {
         var position = {},
+            blocks,
             dir;
 
         position.x = model.attributes.x;
         position.y = model.attributes.y;
         dir = model.attributes.heading;
+        blocks = model.childNamed('blocks').children;
         return {
             id: model.attributes.collabId,
             name: model.attributes.name,
             variables: parseInitialVariables(model.childNamed('variables').children),
             scripts: parseSpriteScripts(model.childNamed('scripts')),
+            customBlocks: blocks.map(Snap2Js.parseBlockDefinition),
             position: position,
             costumeIdx: +model.attributes.costume,
             size: +model.attributes.scale * 100,
             direction: dir
+        };
+    };
+
+    Snap2Js.parseStage = function(model) {
+        let blocks = model.childNamed('blocks').children;
+
+        return {
+            customBlocks: blocks.map(Snap2Js.parseBlockDefinition),
+            scripts: parseSpriteScripts(model.childNamed('scripts')),
+            width: model.attributes.width,
+            height: model.attributes.height,
+            name: model.attributes.name
+        };
+    };
+
+    const DEFAULT_BLOCK_FN_TYPE = 'reifyScript';
+    const parseSpec = function (spec) {
+        var parts = [], word = '', i, quoted = false, c;
+        for (i = 0; i < spec.length; i += 1) {
+            c = spec[i];
+            if (c === "'") {
+                quoted = !quoted;
+            } else if (c === ' ' && !quoted) {
+                parts.push(word);
+                word = '';
+            } else {
+                word = word.concat(c);
+            }
+        }
+        parts.push(word);
+        return parts;
+    };
+    const inputNames = function (spec) {
+        var vNames = [],
+            parts = parseSpec(spec);
+
+        parts.forEach(function (part) {
+            if (part[0] === '%' && part.length > 1) {
+                vNames.push(part.slice(1));
+            }
+        });
+        return vNames;
+    };
+
+
+    Snap2Js.parseBlockDefinition = function(block) {
+        var spec = block.attributes.s,
+            inputs = inputNames(spec).map(createAstNode),
+            ast = parseScript(block.childNamed('script')),
+            blockType = block.attributes.type,
+            inputTypes,
+            blockFnType,
+            root,
+            name;
+
+        // Detect the fn to use to define the function
+        blockFnType = 'reify' + blockType.substring(0,1).toUpperCase() +
+            blockType.substring(1);
+
+        if (!Snap2Js._backend[blockFnType]) {
+            blockFnType = DEFAULT_BLOCK_FN_TYPE;
+        }
+
+        // parse the inputs to make the block def name
+        inputTypes = block.childNamed('inputs').children
+            .map(child => child.attributes.type);
+
+        name = parseSpec(spec).map(part => {
+            if (part[0] === '%' && part.length > 1) {
+                return inputTypes.shift();
+            }
+            return part;
+        }).join(' ');
+
+        // Modify the ast to get it to generate an entire fn
+        root = {
+            type: blockFnType,
+            inputs: [
+                ast,
+                {
+                    type: 'list',
+                    inputs: inputs
+                }
+            ]
+        };
+
+        return {
+            name: name,
+            code: Snap2Js.generateCode(root)
         };
     };
 
@@ -169,10 +270,13 @@
 
         var globalVars = parseInitialVariables(element.childNamed('variables').children);
         var tempo = +stage.attributes.tempo;
+        var blocks = element.childNamed('blocks').children;
         return {
             variables: globalVars,
             tempo: tempo,
             sprites: sprites.map(Snap2Js.parseSprite),
+            stage: Snap2Js.parseStage(stage),
+            customBlocks: blocks.map(Snap2Js.parseBlockDefinition)
         };
 
     };

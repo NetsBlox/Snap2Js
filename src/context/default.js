@@ -6,9 +6,6 @@ const isNil = val => val === undefined || val === null;
 
 var context = _.cloneDeep(base);
 
-// Add the basic overrides
-// TODO: Add the sprite, stage, contexts and stuff
-
 ///////////////////// Motion ///////////////////// 
 context.xPosition = function() {
     return this.xPosition;
@@ -223,7 +220,7 @@ context.reportEquals = function(a, b) {
 };
 
 context.doRun = function(fn) {
-    var args = Array.prototype.slice.call(arguments, 1, arguments.length-1);
+    var args = Array.prototype.slice.call(arguments, 1);
     
     return fn.apply(this, args);
 };
@@ -424,6 +421,13 @@ context.doAddToList = function(value, name, context) {
     if (name && list) {
         list.value.push(value);
     }
+};
+
+context.evaluateCustomBlock = function(name, fnVar) {
+    var args = Array.prototype.slice.call(arguments, 2),
+        fn = fnVar.value;
+
+    return fn.apply(this, args);
 };
 
 module.exports = context;

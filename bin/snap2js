@@ -46,7 +46,7 @@ function fileExists(dir) {
 function isContext(name) {
     var contexts = fs.readdirSync(path.join(__dirname, '..', 'src', 'context'))
         .map(name => name.replace(/\.js$/, ''));
-    console.log(contexts);
+
     var isValid = contexts.find(filename => filename === name.toLowerCase());
 
     if (!isValid) {
