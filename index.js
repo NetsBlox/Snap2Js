@@ -268,6 +268,7 @@
 
     Snap2Js._initNodeMap = {};
     // TODO: move this to the backend...
+    Snap2Js._initNodeMap.receiveOnClone =
     Snap2Js._initNodeMap.receiveGo = function(code, node) {
         return [
             '(function() {',

@@ -107,6 +107,14 @@ context.doWait = function(duration, after) {
     }
 };
 
+context.createClone = function(name) {
+    var sprite = this;
+    if (name !== 'myself') {
+        sprite = this.project.sprites.find(sprite => sprite.name === name);
+    }
+    sprite.clone();
+};
+
 ///////////////////// Looks ///////////////////// 
 context.doThink = function(msg) {
     console.error(msg);

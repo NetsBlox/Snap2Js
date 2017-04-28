@@ -64,12 +64,20 @@ describe('control', function() {
         });
     });
 
-    //describe('cloning', function() {
-        //it('should support broadcast and wait', function(done) {
-    //});
+    describe('cloning', function() {
+        it('should support cloning self', function(done) {
+            utils.compileAndRun('cloning')
+                .then(result => assert.equal(result, 'success'))
+                .nodeify(done);
+        });
+
+        it('should support cloning others', function(done) {
+            utils.compileAndRun('clone-other')
+                .then(result => assert.equal(result, 'success'))
+                .nodeify(done);
+        });
+    });
 
     // Test:
-    //  - cloning
-    //  - pausing
     //  - fork
 });

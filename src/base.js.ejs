@@ -71,13 +71,20 @@ class Stage {
 class Sprite extends Stage {
     constructor(name, variables, customBlocks) {
         super(name, variables, customBlocks);
-        this.isClone = false;
+        this.clones = [];
         this.isSprite = true;
         this.xPosition = 0;
         this.yPosition = 0;
         this.direction = 90;
         this.costume = 0;
         this.size = 100;
+        this.project = project;
+    }
+
+    clone() {
+        let clone = Object.create(this);
+        this.clones.push(clone);
+        setTimeout(() => clone.onCloneStart(), 0);
     }
 }
 
@@ -167,6 +174,19 @@ sprite.onUserEventReceived = function(event) {
 });
 %>
 
+};
+
+sprite.onCloneStart = function(event) {
+    var self = this;
+<%
+(rawSprite.scripts.receiveOnClone || [])
+    .forEach(function(code) {
+%>
+    <%= code %>
+
+<%
+});
+%>
 };
 
 sprite.onEventReceived = function(event) {
