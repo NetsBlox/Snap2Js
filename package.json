@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Cross compiler from Snap! to JavaScript",
   "main": "index.js",
+  "bin": {
+      "snap2js": "./bin/snap2js"
+  },
   "scripts": {
     "test": "mocha --recursive test/"
   },

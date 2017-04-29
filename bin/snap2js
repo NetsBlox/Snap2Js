@@ -113,7 +113,6 @@ function isContext(name) {
     var isValid = contexts.find(filename => filename === name.toLowerCase());
 
     if (!isValid) {
-        console.log(contexts);
         throw new Error(`Invalid context: ${dir}. Expected ${contexts.join(', ')}`);
     }
     return name.toLowerCase();
