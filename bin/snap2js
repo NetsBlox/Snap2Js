@@ -41,7 +41,7 @@ prog
     .argument('<files...>', 'Snap xml files to compile')
     .option('-i,--interpret')
     .option('--output <dir>', 'Output directory', fileExists, '.')
-    .option('--context <type>', 'Context to use', isContext, 'basic')
+    .option('--context <type>', 'Context to use', isContext, 'cli')
     .action((args, opts, logger) => {
         if (opts.interpret) {
             if (args.files.length > 1) logger.warn(`Only interpretting ${args.files[0]}`)
