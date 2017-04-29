@@ -12,7 +12,6 @@ const BROWSERIFY_OPTS = {
     noParse: [ undefined ],
     extensions: [],
     ignoreTransform: [],
-    entries: [ 'hello-cli.js.tmp' ],
     fullPaths: false,
     builtins: false,
     commondir: false,
