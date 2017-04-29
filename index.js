@@ -4,13 +4,13 @@
     const Q = require('q');
     const prettier = require('prettier');
     const fs = require('fs');
-    const inputFilename = process.argv[2];
+    const path = require('path');
     const utils = require('./src/utils');
     const indent = utils.indent;
     const DefaultBackend = require('./src/backend');
     const DefaultContext = require('./src/context/basic');
     const _ = require('lodash');
-    const boilerplate = fs.readFileSync('./src/basic.js.ejs', 'utf8');
+    const boilerplate = fs.readFileSync(path.join(__dirname, 'src', 'basic.js.ejs'), 'utf8');
     const boilerplateTpl = _.template(boilerplate);
 
     const omit = function(obj) {  // for debugging
