@@ -1,10 +1,8 @@
 describe('sounds', function() {
-    let fs = require('fs'),
-        path = require('path'),
-        TEST_CASE_DIR = path.join(__dirname, 'test-cases'),
-        snap2js = require('..'),
+    let snap2js = require('..'),
         assert = require('assert'),
         checkBlockValue = require('./utils').checkBlockValue,
+        utils = require('./utils'),
         content;
 
     describe('all blocks', function() {
@@ -12,7 +10,7 @@ describe('sounds', function() {
             cxt;
 
         before(function() {
-            content = fs.readFileSync(path.join(TEST_CASE_DIR, 'all-sounds.xml'));
+            content = utils.getProjectXml('all-sounds');
             bin = snap2js.compile(content);
         });
 

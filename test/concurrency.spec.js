@@ -1,14 +1,11 @@
 describe('concurrency', function() {
-    let fs = require('fs'),
-        path = require('path'),
-        TEST_CASE_DIR = path.join(__dirname, 'test-cases'),
-        snap2js = require('..'),
+    let snap2js = require('..'),
         assert = require('assert'),
         utils = require('./utils'),
         content;
 
     before(function(){
-        content = fs.readFileSync(path.join(TEST_CASE_DIR, 'loops-and-waits.xml'));
+        content = utils.getProjectXml('loops-and-waits');
     });
 
     describe('transpile', function() {

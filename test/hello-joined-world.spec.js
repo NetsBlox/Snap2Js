@@ -1,13 +1,11 @@
 describe('hello (joined) world', function() {
-    let fs = require('fs'),
-        path = require('path'),
-        TEST_CASE_DIR = path.join(__dirname, 'test-cases'),
-        snap2js = require('..'),
+    let snap2js = require('..'),
         assert = require('assert'),
+        utils = require('./utils'),
         content;
 
     before(function(){
-        content = fs.readFileSync(path.join(TEST_CASE_DIR, 'hello-joined-world.xml'));
+        content = utils.getProjectXml('hello-joined-world');
     });
 
     describe('transpile', function() {

@@ -26,13 +26,13 @@ function checkBlockValue(bin, fn, val, done) {
 }
 
 function getCompiledVersionOf(projectName) {
-    var content = fs.readFileSync(path.join(TEST_CASE_DIR, projectName + '.xml'));
+    var content = getProjectXml(projectName);
     return snap2js.compile(content);
 }
 
 function compileAndRun(projectName) {
     let deferred = Q.defer();
-    let content = fs.readFileSync(path.join(TEST_CASE_DIR, projectName + '.xml'));
+    let content = getProjectXml(projectName);
     let cxt = snap2js.newContext();
 
     cxt['doReport'] = val => deferred.resolve(val);
@@ -41,10 +41,22 @@ function compileAndRun(projectName) {
     return deferred.promise;
 }
 
+function getProjectPaths() {
+    return fs.readdirSync(path.join(TEST_CASE_DIR, 'projects'))
+        .map(name => path.join(TEST_CASE_DIR, 'projects', name));
+}
+
+function getProjectXml(projectName) {
+    return fs.readFileSync(path.join(TEST_CASE_DIR, 'projects', projectName + '.xml'));
+}
+
 module.exports = {
     isRightAfter,
     isRightBefore,
     getCompiledVersionOf,
     compileAndRun,
-    checkBlockValue
+    checkBlockValue,
+
+    getProjectXml,
+    getProjectPaths
 };
