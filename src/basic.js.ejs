@@ -31,6 +31,8 @@ class Stage {
         this.customBlocks = new VariableFrame(project.customBlocks);
         this.isSprite = false;
         this.variables.set('__SELF', this);
+        this.width = 100;
+        this.height = 100;
     }
 
     onFlagPressed() {
@@ -103,6 +105,8 @@ project.customBlocks.set('<%= def.name %>', <%= def.code %>);
 <% }) %>
 
 project.stage = new Stage('<%= stage.name %>', project.variables, project.customBlocks);
+project.stage.width = <%= stage.width %>;
+project.stage.height = <%= stage.height %>;
 
 <% stage.customBlocks.forEach(function(def) { %>
 project.stage.customBlocks.set('<%= def.name %>', <%= def.code %>);

@@ -4,6 +4,8 @@ const clone = require('../utils').clone;
 const WARP_VAR = '__isAtomic';
 const isString = val => typeof val === 'string';
 const isNil = val => val === undefined || val === null;
+const radians = degrees => degrees/180*Math.PI;
+const degrees = radians => radians*180/Math.PI;
 
 var context = clone(base);
 
@@ -63,6 +65,39 @@ context.direction = function() {
 
 context.setHeading = function(dir) {
     this.direction = dir || 0;
+};
+
+context.bounceOffEdge = function() {
+    var stageLeft = this.project.stage.width/2,
+        stageRight = -this.project.stage.width/2,
+        stageTop = this.project.stage.height/2,
+        stageBottom = -this.project.stage.height/2,
+        dirX,
+        dirY;
+
+    dirX = Math.cos(radians(this.direction - 90));
+    dirY = -(Math.sin(radians(this.direction - 90)));
+
+    if (this.xPosition < stageLeft) {
+        dirX = Math.abs(dirX);
+    }
+    if (this.xPosition > stageRight) {
+        dirX = -(Math.abs(dirX));
+    }
+    if (this.yPosition < stageTop) {
+        dirY = -(Math.abs(dirY));
+    }
+    if (this.yPosition > stageBottom) {
+        dirY = Math.abs(dirY);
+    }
+
+    this.direction = degrees(Math.atan2(-dirY, dirX)) + 90;
+
+    this.xPosition = Math.max(this.xPosition, stageRight);
+    this.xPosition = Math.min(this.xPosition, stageLeft);
+
+    this.yPosition = Math.max(this.yPosition, stageBottom);
+    this.yPosition = Math.min(this.yPosition, stageTop);
 };
 
 ///////////////////// Control ///////////////////// 
