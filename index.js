@@ -305,7 +305,7 @@
         var state = _.merge(Snap2Js.parse(element), DEFAULT_STATE);
         var code = boilerplateTpl(state);
 
-        //code = prettier.format(code);
+        code = prettier.format(code);
         return code;
     };
 
