@@ -70,7 +70,8 @@
             node.id = curr.attributes.collabId;
 
             // remove receiver if not a global block
-            if (curr.children[curr.children.length-1].tag === 'receiver') {
+            let lastChild = curr.children[curr.children.length-1];
+            if (lastChild && lastChild.tag === 'receiver') {
                 curr.children.pop();
             }
         } else if (!curr.attributes) {
@@ -234,24 +235,63 @@
         };
     };
 
-    Snap2Js.parse = function(content) {
-        var element = new XML_Element();
-        element.parseString(content.toString());
+    const DEFAULT_STATE = {
+        sprites: [],
+        stage: {customBlocks: [], scripts: {}},
+        variables: {},
+        customBlocks: [],
+        tempo: 60
+    };
+    Snap2Js.parse = function(element) {
+        let state = {};
 
+        // TODO: resolve the 'ref' tags?
+        state.type = element.tag;
+        if (Snap2Js.parse[state.type]) {
+            return Snap2Js.parse[state.type](element);
+        } else {
+            throw `Unsupported xml type: ${state.type}`;
+        }
+    };
+
+    Snap2Js.parse.project = function(element) {
         var stage = element.childNamed('stage');
         var sprites = stage.childNamed('sprites').childrenNamed('sprite');
 
         var globalVars = parseInitialVariables(element.childNamed('variables').children);
         var tempo = +stage.attributes.tempo;
         var blocks = element.childNamed('blocks').children;
+
+        sprites = sprites.map(sprite => Snap2Js.parse(sprite).sprites)
+            .reduce((l1, l2) => l1.concat(l2), []);
+
         return {
             variables: globalVars,
             tempo: tempo,
-            sprites: sprites.map(Snap2Js.parseSprite),
+            sprites: sprites,
             stage: Snap2Js.parseStage(stage),
             customBlocks: blocks.map(Snap2Js.parseBlockDefinition)
         };
+    };
 
+    Snap2Js.parse.sprite = function(element) {
+        return {
+            sprites: [Snap2Js.parseSprite(element)]
+        };
+    };
+
+    Snap2Js.parse.context = function(element) {
+        let receiver = element.childNamed('receiver');
+        let state = {};
+        if (receiver) {  // create the context
+            state = Snap2Js.parse(receiver.children[0]);
+        }
+
+        // Add the execution code
+        let block = createAstNode(element.children[2]);
+        state.context = Snap2Js.generateCode(block);
+
+        return state;
     };
 
     Snap2Js.compile = function(xml) {
@@ -260,10 +300,12 @@
     };
 
     Snap2Js.transpile = function(xml) {
-        var state = Snap2Js.parse(xml);
+        var element = new XML_Element();
+        element.parseString(xml.toString());
+        var state = _.merge(Snap2Js.parse(element), DEFAULT_STATE);
         var code = boilerplateTpl(state);
 
-        code = prettier.format(code);
+        //code = prettier.format(code);
         return code;
     };
 
@@ -312,6 +354,8 @@
 
     Snap2Js.generateCode = function(root) {
         if (!Snap2Js._backend[root.type]) {
+            console.log(Object.keys(root));
+            console.log(root.tag);
             console.log(JSON.stringify(root, null, 2));
             throw `Unsupported node type: ${root.type}`;
         }

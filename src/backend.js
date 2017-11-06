@@ -88,6 +88,17 @@ backend.doWait = function(node) {
 };
 backend.doWait.async = true;
 
+backend.doIf = function(node) {
+    var cond = this.generateCode(node.inputs[0]),
+        ifTrue = this.generateCode(node.inputs[1]);
+
+    return [
+        `if (${cond}) {`,
+        indent(ifTrue),
+        `}`
+    ].join('\n');
+};
+
 backend.doIfElse = function(node) {
     var cond = this.generateCode(node.inputs[0]),
         ifTrue = this.generateCode(node.inputs[1]),
@@ -632,7 +643,11 @@ backend.evaluateCustomBlock = function(node) {
         })
         .map(this.generateCode);
 
-    return callFnWithArgs(node.type, `'${name}'`, fn, args);
+    if (args.length) {
+        return callFnWithArgs(node.type, `'${name}'`, fn, args);
+    } else {
+        return callFnWithArgs(node.type, `'${name}'`, fn);
+    }
 };
 
 ///////////////////// Primitives ///////////////////// 
@@ -651,6 +666,11 @@ backend.bool = function(node) {
 backend.list = function(node) {
     var inputs = node.inputs.map(this.generateCode);
     return `[${inputs.join(', ')}]`;
+};
+
+backend.getJSFromRPCStruct = function(node) {
+    let args = node.inputs.map(this.generateCode);
+    return callFnWithArgs(node.type, args.join(','));
 };
 
 module.exports = backend;

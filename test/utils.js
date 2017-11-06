@@ -46,8 +46,17 @@ function getProjectPaths() {
         .map(name => path.join(TEST_CASE_DIR, 'projects', name));
 }
 
+function getContextNames() {
+    return fs.readdirSync(path.join(TEST_CASE_DIR, 'contexts'))
+        .map(name => name.replace(/\.xml$/, ''));
+}
+
 function getProjectXml(projectName) {
     return fs.readFileSync(path.join(TEST_CASE_DIR, 'projects', projectName + '.xml'));
+}
+
+function getContextXml(name) {
+    return fs.readFileSync(path.join(TEST_CASE_DIR, 'contexts', name + '.xml'));
 }
 
 module.exports = {
@@ -58,5 +67,7 @@ module.exports = {
     checkBlockValue,
 
     getProjectXml,
-    getProjectPaths
+    getProjectPaths,
+    getContextXml,
+    getContextNames
 };
