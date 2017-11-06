@@ -17,6 +17,7 @@ describe.only('functions', function() {
 
             it(`should be able to compile code`, function() {
                 code = snap2js.transpile(content);
+                console.log(code);
             });
 
             it(`should create a js function`, function() {
@@ -26,11 +27,10 @@ describe.only('functions', function() {
 
             it(`should return a callable js fn`, function() {
                 let fn = snap2js.compile(content);
-                console.log(fn.toString());
                 assert.equal(typeof fn(env), 'function');
             });
 
-            it(`should return a callable js fn which returns the correct value`, function() {
+            it.skip(`should return a callable js fn which returns the correct value`, function() {
                 let fn = snap2js.compile(content);
                 assert.equal(typeof fn(env), 'szia világ');
             });

@@ -240,6 +240,7 @@
         stage: {customBlocks: [], scripts: {}},
         variables: {},
         customBlocks: [],
+        returnValue: null,
         tempo: 60
     };
     Snap2Js.parse = function(element) {
@@ -289,24 +290,26 @@
 
         // Add the execution code
         let block = createAstNode(element.children[2]);
-        state.context = Snap2Js.generateCode(block);
+        let body = Snap2Js.generateCode(block);
+        state.returnValue = body;
 
         return state;
     };
 
-    Snap2Js.compile = function(xml) {
-        var code = Snap2Js.transpile(xml)
-        return new Function('__ENV', code);
+    Snap2Js.transpile = function(xml) {
+        let fn = Snap2Js.compile(xml)
+        let code = prettier.format(fn.toString());
+        return code;
     };
 
-    Snap2Js.transpile = function(xml) {
+    Snap2Js.compile = function(xml) {
         var element = new XML_Element();
         element.parseString(xml.toString());
-        var state = _.merge(Snap2Js.parse(element), DEFAULT_STATE);
-        var code = boilerplateTpl(state);
+        var state = _.merge({}, DEFAULT_STATE, Snap2Js.parse(element));
+        let body = boilerplateTpl(state);
+        let fn = new Function('__ENV', body);
 
-        code = prettier.format(code);
-        return code;
+        return fn;
     };
 
     Snap2Js._initNodeMap = {};
