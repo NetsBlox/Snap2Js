@@ -289,11 +289,33 @@
         }
 
         // Add the execution code
-        let block = createAstNode(element.children[2]);
-        let body = Snap2Js.generateCode(block);
-        // TODO: get the arguments (from the inputs) and add them to the context (var frame)
-        let fn = new Function(`return ${body}`);
-        state.returnValue = fn.toString();
+        let block = element.children[2];
+        let inputEls = element.childNamed('inputs').children;
+        let inputNodes = inputEls.map(item => createAstNode(item.contents));
+        let lambda = {
+            type: 'autolambda',
+            inputs: [createAstNode(block)]
+        }
+        let node = {
+            type: 'reifyScript',
+            inputs: [lambda, {type: 'list', inputs: inputNodes}]
+        };
+        let body = `return ${Snap2Js.generateCode(node)}`;
+
+        // TODO: set the 'self' and '__CONTEXT' variables
+        if (receiver.children[0].tag === 'sprite') {
+            let name = receiver.children[0].attributes.name;
+            body = `let self = project.sprites.find(sprite => sprite.name === '${name}');\n` +
+                `let __CONTEXT = new VariableFrame(self.variables);\n` +
+                `${body}`;
+        } else {
+            body = `let self = project.stage;\n` +
+                `let __CONTEXT = new VariableFrame(self.variables);\n` +
+                `${body}`;
+        }
+
+        let fn = new Function(body);
+        state.returnValue = `(${fn.toString()})()`;
 
         return state;
     };
@@ -359,9 +381,6 @@
 
     Snap2Js.generateCode = function(root) {
         if (!Snap2Js._backend[root.type]) {
-            console.log(Object.keys(root));
-            console.log(root.tag);
-            console.log(JSON.stringify(root, null, 2));
             throw `Unsupported node type: ${root.type}`;
         }
 

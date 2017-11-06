@@ -7,8 +7,17 @@ describe.only('functions', function() {
     const utils = require('./utils');
 
     // Create a test for each of the test cases that we have
+    const INPUT_OUTPUTS = {};
+    INPUT_OUTPUTS['simple-fn'] = {
+        output: 'szia világ'
+    };
+    INPUT_OUTPUTS['args-simple-fn'] = {
+        input: ['TEST '],
+        output: 'TEST világ'
+    }
+
     utils.getContextNames().forEach((name, i) => {
-        if (name !== 'simple-fn') return;
+        if (!name.includes('simple-fn')) return;
 
         describe(name, () => {
             let content = null;
@@ -17,7 +26,6 @@ describe.only('functions', function() {
 
             it(`should be able to compile code`, function() {
                 code = snap2js.transpile(content);
-                console.log(code);
             });
 
             it(`should create a js function`, function() {
@@ -30,10 +38,14 @@ describe.only('functions', function() {
                 assert.equal(typeof fn(env), 'function');
             });
 
-            it(`should return a callable js fn which returns the correct value`, function() {
-                let fn = snap2js.compile(content);
-                assert.equal(fn(env)(), 'szia világ');
-            });
+            if (INPUT_OUTPUTS[name]) {
+                let input = INPUT_OUTPUTS[name].input;
+                let output = INPUT_OUTPUTS[name].output;
+                it(`should return fn where ${input}->${output}`, function() {
+                    let fn = snap2js.compile(content);
+                    assert.equal(fn(env).apply(null, input), output);
+                });
+            }
         });
     });
 });
