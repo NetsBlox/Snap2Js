@@ -291,7 +291,9 @@
         // Add the execution code
         let block = createAstNode(element.children[2]);
         let body = Snap2Js.generateCode(block);
-        state.returnValue = body;
+        // TODO: get the arguments (from the inputs) and add them to the context (var frame)
+        let fn = new Function(`return ${body}`);
+        state.returnValue = fn.toString();
 
         return state;
     };

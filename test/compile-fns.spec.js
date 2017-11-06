@@ -30,9 +30,9 @@ describe.only('functions', function() {
                 assert.equal(typeof fn(env), 'function');
             });
 
-            it.skip(`should return a callable js fn which returns the correct value`, function() {
+            it(`should return a callable js fn which returns the correct value`, function() {
                 let fn = snap2js.compile(content);
-                assert.equal(typeof fn(env), 'szia világ');
+                assert.equal(fn(env)(), 'szia világ');
             });
         });
     });
