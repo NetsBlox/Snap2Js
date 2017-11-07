@@ -246,13 +246,16 @@
     Snap2Js.parse = function(element) {
         let state = {};
 
-        // TODO: resolve the 'ref' tags?
         state.type = element.tag;
         if (Snap2Js.parse[state.type]) {
             return Snap2Js.parse[state.type](element);
         } else {
             throw `Unsupported xml type: ${state.type}`;
         }
+    };
+
+    Snap2Js.parse.ref = function(element) {
+        return Snap2Js.parse(element.target);
     };
 
     Snap2Js.parse.project = function(element) {
@@ -282,10 +285,12 @@
     };
 
     Snap2Js.parse.context = function(element) {
-        let receiver = element.childNamed('receiver');
+        let receiver = null;
         let state = {};
-        if (receiver) {  // create the context
-            state = Snap2Js.parse(receiver.children[0]);
+        if (element.childNamed('receiver')) {  // create the context
+            receiver = element.childNamed('receiver').children[0];
+            if (receiver.tag === 'ref') receiver = receiver.target;
+            state = Snap2Js.parse(receiver);
         }
 
         // Add the execution code
@@ -303,8 +308,9 @@
         let body = `return ${Snap2Js.generateCode(node)}`;
 
         // TODO: set the 'self' and '__CONTEXT' variables
-        if (receiver.children[0].tag === 'sprite') {
-            let name = receiver.children[0].attributes.name;
+        // TODO: move this code to the backend...
+        if (receiver && receiver.tag === 'sprite') {
+            let name = receiver.attributes.name;
             body = `let self = project.sprites.find(sprite => sprite.name === '${name}');\n` +
                 `let __CONTEXT = new VariableFrame(self.variables);\n` +
                 `${body}`;
@@ -326,9 +332,33 @@
         return code;
     };
 
+    Snap2Js._resolveRefs = function(element) {
+        let refValues = {},
+            allChildren = element.allChildren(),
+            refs = [];
+
+        for (let i = allChildren.length; i--;) {
+            if (allChildren[i].tag === 'ref') {
+                refs.push(allChildren[i]);
+            } else if (allChildren[i].attributes.id) {
+                refValues[allChildren[i].attributes.id] = allChildren[i];
+            }
+        }
+
+        for (let i = refs.length; i--;) {
+            let id = refs[i].attributes.id;
+            refs[i].target = refValues[id];
+        }
+
+        return element;
+    };
+
     Snap2Js.compile = function(xml) {
         var element = new XML_Element();
         element.parseString(xml.toString());
+
+        // TODO: resolve the 'ref' tags?
+        Snap2Js._resolveRefs(element);
         var state = _.merge({}, DEFAULT_STATE, Snap2Js.parse(element));
         let body = boilerplateTpl(state);
         let fn = new Function('__ENV', body);

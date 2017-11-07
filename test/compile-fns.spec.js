@@ -8,6 +8,7 @@ describe.only('functions', function() {
 
     // Create a test for each of the test cases that we have
     const INPUT_OUTPUTS = {};
+    INPUT_OUTPUTS['local-custom'] =
     INPUT_OUTPUTS['simple-fn'] = {
         output: 'szia világ'
     };
@@ -17,7 +18,7 @@ describe.only('functions', function() {
     }
 
     utils.getContextNames().forEach((name, i) => {
-        if (!name.includes('simple-fn')) return;
+        if (name !== 'local-custom') return;
 
         describe(name, () => {
             let content = null;
@@ -25,7 +26,8 @@ describe.only('functions', function() {
             before(() => content = utils.getContextXml(name))
 
             it(`should be able to compile code`, function() {
-                code = snap2js.transpile(content);
+                let code = snap2js.transpile(content);
+                console.log(code);
             });
 
             it(`should create a js function`, function() {
@@ -43,7 +45,11 @@ describe.only('functions', function() {
                 let output = INPUT_OUTPUTS[name].output;
                 it(`should return fn where ${input}->${output}`, function() {
                     let fn = snap2js.compile(content);
-                    assert.equal(fn(env).apply(null, input), output);
+                    if (input) {
+                        assert.equal(fn(env).apply(null, input), output);
+                    } else {
+                        assert.equal(fn(env)(), output);
+                    }
                 });
             }
         });
