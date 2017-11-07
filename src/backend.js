@@ -90,7 +90,11 @@ backend.doWait.async = true;
 
 backend.doIf = function(node) {
     var cond = this.generateCode(node.inputs[0]),
+        ifTrue = '';
+
+    if (node.inputs[1]) {
         ifTrue = this.generateCode(node.inputs[1]);
+    }
 
     return [
         `if (${cond}) {`,
