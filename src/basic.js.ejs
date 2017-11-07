@@ -12,11 +12,14 @@ class VariableFrame {
     }
 
     get(name) {
+        let result = null;
         if (this.vars[name]) {
-            return this.vars[name];
+            result = this.vars[name];
         } else if (this.parent) {
-            return this.parent.get(name);
+            result = this.parent.get(name);
         }
+        if (result === null) throw 'Error: a variable of name \''+name+'\' does not exist in this context';
+        return result;
     }
 
     set(name, value) {
