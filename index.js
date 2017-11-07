@@ -387,7 +387,7 @@
 
     Snap2Js._initNodeMap.receiveMessage = function(code, node) {
         var event = Snap2Js.generateCode(node.inputs[0]),
-            cond = event === "'any message'" ? 'true' : `event === ${event}`;
+            cond = event === "`any message`" ? 'true' : `event === ${event}`;
         return [
             `if (${cond}) {`,
             'let __CONTEXT = new VariableFrame(self.variables);',
