@@ -73,7 +73,11 @@
             // FIXME: This should actually load the definitions from the receiver
             let lastChild = curr.children[curr.children.length-1];
             if (lastChild && lastChild.tag === 'receiver') {
+                let receiver = lastChild.children[0];
                 curr.children.pop();
+                if (receiver) {
+                    Snap2Js.parse(receiver);
+                }
             }
         } else if (!curr.attributes) {
             type = Object.keys(curr)[0];
@@ -276,8 +280,7 @@
     };
 
     Snap2Js.parse.sprite = function(element) {
-        // TODO: change this to add the sprite to the
-        // TODO: only add if the sprite hasn't already been parsed
+        // only add if the sprite hasn't already been parsed
         let name = element.attributes.name;
         let sprite = this.state.sprites.find(sprite => sprite.name === name);
         if (!sprite) {
@@ -361,7 +364,6 @@
         var element = new XML_Element();
         element.parseString(xml.toString());
 
-        // TODO: resolve the 'ref' tags?
         Snap2Js._resolveRefs(element);
         Snap2Js.parse(element);
         let body = boilerplateTpl(this.state);
