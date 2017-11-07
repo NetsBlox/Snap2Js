@@ -1,5 +1,5 @@
 // Test that we can compile functions from snap into callable JS functions
-describe.only('functions', function() {
+describe('functions', function() {
     const snap2js = require('..');
     const assert = require('assert');
     const env = require('../src/context/basic');
