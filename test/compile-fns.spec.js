@@ -8,6 +8,18 @@ describe.only('functions', function() {
 
     // Create a test for each of the test cases that we have
     const INPUT_OUTPUTS = {};
+    INPUT_OUTPUTS['args-local-recursive'] =
+    INPUT_OUTPUTS['args-global-recursive'] = {
+        input: [6],
+        output: 720
+    };
+    INPUT_OUTPUTS['local-recursive'] =
+    INPUT_OUTPUTS['global-recursive'] = {
+        output: 120
+    };
+    INPUT_OUTPUTS['args-local-custom'] =
+    INPUT_OUTPUTS['args-global-custom'] =
+    INPUT_OUTPUTS['global-custom'] =
     INPUT_OUTPUTS['local-custom'] =
     INPUT_OUTPUTS['simple-fn'] = {
         output: 'szia világ'
@@ -18,8 +30,6 @@ describe.only('functions', function() {
     }
 
     utils.getContextNames().forEach((name, i) => {
-        if (name !== 'local-custom') return;
-
         describe(name, () => {
             let content = null;
 
@@ -27,7 +37,6 @@ describe.only('functions', function() {
 
             it(`should be able to compile code`, function() {
                 let code = snap2js.transpile(content);
-                console.log(code);
             });
 
             it(`should create a js function`, function() {
