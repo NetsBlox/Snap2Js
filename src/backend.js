@@ -656,7 +656,7 @@ backend.evaluateCustomBlock = function(node) {
 
 ///////////////////// Primitives ///////////////////// 
 backend.string = function(node) {
-    return `'${node.value.replace(/'/g, "\\'")}'`;
+    return `\`${node.value.replace(/'/g, "\\'")}\``;
 };
 
 backend.option = function(node) {
