@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.org/NetsBlox/Snap2Js.svg?branch=master)](https://travis-ci.org/NetsBlox/Snap2Js)
 # Snap2Js
 As the name suggests, Snap2Js is a compiler from [Snap!](http://snap.berkeley.edu) to JavaScript.
 
