@@ -17,6 +17,10 @@ describe('functions', function() {
     INPUT_OUTPUTS['global-recursive'] = {
         output: 120
     };
+    INPUT_OUTPUTS['fib'] = {
+        //output: [1, 2, 3, 5, 8, 13, 21]
+        output: 1
+    };
     INPUT_OUTPUTS['args-local-custom'] =
     INPUT_OUTPUTS['args-global-custom'] =
     INPUT_OUTPUTS['global-custom'] =
@@ -61,6 +65,18 @@ describe('functions', function() {
                     }
                 });
             }
+        });
+    });
+
+    describe('closures', () => {
+        before(() => content = utils.getContextXml('fib'))
+
+        it(`should maintain project state between calls`, function() {
+            let fn = snap2js.compile(content);
+            let cxt = snap2js.newContext();
+            let fib = fn(cxt);
+            let results = [1, 2, 3, 5, 8, 13];
+            results.forEach(num => assert.equal(num, fib()));
         });
     });
 });
