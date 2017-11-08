@@ -1,9 +1,7 @@
 describe('variables', function() {
-    let fs = require('fs'),
-        path = require('path'),
-        TEST_CASE_DIR = path.join(__dirname, 'test-cases'),
-        snap2js = require('..'),
+    let snap2js = require('..'),
         assert = require('assert'),
+        utils = require('./utils'),
         content;
 
     describe('initial values', function() {
@@ -12,7 +10,7 @@ describe('variables', function() {
             values;
 
         before(function() {
-            content = fs.readFileSync(path.join(TEST_CASE_DIR, 'initial-variables.xml'));
+            content = utils.getProjectXml('initial-variables');
             cxt = snap2js.newContext();
 
             values = [];
@@ -34,7 +32,7 @@ describe('variables', function() {
 
     describe('basic blocks', function() {
         before(function(){
-            content = fs.readFileSync(path.join(TEST_CASE_DIR, 'variables.xml'));
+            content = utils.getProjectXml('variables');
         });
 
         describe('transpile', function() {
@@ -79,7 +77,7 @@ describe('variables', function() {
         var result;
 
         before(function() {
-            content = fs.readFileSync(path.join(TEST_CASE_DIR, 'nested-lists.xml'));
+            content = utils.getProjectXml('nested-lists');
             var cxt = snap2js.newContext();
             var bin = snap2js.compile(content);
             cxt['doReport'] = val => result = val;
@@ -102,7 +100,7 @@ describe('variables', function() {
 
     describe('cons/cdr', function() {
         before(function() {
-            content = fs.readFileSync(path.join(TEST_CASE_DIR, 'cons-cdr.xml'));
+            content = utils.getProjectXml('cons-cdr');
             var cxt = snap2js.newContext();
             var bin = snap2js.compile(content);
             cxt['doReport'] = val => result = val;
@@ -122,7 +120,7 @@ describe('variables', function() {
             cxt;
 
         before(function() {
-            content = fs.readFileSync(path.join(TEST_CASE_DIR, 'all-variables.xml'));
+            content = utils.getProjectXml('all-variables');
             var bin = snap2js.compile(content)
             cxt = snap2js.newContext();
             cxt['doReport'] = val => result = val;

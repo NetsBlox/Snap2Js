@@ -1,8 +1,5 @@
 describe('looks', function() {
-    let fs = require('fs'),
-        path = require('path'),
-        TEST_CASE_DIR = path.join(__dirname, 'test-cases'),
-        snap2js = require('..'),
+    let snap2js = require('..'),
         assert = require('assert'),
         utils = require('./utils'),
         content;
@@ -11,7 +8,7 @@ describe('looks', function() {
         var result;
 
         before(function() {
-            content = fs.readFileSync(path.join(TEST_CASE_DIR, 'costume-size.xml'));
+            content = utils.getProjectXml('costume-size');
             cxt = snap2js.newContext();
             cxt['doReport'] = val => result = val;
             bin = snap2js.compile(content);
@@ -32,7 +29,7 @@ describe('looks', function() {
             cxt;
 
         before(function() {
-            content = fs.readFileSync(path.join(TEST_CASE_DIR, 'all-looks.xml'));
+            content = utils.getProjectXml('all-looks');
             bin = snap2js.compile(content);
         });
 

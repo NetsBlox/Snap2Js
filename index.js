@@ -70,8 +70,14 @@
             node.id = curr.attributes.collabId;
 
             // remove receiver if not a global block
-            if (curr.children[curr.children.length-1].tag === 'receiver') {
+            // FIXME: This should actually load the definitions from the receiver
+            let lastChild = curr.children[curr.children.length-1];
+            if (lastChild && lastChild.tag === 'receiver') {
+                let receiver = lastChild.children[0];
                 curr.children.pop();
+                if (receiver) {
+                    Snap2Js.parse(receiver);
+                }
             }
         } else if (!curr.attributes) {
             type = Object.keys(curr)[0];
@@ -234,37 +240,137 @@
         };
     };
 
-    Snap2Js.parse = function(content) {
-        var element = new XML_Element();
-        element.parseString(content.toString());
+    const DEFAULT_STATE = {
+        sprites: [],
+        stage: {customBlocks: [], scripts: {}},
+        variables: {},
+        customBlocks: [],
+        returnValue: null,
+        tempo: 60
+    };
 
+    Snap2Js.parse = function(element) {
+        let type = element.tag;
+
+        if (Snap2Js.parse[type]) {
+            return Snap2Js.parse[type].call(Snap2Js, element);
+        } else {
+            throw `Unsupported xml type: ${type}`;
+        }
+    };
+
+    Snap2Js.parse.ref = function(element) {
+        return Snap2Js.parse(element.target);
+    };
+
+    Snap2Js.parse.project = function(element) {
         var stage = element.childNamed('stage');
         var sprites = stage.childNamed('sprites').childrenNamed('sprite');
 
         var globalVars = parseInitialVariables(element.childNamed('variables').children);
         var tempo = +stage.attributes.tempo;
         var blocks = element.childNamed('blocks').children;
-        return {
-            variables: globalVars,
-            tempo: tempo,
-            sprites: sprites.map(Snap2Js.parseSprite),
-            stage: Snap2Js.parseStage(stage),
-            customBlocks: blocks.map(Snap2Js.parseBlockDefinition)
-        };
 
+        sprites.forEach(sprite => Snap2Js.parse(sprite));
+
+        this.state.variables = globalVars;
+        this.state.tempo = tempo;
+        this.state.stage = Snap2Js.parseStage(stage);
+        this.state.customBlocks = blocks.map(Snap2Js.parseBlockDefinition);
     };
 
-    Snap2Js.compile = function(xml) {
-        var code = Snap2Js.transpile(xml)
-        return new Function('__ENV', code);
+    Snap2Js.parse.sprite = function(element) {
+        // only add if the sprite hasn't already been parsed
+        let name = element.attributes.name;
+        let sprite = this.state.sprites.find(sprite => sprite.name === name);
+        if (!sprite) {
+            this.state.sprites.push(Snap2Js.parseSprite(element));
+        } else {
+            console.error(`Sprite ${name} already parsed. Skipping...`);
+        }
+    };
+
+    Snap2Js.parse.context = function(element) {
+        let receiver = null;
+        if (element.childNamed('receiver')) {  // create the context
+            receiver = element.childNamed('receiver').children[0];
+            if (receiver.tag === 'ref') receiver = receiver.target;
+            Snap2Js.parse(receiver);
+        }
+
+        // Add the execution code
+        let block = element.children[2];
+        let inputEls = element.childNamed('inputs').children;
+        let inputNodes = inputEls.map(item => createAstNode(item.contents));
+        let lambda = {
+            type: 'autolambda',
+            inputs: [createAstNode(block)]
+        }
+        let node = {
+            type: 'reifyScript',
+            inputs: [lambda, {type: 'list', inputs: inputNodes}]
+        };
+        let body = `return ${Snap2Js.generateCode(node)}`;
+
+        // TODO: set the 'self' and '__CONTEXT' variables
+        // TODO: move this code to the backend...
+        if (receiver && receiver.tag === 'sprite') {
+            let name = receiver.attributes.name;
+            body = `let self = project.sprites.find(sprite => sprite.name === '${name}');\n` +
+                `let __CONTEXT = new VariableFrame(self.variables);\n` +
+                `${body}`;
+        } else {
+            body = `let self = project.stage;\n` +
+                `let __CONTEXT = new VariableFrame(self.variables);\n` +
+                `${body}`;
+        }
+
+        let fn = new Function(body);
+        this.state.returnValue = `(${fn.toString()})()`;
     };
 
     Snap2Js.transpile = function(xml) {
-        var state = Snap2Js.parse(xml);
-        var code = boilerplateTpl(state);
-
-        code = prettier.format(code);
+        let fn = Snap2Js.compile(xml)
+        let code = prettier.format(fn.toString());
         return code;
+    };
+
+    Snap2Js._resolveRefs = function(element) {
+        let refValues = {},
+            allChildren = element.allChildren(),
+            refs = [];
+
+        for (let i = allChildren.length; i--;) {
+            if (allChildren[i].tag === 'ref') {
+                refs.push(allChildren[i]);
+            } else if (allChildren[i].attributes.id) {
+                refValues[allChildren[i].attributes.id] = allChildren[i];
+            }
+        }
+
+        for (let i = refs.length; i--;) {
+            let id = refs[i].attributes.id;
+            refs[i].target = refValues[id];
+        }
+
+        return element;
+    };
+
+    Snap2Js.resetState = function() {
+        this.state = _.merge({}, DEFAULT_STATE);
+    };
+
+    Snap2Js.compile = function(xml) {
+        var element = new XML_Element();
+        element.parseString(xml.toString());
+
+        Snap2Js._resolveRefs(element);
+        Snap2Js.parse(element);
+        let body = boilerplateTpl(this.state);
+        let fn = new Function('__ENV', body);
+
+        this.resetState();
+        return fn;
     };
 
     Snap2Js._initNodeMap = {};
@@ -281,7 +387,7 @@
 
     Snap2Js._initNodeMap.receiveMessage = function(code, node) {
         var event = Snap2Js.generateCode(node.inputs[0]),
-            cond = event === "'any message'" ? 'true' : `event === ${event}`;
+            cond = event === "`any message`" ? 'true' : `event === ${event}`;
         return [
             `if (${cond}) {`,
             'let __CONTEXT = new VariableFrame(self.variables);',
@@ -312,7 +418,6 @@
 
     Snap2Js.generateCode = function(root) {
         if (!Snap2Js._backend[root.type]) {
-            console.log(JSON.stringify(root, null, 2));
             throw `Unsupported node type: ${root.type}`;
         }
 
@@ -336,5 +441,6 @@
     Snap2Js._contexts.nop = require('./src/context/nop');
 
     Snap2Js.newContext = type => _.cloneDeep(Snap2Js._contexts[type || Snap2Js.CONTEXT.DEFAULT]);
+    Snap2Js.resetState();
 
 })(module.exports);

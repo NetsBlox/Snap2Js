@@ -1,9 +1,7 @@
 describe('pen', function() {
-    let fs = require('fs'),
-        path = require('path'),
-        TEST_CASE_DIR = path.join(__dirname, 'test-cases'),
-        snap2js = require('..'),
+    let snap2js = require('..'),
         assert = require('assert'),
+        utils = require('./utils'),
         checkBlockValue = require('./utils').checkBlockValue,
         content;
 
@@ -12,7 +10,7 @@ describe('pen', function() {
             cxt;
 
         before(function() {
-            content = fs.readFileSync(path.join(TEST_CASE_DIR, 'all-pen.xml'));
+            content = utils.getProjectXml('all-pen');
             bin = snap2js.compile(content);
         });
 

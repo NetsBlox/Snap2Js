@@ -75,7 +75,7 @@ context.doYield = function(fn) {
     var args = Array.prototype.slice.call(arguments, 1),
         context = args.pop();
 
-    var isAtomic = context.get(WARP_VAR);
+    var isAtomic = context.get(WARP_VAR, true);
     if (isAtomic && isAtomic.value) {
         fn.apply(this, args);
     } else {
@@ -97,7 +97,7 @@ context.doBroadcastAndWait = function(event) {
 
 context.doWait = function(duration, after) {
     var context = arguments[arguments.length-1],
-        warpVar = context.get(WARP_VAR),
+        warpVar = context.get(WARP_VAR, true),
         isWarping = warpVar && warpVar.value === true;
 
     duration = duration || 0;

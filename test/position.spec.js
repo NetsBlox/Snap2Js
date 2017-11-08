@@ -1,8 +1,5 @@
 describe('motion', function() {
-    let fs = require('fs'),
-        path = require('path'),
-        TEST_CASE_DIR = path.join(__dirname, 'test-cases'),
-        snap2js = require('..'),
+    let snap2js = require('..'),
         assert = require('assert'),
         utils = require('./utils'),
         content;
@@ -13,7 +10,7 @@ describe('motion', function() {
             result;
 
         before(function() {
-            content = fs.readFileSync(path.join(TEST_CASE_DIR, 'initial-set-change-pos.xml'));
+            content = utils.getProjectXml('initial-set-change-pos');
             cxt = snap2js.newContext();
             cxt['doReport'] = val => result = val;
             bin = snap2js.compile(content);
@@ -39,7 +36,7 @@ describe('motion', function() {
             result;
 
         before(function() {
-            content = fs.readFileSync(path.join(TEST_CASE_DIR, 'forward-angle.xml'));
+            content = utils.getProjectXml('forward-angle');
             cxt = snap2js.newContext();
             cxt['doReport'] = val => result = val;
             bin = snap2js.compile(content);
@@ -54,7 +51,7 @@ describe('motion', function() {
 
     describe('all motion blocks', function() {
         before(function() {
-            content = fs.readFileSync(path.join(TEST_CASE_DIR, 'all-motion.xml'));
+            content = utils.getProjectXml('all-motion');
         });
 
         it('should compile without error', function() {

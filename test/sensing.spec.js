@@ -1,18 +1,15 @@
 describe('sensing', function() {
-    let fs = require('fs'),
-        path = require('path'),
-        TEST_CASE_DIR = path.join(__dirname, 'test-cases'),
-        snap2js = require('..'),
-        assert = require('assert'),
-        utils = require('./utils'),
-        content;
+    const snap2js = require('..');
+    const assert = require('assert');
+    const utils = require('./utils');
+    let content;
 
     describe('all blocks', function() {
         var bin,
             cxt;
 
         before(function() {
-            content = fs.readFileSync(path.join(TEST_CASE_DIR, 'all-sensing.xml'));
+            content = utils.getProjectXml('all-sensing');
             bin = snap2js.compile(content);
         });
 
@@ -72,7 +69,7 @@ describe('sensing', function() {
 
     describe('timer', function() {
         before(function() {
-            content = fs.readFileSync(path.join(TEST_CASE_DIR, 'timer.xml'));
+            content = utils.getProjectXml('timer');
         });
 
         it('should have a timer value of 0.1', function(done) {
@@ -95,7 +92,7 @@ describe('sensing', function() {
             endTime;
 
         before(function(done) {
-            content = fs.readFileSync(path.join(TEST_CASE_DIR, 'date.xml'));
+            content = utils.getProjectXml('date');
             var cxt = snap2js.newContext();
             cxt['doReport'] = res => {
                 result = res;

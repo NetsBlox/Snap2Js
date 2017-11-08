@@ -1,14 +1,12 @@
 describe('say and think', function() {
-    let fs = require('fs'),
-        path = require('path'),
-        TEST_CASE_DIR = path.join(__dirname, 'test-cases'),
-        snap2js = require('..'),
+    let snap2js = require('..'),
         assert = require('assert'),
-        isRightAfter = require('./utils').isRightAfter,
+        utils = require('./utils'),
+        isRightAfter = utils.isRightAfter,
         content;
 
     before(function(){
-        content = fs.readFileSync(path.join(TEST_CASE_DIR, 'say-and-think.xml'));
+        content = utils.getProjectXml('say-and-think');
     });
 
     describe('compile', function() {

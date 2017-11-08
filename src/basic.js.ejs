@@ -11,12 +11,15 @@ class VariableFrame {
         this.vars = {};
     }
 
-    get(name) {
+    get(name, silent) {
+        let result = null;
         if (this.vars[name]) {
-            return this.vars[name];
+            result = this.vars[name];
         } else if (this.parent) {
-            return this.parent.get(name);
+            result = this.parent.get(name, silent);
         }
+        if (result === null && !silent) throw 'Error: a variable of name \''+name+'\' does not exist in this context';
+        return result;
     }
 
     set(name, value) {
@@ -239,5 +242,12 @@ project.sprites.push(sprite);
 <% }) %>
 project.timerStart = Date.now();
 __ENV.__start(project);
+<% // This only executes if there is not context...? %>
+<% // This should be the default fn to call when this runs... %>
+<% // or should this  %>
+<% if (returnValue) { %>
+return <%= returnValue %>;
+<% } else { %>
 project.sprites.forEach(sprite => sprite.onFlagPressed());
 project.stage.onFlagPressed();
+<% } %>
