@@ -7,8 +7,8 @@
     "snap2js": "./bin/snap2js"
   },
   "scripts": {
-    "test": "mocha --recursive test/",
-    "test-cover": "istanbul --hook-run-in-context cover -x \"lib/**\" node_modules/mocha/bin/_mocha -- -R spec test/**.js"
+    "test-quick": "mocha --recursive test/",
+    "test": "istanbul --hook-run-in-context cover -x \"lib/**\" node_modules/mocha/bin/_mocha -- -R spec test/**.js"
   },
   "author": "Brian Broll",
   "license": "ISC",
