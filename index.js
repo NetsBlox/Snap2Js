@@ -87,7 +87,6 @@
         node.type = type;
 
         if (next) {
-            console.log(`setting parent of ${next.type} to ${node.type}`);
             next.parent = node;
         }
         node.inputs = curr.children

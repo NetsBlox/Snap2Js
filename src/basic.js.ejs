@@ -9,10 +9,6 @@ class Variable {
 
 class VariableFrame {
     constructor(parent) {
-        if (parent) console.log('creating var frame', parent.constructor.name);
-        if (this.parent && !(this.parent instanceof VariableFrame)) {
-            console.log('invalid parent:', this.parent);
-        }
         this.parent = parent;
         this.vars = {};
     }
@@ -22,9 +18,6 @@ class VariableFrame {
         if (this.vars[name]) {
             result = this.vars[name];
         } else if (this.parent) {
-            if (!this.parent.get) {
-                console.log('invalid parent (2):', this.parent === __ENV);
-            }
             result = this.parent.get(name, silent);
         }
         if (result === null && !silent) throw 'Error: a variable of name \''+name+'\' does not exist in this context';

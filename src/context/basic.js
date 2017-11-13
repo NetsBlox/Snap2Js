@@ -202,7 +202,6 @@ context.getTempo = function() {
 ///////////////////// Operators ///////////////////// 
 context.reportIsIdentical =
 context.reportEquals = function(a, b) {
-    console.log('checking equal', a, b);
     if (a instanceof Array || (b instanceof Array)) {
         if (a instanceof Array && (b instanceof Array)) {
             return a.reduce((isEqual, item, index) => {
