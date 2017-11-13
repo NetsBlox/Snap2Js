@@ -157,7 +157,6 @@ backend.doBroadcastAndWait = function(node) {
     return callStatementWithArgs(node.type, event);
 };
 
-// TODO: wrap in SPromise?
 backend.reportCallCC =
 backend.evaluate = function(node) {
     var fn = this.generateCode(node.inputs[0]),

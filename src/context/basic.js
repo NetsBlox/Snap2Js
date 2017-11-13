@@ -457,7 +457,9 @@ context.evaluateCustomBlock = function(name, fnVar) {
         fn = fnVar.value;
 
     return new SPromise(resolve => {
+        let cxt = args.pop();
         args.push(resolve);
+        args.push(cxt);
         return fn.apply(this, args);
     });
 };

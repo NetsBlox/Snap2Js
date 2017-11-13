@@ -90,7 +90,6 @@
             console.log(`setting parent of ${next.type} to ${node.type}`);
             next.parent = node;
         }
-        console.log('parsing children for', node.type);
         node.inputs = curr.children
             .map(child => {
                 let key = child.tag;
@@ -231,6 +230,7 @@
         // Modify the ast to get it to generate an entire fn
         root = {
             type: blockFnType,
+            id: block.attributes.collabId,
             inputs: [
                 ast,
                 {
@@ -239,6 +239,7 @@
                 }
             ]
         };
+        ast.parent = root;
 
         return {
             name: name,
@@ -324,7 +325,6 @@
             inputs: [lambda, {type: 'list', inputs: inputNodes}]
         };
         let body = `return ${Snap2Js.generateCode(node)}`;
-        console.log(body);
 
         // TODO: set the 'self' and '__CONTEXT' variables
         // TODO: move this code to the backend...
