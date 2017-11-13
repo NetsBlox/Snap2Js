@@ -508,7 +508,7 @@ backend.reifyPredicate = function(node) {
     // TODO: add the callback name to the function...
     // TODO: doReport should call this callback...
     return [
-        `function(${args.map((e, i) => `a${i}`).join(', ')}${args.length && ','}${cb}) {`,
+        `function(${args.map((e, i) => `a${i}`).join(', ')}${args.length ? ',' : ''}${cb}) {`,
         indent(`var context = new VariableFrame(arguments[${args.length+1}] || __CONTEXT);`),
         indent(`var self = context.get('${CALLER}').value;`),
         indent(args.map((arg, index) => `context.set(${arg}, a${index});`).join('\n')),
