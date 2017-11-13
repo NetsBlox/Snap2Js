@@ -4,16 +4,25 @@ const indent = utils.indent;
 const CALLER = '__SELF';
 var backend = {};
 
-var callFnWithArgs = function(fn) {
+var callRawFnWithArgs = function(fn) {
     var inputs = Array.prototype.slice.call(arguments, 1);
     if (inputs.length) {
-        return `__ENV.${fn}.call(self, ${inputs.join(', ')}, __CONTEXT)`;
+        return `callMaybeAsync(self, ${fn}, ${inputs.join(', ')}, __CONTEXT)`;
     }
-    return `__ENV.${fn}.call(self, __CONTEXT)`;
+    return `callMaybeAsync(self, ${fn}, __CONTEXT)`;
+};
+
+var callFnWithArgs = function(fn) {
+    arguments[0] = `__ENV.${fn}`;
+    return callRawFnWithArgs.apply(null, arguments);
 };
 
 var callStatementWithArgs = function() {
     return callFnWithArgs.apply(null, arguments) + ';';
+};
+
+var callRawStatementWithArgs = function() {
+    return callRawFnWithArgs.apply(null, arguments) + ';';
 };
 
 ///////////////////// Motion ///////////////////// 
@@ -27,7 +36,7 @@ backend.changeXPosition =
 backend.changeYPosition =
 backend.forward = function(node) {
     var dist = this.generateCode(node.inputs[0]);
-    return callStatementWithArgs(node.type, `+${dist}`);
+    return callStatementWithArgs(node.type, dist);
 };
 
 backend.xPosition =
@@ -39,7 +48,7 @@ backend.yPosition = function(node) {
 backend.gotoXY = function(node) {
     var x = this.generateCode(node.inputs[0]);
     var y = this.generateCode(node.inputs[1]);
-    return callStatementWithArgs(node.type, `+${x}`, `+${y}`);
+    return callStatementWithArgs(node.type, x, y);
 };
 
 backend.doFaceTowards = function(node) {
@@ -56,7 +65,7 @@ backend.doGlide = function(node) {
     var time = this.generateCode(node.inputs[0]);
     var x = this.generateCode(node.inputs[1]);
     var y = this.generateCode(node.inputs[2]);
-    return callStatementWithArgs(node.type, x, y, `+${time}`);
+    return callStatementWithArgs(node.type, x, y, time);
 };
 
 backend.bounceOffEdge = function(node) {
@@ -118,8 +127,19 @@ backend.doIfElse = function(node) {
 };
 
 backend.doReport = function(node) {
+    // Get the current callback name and call it!
     var value = this.generateCode(node.inputs[0]);
-    return 'return ' + callStatementWithArgs(node.type, value);
+    let callback = getCallbackName(node);
+    console.log('>>', node);
+    console.log('DO REPORT', callback);
+    if (!node.parent) throw 'no parent:' + node.type;
+    // TODO: add support for inside custom block definition
+
+    if (callback) {
+        return 'return ' + callRawStatementWithArgs(callback, value);
+    } else {
+        return 'return ' + callStatementWithArgs(node.type, value);
+    }
 };
 
 backend.removeClone =
@@ -137,16 +157,14 @@ backend.doBroadcastAndWait = function(node) {
     return callStatementWithArgs(node.type, event);
 };
 
+// TODO: wrap in SPromise?
 backend.reportCallCC =
 backend.evaluate = function(node) {
     var fn = this.generateCode(node.inputs[0]),
         argInputs = node.inputs[1] ? node.inputs[1].inputs : [],
         args = argInputs.map(this.generateCode);
 
-    if (args.length) {
-        return callFnWithArgs(node.type, fn, args);
-    }
-    return callFnWithArgs(node.type, fn);
+    return callFnWithArgs(node.type, fn, args);
 };
 
 backend.doCallCC = function(node) {
@@ -187,7 +205,7 @@ backend.doRepeat = function(node) {
         indent(node.next ? this.generateCode(node.next) : ''),
         `}`,
         `}`,
-         `doLoop_${node.id}(+${count});`
+         callRawStatementWithArgs(`doLoop_${node.id}`, count)
     ].join('\n');
 };
 backend.doRepeat.async = true;
@@ -240,7 +258,7 @@ backend.changeEffect =
 backend.setEffect = function(node) {
     var effect = this.generateCode(node.inputs[0]);
     var amount = this.generateCode(node.inputs[1]);
-    return callStatementWithArgs(node.type, effect, `+${amount}`);
+    return callStatementWithArgs(node.type, effect, amount);
 };
 
 backend.clearEffects = function(node) {
@@ -251,7 +269,7 @@ backend.goBack =
 backend.changeScale =
 backend.setScale = function(node) {
     var amount = this.generateCode(node.inputs[0]);
-    return callStatementWithArgs(node.type, `+${amount}`);
+    return callStatementWithArgs(node.type, amount);
 };
 
 backend.getCostumeIdx =
@@ -266,7 +284,7 @@ backend.hide = function(node) {
 };
 
 backend.doSayFor = function(node) {
-    var time = '+' + this.generateCode(node.inputs[1]),
+    var time = this.generateCode(node.inputs[1]),
         msg = this.generateCode(node.inputs[0]),
         afterFn = `afterSay_${node.id}`,
         body = node.next ? this.generateCode(node.next) : '';
@@ -281,7 +299,7 @@ backend.doSayFor = function(node) {
 backend.doSayFor.async = true;
 
 backend.doThinkFor = function(node) {
-    var time = '+' + this.generateCode(node.inputs[1]),
+    var time = this.generateCode(node.inputs[1]),
         msg = this.generateCode(node.inputs[0]),
         afterFn = `afterThink_${node.id}`,
         body = node.next ? this.generateCode(node.next) : '';
@@ -383,13 +401,13 @@ backend.doStopAllSounds = function(node) {
 
 backend.doRest = function(node) {
     var duration = this.generateCode(node.inputs[0]);
-    return callStatementWithArgs(node.type, `+${duration}`);
+    return callStatementWithArgs(node.type, duration);
 };
 
 backend.doPlayNote = function(node) {
     var note = this.generateCode(node.inputs[0]);
     var duration = this.generateCode(node.inputs[1]);
-    return callStatementWithArgs(node.type, `+${note}`, `+${duration}`);
+    return callStatementWithArgs(node.type, note, duration);
 };
 
 backend.getTempo = function(node) {
@@ -406,13 +424,13 @@ backend.reportSum = function(node) {
     var left = this.generateCode(node.inputs[0]),
         right = this.generateCode(node.inputs[1]);
 
-    return callFnWithArgs(node.type, `+${left}`, `+${right}`);
+    return callFnWithArgs(node.type, left, right);
 };
 
 backend.reportRound = function(node) {
     var number = this.generateCode(node.inputs[0]);
 
-    return callFnWithArgs(node.type, `+${number}`);
+    return callFnWithArgs(node.type, number);
 };
 
 backend.reportIsIdentical =
@@ -454,10 +472,33 @@ backend.reportJSFunction = function(node) {
     return callFnWithArgs(node.type, args, body);
 };
 
+const TYPES_WITH_CALLBACKS = [
+    'reifyScript',
+    'reifyReporter',
+    'reifyPredicate'
+];
+let nodeIdCounter = 1;
+
+// Get the name of the callback fn of the closest enclosing fn definition
+const getCallbackName = node => {
+    if (TYPES_WITH_CALLBACKS.includes(node.type)) {
+        let nodeId = node.id;
+        if (!nodeId) {
+            nodeId = `anon_item__${nodeIdCounter++}`;
+        }
+        return `callback${nodeId.replace(/-/g, '_')}`;
+    }
+
+    if (node.parent) return getCallbackName(node.parent);
+
+    return null;
+};
+
+backend.reifyScript =
 backend.reifyReporter =
-backend.reifyPredicate =
-backend.reifyScript = function(node) {
+backend.reifyPredicate = function(node) {
     var body = '',
+        cb = getCallbackName(node),
         args = node.inputs[1].inputs
             .map(this.generateCode);
 
@@ -465,9 +506,11 @@ backend.reifyScript = function(node) {
         body = this.generateCode(node.inputs[0]);
     }
 
+    // TODO: add the callback name to the function...
+    // TODO: doReport should call this callback...
     return [
-        `function(${args.map((e, i) => `a${i}`).join(', ')}) {`,
-        indent(`var context = new VariableFrame(arguments[${args.length}] || __CONTEXT);`),
+        `function(${args.map((e, i) => `a${i}`).join(', ')}${args.length && ','}${cb}) {`,
+        indent(`var context = new VariableFrame(arguments[${args.length+1}] || __CONTEXT);`),
         indent(`var self = context.get('${CALLER}').value;`),
         indent(args.map((arg, index) => `context.set(${arg}, a${index});`).join('\n')),
         indent(`__CONTEXT = context;`),
@@ -475,6 +518,11 @@ backend.reifyScript = function(node) {
         `}`
     ].join('\n');
 };
+
+//backend.reifyScript = function(node) {
+    //// TODO: do the same thing as before but only return the doReport value...
+    //// we need to handle
+//};
 
 backend.autolambda = function(node) {
     var body = this.generateCode(node.inputs[0]);

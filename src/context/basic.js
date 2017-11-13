@@ -1,5 +1,6 @@
 const base = require('./nop');
 const clone = require('../utils').clone;
+const SPromise = require('synchronous-promise').SynchronousPromise;
 
 const WARP_VAR = '__isAtomic';
 const isString = val => typeof val === 'string';
@@ -201,6 +202,7 @@ context.getTempo = function() {
 ///////////////////// Operators ///////////////////// 
 context.reportIsIdentical =
 context.reportEquals = function(a, b) {
+    console.log('checking equal', a, b);
     if (a instanceof Array || (b instanceof Array)) {
         if (a instanceof Array && (b instanceof Array)) {
             return a.reduce((isEqual, item, index) => {
@@ -286,7 +288,7 @@ context.reportDifference = function (left, right) {
 };
 
 context.reportSum = function(left, right) {
-    return left + right;
+    return (+left) + (+right);
 };
 
 context.reportGreaterThan = function(a, b) {
@@ -440,11 +442,24 @@ context.doAddToList = function(value, name, context) {
     }
 };
 
+context.evaluate = function(fn) {
+    var args = Array.prototype.slice.call(arguments, 1);
+    return new SPromise(resolve => {
+        let cxt = args.pop();
+        args.push(resolve);
+        args.push(cxt);
+        return fn.apply(this, args);
+    });
+};
+
 context.evaluateCustomBlock = function(name, fnVar) {
     var args = Array.prototype.slice.call(arguments, 2),
         fn = fnVar.value;
 
-    return fn.apply(this, args);
+    return new SPromise(resolve => {
+        args.push(resolve);
+        return fn.apply(this, args);
+    });
 };
 
 module.exports = context;

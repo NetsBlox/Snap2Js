@@ -1,3 +1,5 @@
+const SPromise = __ENV.SPromise;
+
 class Variable {
     constructor(name, value) {
         this.name = name;
@@ -7,6 +9,10 @@ class Variable {
 
 class VariableFrame {
     constructor(parent) {
+        if (parent) console.log('creating var frame', parent.constructor.name);
+        if (this.parent && !(this.parent instanceof VariableFrame)) {
+            console.log('invalid parent:', this.parent);
+        }
         this.parent = parent;
         this.vars = {};
     }
@@ -16,6 +22,9 @@ class VariableFrame {
         if (this.vars[name]) {
             result = this.vars[name];
         } else if (this.parent) {
+            if (!this.parent.get) {
+                console.log('invalid parent (2):', this.parent === __ENV);
+            }
             result = this.parent.get(name, silent);
         }
         if (result === null && !silent) throw 'Error: a variable of name \''+name+'\' does not exist in this context';
@@ -251,3 +260,14 @@ return <%= returnValue %>;
 project.sprites.forEach(sprite => sprite.onFlagPressed());
 project.stage.onFlagPressed();
 <% } %>
+
+function callMaybeAsync(self, fn) {
+    let args = [].slice.call(arguments, 2);
+
+    // Wait for any args to resolve
+    let result = __ENV.SPromise.all(args);
+
+    result = result.then(args => fn.apply(self, args));
+
+    return result;
+}

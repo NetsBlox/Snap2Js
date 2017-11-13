@@ -13,19 +13,6 @@
     const boilerplate = fs.readFileSync(path.join(__dirname, 'src', 'basic.js.ejs'), 'utf8');
     const boilerplateTpl = _.template(boilerplate);
 
-    const omit = function(obj) {  // for debugging
-        var keys = Object.keys(obj);
-        var omitted = Array.prototype.slice.call(arguments, 1);
-        var newObj = {};
-
-        for (var i = keys.length; i--;) {
-            if (!omitted.includes(keys[i])) {
-                newObj[keys[i]] = obj[keys[i]];
-            }
-        }
-        return newObj;
-    };
-
     const parseSpriteScripts = model => {
         var asts = model.children.map(parseScript),
             eventHandlers = {},
@@ -46,6 +33,7 @@
     const createAstNode = (curr, next) => {
         if (typeof curr !== 'object') {
             return {
+                parent: null,
                 type: typeof curr,
                 value: curr
             };
@@ -59,6 +47,7 @@
 
         node = {
             id: null,
+            parent: null,
             type: null,
             inputs: null,
             next: next || null
@@ -96,21 +85,38 @@
         }
 
         node.type = type;
+
+        if (next) {
+            console.log(`setting parent of ${next.type} to ${node.type}`);
+            next.parent = node;
+        }
+        console.log('parsing children for', node.type);
         node.inputs = curr.children
             .map(child => {
-                var key = child.tag;
+                let key = child.tag;
+                let childNode = null;
 
                 if (key === 'script') {
-                    return parseScript(child);
+                    childNode = parseScript(child);
+                    childNode.parent = node;
+                    return childNode;
                 } else if (key === 'l') {
                     if (child.children.length === 1) {
-                        return createAstNode(child.children[0]);
+                        childNode = createAstNode(child.children[0]);
+                        childNode.parent = node;
+                        return childNode;
                     } else if (child.children.length) {
-                        return child.children.map(createAstNode);
+                        let children = child.children.map(createAstNode);
+                        children.forEach(child => child.parent = node);
+                        return children;
                     }
-                    return createAstNode(child.contents);
+                    childNode = createAstNode(child.contents);
+                    childNode.parent = node;
+                    return childNode;
                 }
-                return createAstNode(child);
+                childNode = createAstNode(child);
+                childNode.parent = node;
+                return childNode;
             });
 
         if (curr.contents) {
@@ -300,17 +306,25 @@
 
         // Add the execution code
         let block = element.children[2];
+        let fnNode = null;
+        if (block.tag === 'script') {
+            // TODO: wrap this in a function...
+            fnNode = parseScript(block);
+        } else {
+            fnNode = createAstNode(block);
+        }
         let inputEls = element.childNamed('inputs').children;
         let inputNodes = inputEls.map(item => createAstNode(item.contents));
         let lambda = {
             type: 'autolambda',
-            inputs: [createAstNode(block)]
+            inputs: [fnNode]
         }
         let node = {
             type: 'reifyScript',
             inputs: [lambda, {type: 'list', inputs: inputNodes}]
         };
         let body = `return ${Snap2Js.generateCode(node)}`;
+        console.log(body);
 
         // TODO: set the 'self' and '__CONTEXT' variables
         // TODO: move this code to the backend...
