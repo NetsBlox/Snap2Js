@@ -130,8 +130,6 @@ backend.doReport = function(node) {
     // Get the current callback name and call it!
     var value = this.generateCode(node.inputs[0]);
     let callback = getCallbackName(node);
-    console.log('>>', node);
-    console.log('DO REPORT', callback);
     if (!node.parent) throw 'no parent:' + node.type;
     // TODO: add support for inside custom block definition
 
@@ -524,7 +522,13 @@ backend.reifyPredicate = function(node) {
 //};
 
 backend.autolambda = function(node) {
-    var body = this.generateCode(node.inputs[0]);
+    let body = this.generateCode(node.inputs[0]);
+    let callback = getCallbackName(node);
+
+    if (callback) {
+        body = `${callback}(${body});`;
+    }
+
     return `return ${body};`;
 };
 
