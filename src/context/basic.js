@@ -151,7 +151,7 @@ context.doWearNextCostume = function() {
 };
 
 context.changeScale = function(value) {
-    this.size += value || 0
+    this.size += +value || 0
 };
 
 context.setScale = function(value) {
@@ -252,7 +252,6 @@ context.doRun = function(fn) {
 };
 
 context.reportJSFunction = function(args, body) {
-    console.log('creating fn', args);
     return Function.apply(
         null,
         args.concat([body])
