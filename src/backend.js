@@ -161,7 +161,11 @@ backend.evaluate = function(node) {
         argInputs = node.inputs[1] ? node.inputs[1].inputs : [],
         args = argInputs.map(this.generateCode);
 
-    return callFnWithArgs(node.type, fn, args);
+    if (args.length) {
+        return callFnWithArgs(node.type, fn, args);
+    } else {
+        return callFnWithArgs(node.type, fn);
+    }
 };
 
 backend.doCallCC = function(node) {

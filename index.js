@@ -96,12 +96,13 @@
 
                 if (key === 'script') {
                     childNode = parseScript(child);
-                    childNode.parent = node;
+                    if (childNode) childNode.parent = node;
+
                     return childNode;
                 } else if (key === 'l') {
                     if (child.children.length === 1) {
                         childNode = createAstNode(child.children[0]);
-                        childNode.parent = node;
+                        if (childNode) childNode.parent = node;
                         return childNode;
                     } else if (child.children.length) {
                         let children = child.children.map(createAstNode);
@@ -109,11 +110,11 @@
                         return children;
                     }
                     childNode = createAstNode(child.contents);
-                    childNode.parent = node;
+                    if (childNode) childNode.parent = node;
                     return childNode;
                 }
                 childNode = createAstNode(child);
-                childNode.parent = node;
+                if (childNode) childNode.parent = node;
                 return childNode;
             });
 

@@ -43,11 +43,11 @@ describe('variables', function() {
             });
 
             it('should contain "doSetVar"', function() {
-                assert(/doSetVar.call\([^'"]/.test(code));
+                assert(/\bdoSetVar\b/.test(code));
             });
 
             it('should contain "doChangeVar"', function() {
-                assert(/doChangeVar.call\([^'"]/.test(code));
+                assert(/\bdoChangeVar\b/.test(code));
             });
         });
 
