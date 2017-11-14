@@ -14,11 +14,11 @@ context.xPosition = function() {
 };
 
 context.setXPosition = function(value) {
-    this.xPosition = value || 0;
+    this.xPosition = +value || 0;
 };
 
 context.changeXPosition = function(value) {
-    this.xPosition += (value || 0);
+    this.xPosition += (+value || 0);
 };
 
 context.yPosition = function() {
@@ -26,16 +26,16 @@ context.yPosition = function() {
 };
 
 context.setYPosition = function(value) {
-    this.yPosition = value || 0;
+    this.yPosition = +value || 0;
 };
 
 context.changeYPosition = function(value) {
-    this.yPosition += (value || 0);
+    this.yPosition += (+value || 0);
 };
 
 context.gotoXY = function(x, y) {
-    this.xPosition = x;
-    this.yPosition = y;
+    this.xPosition = +x;
+    this.yPosition = +y;
 };
 
 context.forward = function(dist) {
@@ -43,27 +43,27 @@ context.forward = function(dist) {
         angle = degrees * Math.PI / 180,
         dx, dy;
 
-    dx = Math.cos(angle) * dist;
-    dy = Math.sin(angle) * dist;
+    dx = Math.cos(angle) * +dist;
+    dy = Math.sin(angle) * +dist;
 
     this.yPosition += dy;
     this.xPosition += dx;
 };
 
 context.turnLeft = function(value) {
-    this.direction -= (value || 0);
+    this.direction -= (+value || 0);
 };
 
 context.turn = function(value) {
-    this.direction += (value || 0);
+    this.direction += (+value || 0);
 };
 
 context.direction = function() {
-    return this.direction;
+    return +this.direction;
 };
 
 context.setHeading = function(dir) {
-    this.direction = dir || 0;
+    this.direction = +dir || 0;
 };
 
 ///////////////////// Control ///////////////////// 

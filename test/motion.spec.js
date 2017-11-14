@@ -4,7 +4,7 @@ describe('motion', function() {
         utils = require('./utils'),
         content;
 
-    describe('position', function() {
+    describe.only('position', function() {
         var bin,
             cxt,
             result;
