@@ -720,7 +720,7 @@ backend.bool = function(node) {
 
 backend.list = function(node) {
     var inputs = node.inputs.map(this.generateCode);
-    return `[${inputs.join(', ')}]`;
+    return `SPromise.all([${inputs.join(', ')}])`;
 };
 
 backend.getJSFromRPCStruct = function(node) {
