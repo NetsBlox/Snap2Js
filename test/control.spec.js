@@ -80,15 +80,18 @@ describe('control', function() {
 
     describe('forking', function() {
         it('should support forking', function(done) {
-            utils.compileAndRun('fork')
-                .then(list => {
-                    assert.equal(list[0], 2);
-                    assert.equal(list[1], 1);
-                })
-                .nodeify(done);
+            let cxt = snap2js.newContext();
+
+            cxt['bubble'] = () => {
+                iterCount++;
+            };
+            cxt['doThink'] = list => {
+                assert.equal(list[0], 2);
+                assert.equal(list[1], 1);
+                done();
+            };
+            bin = utils.getCompiledVersionOf('fork');
+            bin(cxt);
         });
     });
-
-    // Test:
-    //  - fork
 });

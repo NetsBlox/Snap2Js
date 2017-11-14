@@ -25,7 +25,7 @@ var callRawStatementWithArgs = function() {
     return callRawFnWithArgs.apply(null, arguments) + ';';
 };
 
-///////////////////// Motion ///////////////////// 
+///////////////////// Motion /////////////////////
 
 backend.turn =
 backend.turnLeft =
@@ -72,7 +72,7 @@ backend.bounceOffEdge = function(node) {
     return callStatementWithArgs(node.type);
 };
 
-///////////////////// Control ///////////////////// 
+///////////////////// Control /////////////////////
 backend.doWarp = function(node) {
     var body = this.generateCode(node.inputs[0]);
     return [
@@ -105,6 +105,7 @@ backend.doIf = function(node) {
         ifTrue = this.generateCode(node.inputs[1]);
     }
 
+    // TODO: Add support for conditional promises
     return [
         `if (${cond}) {`,
         indent(ifTrue),
@@ -117,13 +118,11 @@ backend.doIfElse = function(node) {
         ifTrue = this.generateCode(node.inputs[1]),
         ifFalse = this.generateCode(node.inputs[2]);
 
-    return [
-        `if (${cond}) {`,
-        indent(ifTrue),
-        `} else {`,
-        indent(ifFalse),
-        `}`
-    ].join('\n');
+    // wrap true/false bodies into function so they can be passed as callbacks
+    // TODO: Add test
+    ifTrue = `function() {\n${ifTrue}\n}`;
+    ifFalse = `function() {\n${ifFalse}\n}`;
+    return callStatementWithArgs(node.type, cond, ifTrue, ifFalse);
 };
 
 backend.doReport = function(node) {
@@ -197,6 +196,7 @@ backend.doRepeat = function(node) {
         recurse;
 
     recurse = callStatementWithArgs('doYield', `doLoop_${node.id}`, node.id);
+    // TODO: Add promise support
     return [
         `function doLoop_${node.id} (${node.id}) {`,
         indent(body),
@@ -227,25 +227,27 @@ backend.doForever = function(node) {
 backend.doUntil = function(node) {
     var cond = this.generateCode(node.inputs[0]),
         body = this.generateCode(node.inputs[1]),
+        exitBody = node.next ? this.generateCode(node.next) : '',
         iterVar = node.id,
         recurse;
 
+    // Convert the doUntil to a recursive doIfElse
     recurse = callStatementWithArgs('doYield', `doLoop_${node.id}`, node.id);
+
+    let execBody = `function() {\n${body}\n${recurse}}`;
+    let exitLoop = `function() {\n${exitBody}}`;
+
+    loopControl = callStatementWithArgs('doIfElse', cond, exitLoop, execBody);
     return [
         `function doLoop_${node.id} (${node.id}) {`,
-        `if (!${cond}) {`,
-        indent(body),
-        indent(recurse),
-        `} else {`,
-        indent(node.next ? this.generateCode(node.next) : ''),
-        `}`,
+        indent(loopControl),
         `}`,
          `doLoop_${node.id}();`
     ].join('\n');
 };
 backend.doUntil.async = true;
 
-///////////////////// Looks ///////////////////// 
+///////////////////// Looks /////////////////////
 backend.doSwitchToCostume = function(node) {
     var costume = this.generateCode(node.inputs[0]);
     return callStatementWithArgs(node.type, costume);
@@ -324,7 +326,7 @@ backend.doThink = function(node) {
     return callStatementWithArgs(node.type, msg);
 };
 
-///////////////////// Sensing ///////////////////// 
+///////////////////// Sensing /////////////////////
 backend.doAsk = function(node) {
     var msg = this.generateCode(node.inputs[0]);
     return callStatementWithArgs(node.type, msg);
@@ -387,7 +389,7 @@ backend.reportDistanceTo = function(node) {
     return callFnWithArgs(node.type, obj);
 };
 
-///////////////////// Sounds ///////////////////// 
+///////////////////// Sounds /////////////////////
 backend.doSetTempo =
 backend.doChangeTempo =
 backend.playSound =
@@ -415,7 +417,7 @@ backend.getTempo = function(node) {
     return callFnWithArgs(node.type);
 };
 
-///////////////////// Operators ///////////////////// 
+///////////////////// Operators /////////////////////
 backend.reportModulus =
 backend.reportQuotient =
 backend.reportProduct =
@@ -458,7 +460,7 @@ backend.reportJoinWords = function(node) {
 backend.reportNot =
 backend.reportStringSize = function(node) {
     var str = this.generateCode(node.inputs[0]);
-    
+
     return callFnWithArgs(node.type, str);
 };
 
@@ -546,7 +548,7 @@ backend.doRun = function(node) {
     return callStatementWithArgs(node.type, fn);
 };
 
-///////////////////// Pen ///////////////////// 
+///////////////////// Pen /////////////////////
 backend.up =
 backend.down =
 backend.doStamp =
@@ -578,7 +580,7 @@ backend.changeSize = function(node) {
     return callStatementWithArgs(node.type, size);
 };
 
-///////////////////// Variables ///////////////////// 
+///////////////////// Variables /////////////////////
 backend.doChangeVar =
 backend.doSetVar = function(node) {
     var name = this.generateCode(node.inputs[0]);
@@ -698,7 +700,7 @@ backend.evaluateCustomBlock = function(node) {
                 };
             }
             return input;
-            
+
         })
         .map(this.generateCode);
 
@@ -709,7 +711,7 @@ backend.evaluateCustomBlock = function(node) {
     }
 };
 
-///////////////////// Primitives ///////////////////// 
+///////////////////// Primitives /////////////////////
 backend.string = function(node) {
     return `\`${node.value.replace(/'/g, "\\'")}\``;
 };
