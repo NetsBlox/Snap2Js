@@ -16,7 +16,7 @@ describe('concurrency', function() {
         });
 
         it('should contain "doWarp"', function() {
-            assert(/doWarp.call\([^'"]/.test(code));
+            assert(/\bdoWarp\b/.test(code));
         });
 
         it('should not contain "for"', function() {
