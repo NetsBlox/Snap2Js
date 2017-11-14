@@ -252,6 +252,7 @@ context.doRun = function(fn) {
 };
 
 context.reportJSFunction = function(args, body) {
+    console.log('creating fn', args);
     return Function.apply(
         null,
         args.concat([body])
