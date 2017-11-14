@@ -130,7 +130,6 @@ backend.doReport = function(node) {
     var value = this.generateCode(node.inputs[0]);
     let callback = getCallbackName(node);
     if (!node.parent) throw 'no parent:' + node.type;
-    // TODO: add support for inside custom block definition
 
     if (callback) {
         return 'return ' + callRawStatementWithArgs(callback, value);
@@ -485,11 +484,10 @@ let nodeIdCounter = 1;
 // Get the name of the callback fn of the closest enclosing fn definition
 const getCallbackName = node => {
     if (TYPES_WITH_CALLBACKS.includes(node.type)) {
-        let nodeId = node.id;
-        if (!nodeId) {
-            nodeId = `anon_item__${nodeIdCounter++}`;
+        if (!node.id) {
+            node.id = `anon_item__${nodeIdCounter++}`;
         }
-        return `callback${nodeId.replace(/-/g, '_')}`;
+        return `callback${node.id.replace(/-/g, '_')}`;
     }
 
     if (node.parent) return getCallbackName(node.parent);

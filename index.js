@@ -308,22 +308,33 @@
         // Add the execution code
         let block = element.children[2];
         let fnNode = null;
+        let node = null;
         if (block.tag === 'script') {
-            // TODO: wrap this in a function...
             fnNode = parseScript(block);
+            let inputEls = element.childNamed('inputs').children;
+            let inputNodes = inputEls.map(item => createAstNode(item.contents));
+            node = {
+                type: 'reifyScript',
+                inputs: [fnNode, {type: 'list', inputs: inputNodes}]
+            };
+            node.inputs.forEach(input => input.parent = node);
         } else {
             fnNode = createAstNode(block);
+            let inputEls = element.childNamed('inputs').children;
+            let inputNodes = inputEls.map(item => createAstNode(item.contents));
+            // use autolambda (auto-returns result) if not a script
+            let lambda = {
+                type: 'autolambda',
+                inputs: [fnNode]
+            }
+            node = {
+                type: 'reifyScript',
+                inputs: [lambda, {type: 'list', inputs: inputNodes}]
+            };
         }
-        let inputEls = element.childNamed('inputs').children;
-        let inputNodes = inputEls.map(item => createAstNode(item.contents));
-        let lambda = {
-            type: 'autolambda',
-            inputs: [fnNode]
-        }
-        let node = {
-            type: 'reifyScript',
-            inputs: [lambda, {type: 'list', inputs: inputNodes}]
-        };
+
+        node.inputs.forEach(input => input.parent = node);
+
         let body = `return ${Snap2Js.generateCode(node)}`;
 
         // TODO: set the 'self' and '__CONTEXT' variables

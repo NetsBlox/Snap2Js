@@ -73,16 +73,13 @@ describe('functions', function() {
         before(() => content = utils.getContextXml('build-list'));
 
         it(`should return list 1-100`, function(done) {
-            let fn = snap2js.compile(content);
+            let factory = snap2js.compile(content);
             let env = snap2js.newContext();
-            fn(env).call(null);
-
-            env.doReport = result => {
-                console.log('Finished!');
-                console.log(result);
-                assert.equal(_.range(1, 101), result);
+            let fn = factory(env);
+            fn.call(null, result => {
+                result.forEach((n, i) => assert.equal(n, i+1));
                 done();
-            };
+            });
         });
 
     });
