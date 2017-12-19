@@ -442,6 +442,7 @@
     };
 
     Snap2Js.generateCode = function(root) {
+        if (!root) return `SPromise.resolve()`;
         if (!Snap2Js._backend[root.type]) {
             throw `Unsupported node type: ${root.type}`;
         }

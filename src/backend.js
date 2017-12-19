@@ -305,32 +305,26 @@ backend.hide = function(node) {
 backend.doSayFor = function(node) {
     var time = this.generateCode(node.inputs[1]),
         msg = this.generateCode(node.inputs[0]),
-        afterFn = `afterSay_${node.id}`,
-        body = node.next ? this.generateCode(node.next) : '';
+        afterFn = `afterSay_${node.id}`;
 
     return [
-        `function ${afterFn} () {`,
-        indent(body),
-        `}`,
-        callStatementWithArgs(node.type, msg, time, afterFn)
+        `new SPromise(${afterFn} => {`,
+        callStatementWithArgs(node.type, msg, time, afterFn),
+        `})`
     ].join('\n');
 };
-backend.doSayFor.async = true;
 
 backend.doThinkFor = function(node) {
     var time = this.generateCode(node.inputs[1]),
         msg = this.generateCode(node.inputs[0]),
-        afterFn = `afterThink_${node.id}`,
-        body = node.next ? this.generateCode(node.next) : '';
+        afterFn = `afterThink_${node.id}`;
 
     return [
-        `function ${afterFn} () {`,
-        indent(body),
-        `}`,
-        callStatementWithArgs(node.type, msg, time, afterFn)
+        `new SPromise(${afterFn} => {`,
+        callStatementWithArgs(node.type, msg, time, afterFn),
+        `})`
     ].join('\n');
 };
-backend.doThinkFor.async = true;
 
 backend.bubble = function(node) {
     var inputs = this.generateCode(node.inputs[0]);
