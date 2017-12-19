@@ -94,4 +94,35 @@ describe('control', function() {
             bin(cxt);
         });
     });
+
+    describe('doIf', function() {
+
+        describe('repeat loop', function() {
+            it('should support async conditions (true)', function(done) {
+                utils.compileAndRun('do-if-true-async')
+                    .then(result => assert.equal(result, true))
+                    .nodeify(done);
+            });
+
+            it('should support async conditions (false)', function(done) {
+                utils.compileAndRun('do-if-false-async')
+                    .then(result => assert.equal(result, false))
+                    .nodeify(done);
+            });
+        });
+
+        describe('repeatUntil', function() {
+            it('should support async conditions (true)', function(done) {
+                utils.compileAndRun('do-if-true-async-repeat-until')
+                    .then(result => assert.equal(result, true))
+                    .nodeify(done);
+            });
+
+            it('should support async conditions (false)', function(done) {
+                utils.compileAndRun('do-if-false-async-repeat-until')
+                    .then(result => assert.equal(result, false))
+                    .nodeify(done);
+            });
+        });
+    });
 });

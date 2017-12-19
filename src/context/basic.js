@@ -67,6 +67,12 @@ context.setHeading = function(dir) {
 };
 
 ///////////////////// Control ///////////////////// 
+context.doIf = function(cond, ifTrue) {
+    if (cond) {
+        return ifTrue();
+    }
+};
+
 context.doIfElse = function(cond, ifTrue, ifFalse) {
     if (cond) {
         return ifTrue();
@@ -76,7 +82,6 @@ context.doIfElse = function(cond, ifTrue, ifFalse) {
 };
 
 context.doReport = function(value) {
-    console.log('calling doReport with', value);
     return value;
 };
 

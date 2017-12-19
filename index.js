@@ -448,7 +448,7 @@
 
         var code = Snap2Js._backend[root.type].call(Snap2Js, root);
         if (!Snap2Js._backend[root.type].async && root.next) {
-            code += ';\n' + Snap2Js.generateCode(root.next);
+            code += `\n.then(() => ${Snap2Js.generateCode(root.next)})`;
         }
         return code.replace(/\);/g, ');\n');
     };
