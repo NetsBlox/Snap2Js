@@ -354,9 +354,12 @@
         this.state.returnValue = `(${fn.toString()})()`;
     };
 
-    Snap2Js.transpile = function(xml) {
+    Snap2Js.transpile = function(xml, pretty=false) {
         let fn = Snap2Js.compile(xml)
-        let code = prettier.format(fn.toString());
+        let code = fn.toString();
+        if (pretty) {
+            code = prettier.format(fn.toString());
+        }
         return code;
     };
 
