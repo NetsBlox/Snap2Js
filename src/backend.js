@@ -25,6 +25,8 @@ var callRawStatementWithArgs = function() {
     return callRawFnWithArgs.apply(null, arguments) + '\n';
 };
 
+const newPromise = (value='') => `SPromise.resolve(${value})`;
+
 ///////////////////// Motion /////////////////////
 
 backend.turn =
@@ -74,28 +76,26 @@ backend.bounceOffEdge = function(node) {
 
 ///////////////////// Control /////////////////////
 backend.doWarp = function(node) {
-    var body = this.generateCode(node.inputs[0]);
-    return [
-        callStatementWithArgs(node.type, true),
-        body,
-        callStatementWithArgs(node.type, false)
-    ].join('\n');
+    let body = this.generateCode(node.inputs[0]);
+    let afterFn = `callback_${node.id}_${Date.now()}`;
+    return `new SPromise(${afterFn} => ${callStatementWithArgs(node.type, true)}
+        .then(() => ${body})
+        .then(() => ${callStatementWithArgs(node.type, false)})
+        .then(() => ${afterFn}())
+    )`;
 
 };
 
 backend.doWait = function(node) {
     var time = this.generateCode(node.inputs[0]),
-        afterFn = `afterWait_${node.id}`,
-        body = node.next ? this.generateCode(node.next) : '';
+        afterFn = `afterWait_${node.id}`;
 
     return [
-        `function ${afterFn} () {`,
-        indent(body),
-        `}`,
-        callStatementWithArgs(node.type, time, afterFn)
+        `new SPromise(${afterFn} => {`,
+        callStatementWithArgs(node.type, time, afterFn),
+        `})`
     ].join('\n');
 };
-backend.doWait.async = true;
 
 backend.doIf = function(node) {
     var cond = this.generateCode(node.inputs[0]),
@@ -185,17 +185,18 @@ backend.fork = function(node) {
 };
 
 backend.doRepeat = function(node) {
-    var count = this.generateCode(node.inputs[0]),
+    var count = node.inputs[0] ? this.generateCode(node.inputs[0]) : 0,
         body = this.generateCode(node.inputs[1]),
+        next = this.generateCode(node.next),
         iterVar = node.id,
         recurse;
 
     recurse = callStatementWithArgs('doYield', `doLoop_${node.id}`, node.id);
 
     let cond = `${node.id}-- > 0`;
-    let doLoop = `() => {${body};\n${recurse}}`;
+    let doLoop = `() => {${body}.then(() => ${recurse})}`;
     let callback = `resolve_${node.id}_${Date.now()}`;
-    let doElse = `() => {${node.next ? this.generateCode(node.next) : ''};\n${callback}();\n}`;
+    let doElse = `() => {${next}.then(() => ${callback}());\n}`;
     loopControl = callStatementWithArgs('doIfElse', cond, doLoop, doElse);
 
     return [
@@ -211,13 +212,18 @@ backend.doRepeat.async = true;
 
 backend.doForever = function(node) {
     var recurse = callStatementWithArgs('doYield', `doForever_${node.id}`),
-        body = this.generateCode(node.inputs[0]);
+        body = recurse;
+
+    if (node.inputs[0]) {
+        body = `${this.generateCode(node.inputs[0])}.then(() => ${recurse})`;
+    } else {
+        body = recurse;
+    }
 
     return [
         `new SPromise(() => {`,
         `function doForever_${node.id} () {`,
         indent(body),
-        indent(recurse),
         `}`,
          `doForever_${node.id}();`,
         `})`
@@ -225,9 +231,9 @@ backend.doForever = function(node) {
 };
 
 backend.doUntil = function(node) {
-    var cond = this.generateCode(node.inputs[0]),
-        body = this.generateCode(node.inputs[1]),
-        exitBody = node.next ? this.generateCode(node.next) : '',
+    var cond = newPromise(false),
+        body = newPromise(),
+        exitBody = node.next ? this.generateCode(node.next) : newPromise(),
         callback = `resolve_${node.id}_${Date.now()}`,
         iterVar = node.id,
         recurse;
@@ -235,8 +241,15 @@ backend.doUntil = function(node) {
     // Convert the doUntil to a recursive doIfElse
     recurse = callStatementWithArgs('doYield', `doLoop_${node.id}`);
 
-    let execBody = `function() {\n${body};\n${recurse}}`;
-    let exitLoop = `function() {\n${exitBody};\n${callback}();\n}`;
+    if (node.inputs[1]) {
+        body = this.generateCode(node.inputs[1]);
+    }
+    if (node.inputs[0]) {
+        cond = this.generateCode(node.inputs[0]);
+    }
+
+    let execBody = `function() {\n${body}.then(() => ${recurse})}`;
+    let exitLoop = `function() {\n${exitBody}.then(() => \n${callback}());\n}`;
 
     loopControl = callStatementWithArgs('doIfElse', cond, exitLoop, execBody);
     return [
