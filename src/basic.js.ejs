@@ -244,15 +244,6 @@ project.sprites.push(sprite);
 <% }) %>
 project.timerStart = Date.now();
 __ENV.__start(project);
-<% // This only executes if there is not context...? %>
-<% // This should be the default fn to call when this runs... %>
-<% // or should this  %>
-<% if (returnValue) { %>
-return <%= returnValue %>;
-<% } else { %>
-project.sprites.forEach(sprite => sprite.onFlagPressed());
-project.stage.onFlagPressed();
-<% } %>
 
 function callMaybeAsync(self, fn) {
     let args = [].slice.call(arguments, 2);
@@ -264,3 +255,13 @@ function callMaybeAsync(self, fn) {
 
     return result;
 }
+
+<% // This only executes if there is not context...? %>
+<% // This should be the default fn to call when this runs... %>
+<% // or should this  %>
+<% if (returnValue) { %>
+return <%= returnValue %>;
+<% } else { %>
+project.sprites.forEach(sprite => sprite.onFlagPressed());
+project.stage.onFlagPressed();
+<% } %>
