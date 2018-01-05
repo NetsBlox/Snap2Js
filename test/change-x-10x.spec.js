@@ -16,7 +16,7 @@ describe('change x 10x', function() {
         });
 
         it('should contain "setXPosition"', function() {
-            assert(/setXPosition.call\([^'"]/.test(code));
+            assert(/\bsetXPosition\b/.test(code));
         });
 
         it('should not contain "for"', function() {
@@ -31,15 +31,14 @@ describe('change x 10x', function() {
 
         before(function() {
             cxt = snap2js.newContext();
-            cxt['setXPosition'] = v => xVal = v;
-            cxt['changeXPosition'] = v => xVal += v;
+            cxt['setXPosition'] = v => xVal = (+v);
 
             bin = snap2js.compile(content);
         });
 
         it('should finish with x == 100', function(done) {
             cxt['changeXPosition'] = v => {
-                xVal += v;
+                xVal += +v;
                 if (xVal === 100) done();
             };
             bin(cxt);

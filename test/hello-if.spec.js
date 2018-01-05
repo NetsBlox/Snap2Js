@@ -16,7 +16,7 @@ describe('hello if-else', function() {
         });
 
         it('should contain "bubble" block selector w/ nested fn', function() {
-            assert(/bubble.call\([^'"]/.test(code));
+            assert(/\bbubble\b/.test(code));
         });
 
     });

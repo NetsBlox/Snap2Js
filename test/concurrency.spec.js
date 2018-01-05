@@ -16,7 +16,7 @@ describe('concurrency', function() {
         });
 
         it('should contain "doWarp"', function() {
-            assert(/doWarp.call\([^'"]/.test(code));
+            assert(/\bdoWarp\b/.test(code));
         });
 
         it('should not contain "for"', function() {
@@ -31,14 +31,17 @@ describe('concurrency', function() {
             totalOrder;
 
         before(function(done) {
+            this.timeout(5000);
             cxt = snap2js.newContext();
-            cxt['bubble'] = val => values.push(val);
+            cxt['bubble'] = val => {
+                values.push(val);
+                if (values.length === 2) {
+                    totalOrder = values[1];
+                    done();
+                }
+            };
             bin = snap2js.compile(content);
             bin(cxt);
-            setTimeout(function() {
-                totalOrder = values[1];
-                done();
-            }, 1500);
         });
 
         // Things to check:

@@ -43,11 +43,11 @@ describe('variables', function() {
             });
 
             it('should contain "doSetVar"', function() {
-                assert(/doSetVar.call\([^'"]/.test(code));
+                assert(/\bdoSetVar\b/.test(code));
             });
 
             it('should contain "doChangeVar"', function() {
-                assert(/doChangeVar.call\([^'"]/.test(code));
+                assert(/\bdoChangeVar\b/.test(code));
             });
         });
 
@@ -76,11 +76,15 @@ describe('variables', function() {
     describe('nested lists', function() {
         var result;
 
-        before(function() {
+        before(done => {
             content = utils.getProjectXml('nested-lists');
             var cxt = snap2js.newContext();
             var bin = snap2js.compile(content);
-            cxt['doReport'] = val => result = val;
+            cxt['bubble'] = val => {
+                console.log('value', val);
+                result = val;
+                done();
+            };
             bin(cxt);
         });
 

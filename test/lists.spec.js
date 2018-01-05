@@ -16,11 +16,11 @@ describe('lists', function() {
         });
 
         it('should contain "reportListLength"', function() {
-            assert(/reportListLength.call\([^'"]/.test(code));
+            assert(/\breportListLength\b/.test(code));
         });
 
         it('should contain doAddToList', function() {
-            assert(/doAddToList.call\([^'"]/.test(code));
+            assert(/\bdoAddToList\b/.test(code));
         });
     });
 
