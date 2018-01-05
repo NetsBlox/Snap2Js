@@ -431,9 +431,11 @@ backend.reportEquals = function(node) {
 
 backend.reportJoinWords = function(node) {
     var listInput = node.inputs[0],
-        inputs = listInput.inputs.map(this.generateCode);
+        inputs = listInput.inputs.map(this.generateCode),
+        args = inputs.slice();
 
-    return `[${inputs.join(',')}].join('')`;
+    args.unshift(node.type);
+    return callFnWithArgs.apply(this, args);
 };
 
 backend.reportNot =

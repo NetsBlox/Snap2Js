@@ -440,6 +440,13 @@ context.doAddToList = function(value, name, context) {
     }
 };
 
+context.reportJoinWords = function() {
+    var args = Array.prototype.slice.call(arguments);
+    args.pop();  // remove the context
+
+    return args.join('');
+};
+
 context.evaluateCustomBlock = function(name, fnVar) {
     var args = Array.prototype.slice.call(arguments, 2),
         fn = fnVar.value;
