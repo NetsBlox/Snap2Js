@@ -454,6 +454,13 @@ context.doAddToList = function(value, name, context) {
     }
 };
 
+context.reportJoinWords = function() {
+    var args = Array.prototype.slice.call(arguments);
+    args.pop();  // remove the context
+
+    return args.join('');
+};
+
 context.evaluate = function(fn) {
     var args = Array.prototype.slice.call(arguments, 1);
     return new SPromise(resolve => {
