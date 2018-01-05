@@ -80,15 +80,49 @@ describe('control', function() {
 
     describe('forking', function() {
         it('should support forking', function(done) {
-            utils.compileAndRun('fork')
-                .then(list => {
-                    assert.equal(list[0], 2);
-                    assert.equal(list[1], 1);
-                })
-                .nodeify(done);
+            let cxt = snap2js.newContext();
+
+            cxt['bubble'] = () => {
+                iterCount++;
+            };
+            cxt['doThink'] = list => {
+                assert.equal(list[0], 2);
+                assert.equal(list[1], 1);
+                done();
+            };
+            bin = utils.getCompiledVersionOf('fork');
+            bin(cxt);
         });
     });
 
-    // Test:
-    //  - fork
+    describe('doIf', function() {
+
+        describe('repeat loop', function() {
+            it('should support async conditions (true)', function(done) {
+                utils.compileAndRun('do-if-true-async')
+                    .then(result => assert.equal(result, true))
+                    .nodeify(done);
+            });
+
+            it('should support async conditions (false)', function(done) {
+                utils.compileAndRun('do-if-false-async')
+                    .then(result => assert.equal(result, false))
+                    .nodeify(done);
+            });
+        });
+
+        describe('repeatUntil', function() {
+            it('should support async conditions (true)', function(done) {
+                utils.compileAndRun('do-if-true-async-repeat-until')
+                    .then(result => assert.equal(result, true))
+                    .nodeify(done);
+            });
+
+            it('should support async conditions (false)', function(done) {
+                utils.compileAndRun('do-if-false-async-repeat-until')
+                    .then(result => assert.equal(result, false))
+                    .nodeify(done);
+            });
+        });
+    });
 });

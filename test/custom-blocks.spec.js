@@ -29,8 +29,8 @@ describe('custom blocks', function() {
             ['list', ['1', '2']],
             ['number', 3],
             ['cmd ring', val => typeof val === 'function'],
-            ['reporter ring', val => val(3) === 4],
-            ['predicate ring', val => val(false) === true],
+            ['reporter ring', {in: 3, out: 4}],
+            ['predicate ring', {in: false, out: true}],
             ['cslot', val => typeof val === 'function'],
             ['any input', 'asdf'],
             ['boolUE', false],
@@ -38,16 +38,25 @@ describe('custom blocks', function() {
         ].forEach((pair, index) => {
             let [type, value] = pair;
 
-            it(`should evaluate ${type}`, function() {
+            it(`should evaluate ${type}`, function(done) {
                 if (value instanceof Array) {
                     value.forEach((el, i) => {
                         assert.equal(result[index][i], el);
                     });
                 } else if (value instanceof Function) {
                     assert(value(result[index]));
+                } else if (value instanceof Object) {
+                    fn = result[index];
+                    return fn(value.in, promise => {
+                        promise.then(output => {
+                            assert.equal(output, value.out);
+                            done();
+                        });
+                    });
                 } else {
                     assert.equal(result[index], value);
                 }
+                done();
             });
         });
 

@@ -1,5 +1,6 @@
 const base = require('./nop');
 const clone = require('../utils').clone;
+const SPromise = require('synchronous-promise').SynchronousPromise;
 
 const WARP_VAR = '__isAtomic';
 const isString = val => typeof val === 'string';
@@ -13,11 +14,11 @@ context.xPosition = function() {
 };
 
 context.setXPosition = function(value) {
-    this.xPosition = value || 0;
+    this.xPosition = +value || 0;
 };
 
 context.changeXPosition = function(value) {
-    this.xPosition += (value || 0);
+    this.xPosition += (+value || 0);
 };
 
 context.yPosition = function() {
@@ -25,16 +26,16 @@ context.yPosition = function() {
 };
 
 context.setYPosition = function(value) {
-    this.yPosition = value || 0;
+    this.yPosition = +value || 0;
 };
 
 context.changeYPosition = function(value) {
-    this.yPosition += (value || 0);
+    this.yPosition += (+value || 0);
 };
 
 context.gotoXY = function(x, y) {
-    this.xPosition = x;
-    this.yPosition = y;
+    this.xPosition = +x;
+    this.yPosition = +y;
 };
 
 context.forward = function(dist) {
@@ -42,32 +43,45 @@ context.forward = function(dist) {
         angle = degrees * Math.PI / 180,
         dx, dy;
 
-    dx = Math.cos(angle) * dist;
-    dy = Math.sin(angle) * dist;
+    dx = Math.cos(angle) * +dist;
+    dy = Math.sin(angle) * +dist;
 
     this.yPosition += dy;
     this.xPosition += dx;
 };
 
 context.turnLeft = function(value) {
-    this.direction -= (value || 0);
+    this.direction -= (+value || 0);
 };
 
 context.turn = function(value) {
-    this.direction += (value || 0);
+    this.direction += (+value || 0);
 };
 
 context.direction = function() {
-    return this.direction;
+    return +this.direction;
 };
 
 context.setHeading = function(dir) {
-    this.direction = dir || 0;
+    this.direction = +dir || 0;
 };
 
 ///////////////////// Control ///////////////////// 
+context.doIf = function(cond, ifTrue) {
+    if (cond) {
+        return ifTrue();
+    }
+};
+
+context.doIfElse = function(cond, ifTrue, ifFalse) {
+    if (cond) {
+        return ifTrue();
+    } else {
+        return ifFalse();
+    }
+};
+
 context.doReport = function(value) {
-    console.log('calling doReport with', value);
     return value;
 };
 
@@ -142,7 +156,7 @@ context.doWearNextCostume = function() {
 };
 
 context.changeScale = function(value) {
-    this.size += value || 0
+    this.size += +value || 0
 };
 
 context.setScale = function(value) {
@@ -286,7 +300,7 @@ context.reportDifference = function (left, right) {
 };
 
 context.reportSum = function(left, right) {
-    return left + right;
+    return (+left) + (+right);
 };
 
 context.reportGreaterThan = function(a, b) {
@@ -447,11 +461,26 @@ context.reportJoinWords = function() {
     return args.join('');
 };
 
+context.evaluate = function(fn) {
+    var args = Array.prototype.slice.call(arguments, 1);
+    return new SPromise(resolve => {
+        let cxt = args.pop();
+        args.push(resolve);
+        args.push(cxt);
+        return fn.apply(this, args);
+    });
+};
+
 context.evaluateCustomBlock = function(name, fnVar) {
     var args = Array.prototype.slice.call(arguments, 2),
         fn = fnVar.value;
 
-    return fn.apply(this, args);
+    return new SPromise(resolve => {
+        let cxt = args.pop();
+        args.push(resolve);
+        args.push(cxt);
+        return fn.apply(this, args);
+    });
 };
 
 module.exports = context;

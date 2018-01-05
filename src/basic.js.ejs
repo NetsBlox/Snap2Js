@@ -1,3 +1,5 @@
+const SPromise = __ENV.SPromise;
+
 class Variable {
     constructor(name, value) {
         this.name = name;
@@ -242,6 +244,18 @@ project.sprites.push(sprite);
 <% }) %>
 project.timerStart = Date.now();
 __ENV.__start(project);
+
+function callMaybeAsync(self, fn) {
+    let args = [].slice.call(arguments, 2);
+
+    // Wait for any args to resolve
+    let result = __ENV.SPromise.all(args);
+
+    result = result.then(args => fn.apply(self, args));
+
+    return result;
+}
+
 <% // This only executes if there is not context...? %>
 <% // This should be the default fn to call when this runs... %>
 <% // or should this  %>
