@@ -467,13 +467,15 @@
     Snap2Js.setBackend(DefaultBackend);
 
     Snap2Js.CONTEXT = {};
-    Snap2Js._contexts = {};
-
     Snap2Js.CONTEXT.NOP = 'nop';
     Snap2Js.CONTEXT.DEFAULT = 'basic';
+
+    Snap2Js._contexts = {};
+
     Snap2Js._contexts.basic = DefaultContext;
     Snap2Js._contexts.nop = require('./src/context/nop');
 
+    Snap2Js.addContext = (type, context) => Snap2Js._contexts[type] = context;
     Snap2Js.newContext = type => _.cloneDeep(Snap2Js._contexts[type || Snap2Js.CONTEXT.DEFAULT]);
     Snap2Js.resetState();
 
