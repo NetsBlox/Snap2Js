@@ -2,30 +2,13 @@
 const utils = require('./utils');
 const indent = utils.indent;
 const CALLER = '__SELF';
-var backend = {};
+const callRawFnWithArgs = require('./backend-helpers').callRawFnWithArgs;
+const callFnWithArgs = require('./backend-helpers').callFnWithArgs;
+const callStatementWithArgs = require('./backend-helpers').callStatementWithArgs;
+const callRawStatementWithArgs = require('./backend-helpers').callRawStatementWithArgs;
+const newPromise = require('./backend-helpers').newPromise;
 
-var callRawFnWithArgs = function(fn) {
-    var inputs = Array.prototype.slice.call(arguments, 1);
-    if (inputs.length) {
-        return `callMaybeAsync(self, ${fn}, ${inputs.join(', ')}, __CONTEXT)`;
-    }
-    return `callMaybeAsync(self, ${fn}, __CONTEXT)`;
-};
-
-var callFnWithArgs = function(fn) {
-    arguments[0] = `__ENV.${fn}`;
-    return callRawFnWithArgs.apply(null, arguments);
-};
-
-var callStatementWithArgs = function() {
-    return callFnWithArgs.apply(null, arguments) + '\n';
-};
-
-var callRawStatementWithArgs = function() {
-    return callRawFnWithArgs.apply(null, arguments) + '\n';
-};
-
-const newPromise = (value='') => `SPromise.resolve(${value})`;
+const backend = {};
 
 ///////////////////// Motion /////////////////////
 
