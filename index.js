@@ -13,13 +13,13 @@
     const boilerplate = fs.readFileSync(path.join(__dirname, 'src', 'basic.js.ejs'), 'utf8');
     const boilerplateTpl = _.template(boilerplate);
 
-    const parseSpriteScripts = model => {
-        var asts = model.children.map(parseScript),
+    Snap2Js.parseSpriteScripts = function(model) {
+        var asts = model.children.map(child => this.parseScript(child)),
             eventHandlers = {},
             code;
 
         for (var i = asts.length; i--;) {
-            code = Snap2Js.generateScriptCode(asts[i]);
+            code = this.generateScriptCode(asts[i]);
             if (code) {
                 if (!eventHandlers[asts[i].type]) {
                     eventHandlers[asts[i].type] = [];
@@ -30,7 +30,7 @@
         return eventHandlers;
     };
 
-    const createAstNode = (curr, next) => {
+    Snap2Js.createAstNode = function(curr, next) {
         if (typeof curr !== 'object') {
             return {
                 parent: null,
@@ -40,7 +40,7 @@
         }
 
         if (curr.tag === 'color' || curr.tag === 'option')
-            return createAstNode(curr.contents)
+            return this.createAstNode(curr.contents)
 
         var node,
             type;
@@ -65,7 +65,7 @@
                 let receiver = lastChild.children[0];
                 curr.children.pop();
                 if (receiver) {
-                    Snap2Js.parse(receiver);
+                    this.parse(receiver);
                 }
             }
         } else if (!curr.attributes) {
@@ -95,25 +95,25 @@
                 let childNode = null;
 
                 if (key === 'script') {
-                    childNode = parseScript(child);
+                    childNode = this.parseScript(child);
                     if (childNode) childNode.parent = node;
 
                     return childNode;
                 } else if (key === 'l') {
                     if (child.children.length === 1) {
-                        childNode = createAstNode(child.children[0]);
+                        childNode = this.createAstNode(child.children[0]);
                         if (childNode) childNode.parent = node;
                         return childNode;
                     } else if (child.children.length) {
-                        let children = child.children.map(createAstNode);
+                        let children = child.children.map(child => this.createAstNode(child));
                         children.forEach(child => child.parent = node);
                         return children;
                     }
-                    childNode = createAstNode(child.contents);
+                    childNode = this.createAstNode(child.contents);
                     if (childNode) childNode.parent = node;
                     return childNode;
                 }
-                childNode = createAstNode(child);
+                childNode = this.createAstNode(child);
                 if (childNode) childNode.parent = node;
                 return childNode;
             });
@@ -124,13 +124,13 @@
         return node;
     };
 
-    const parseScript = script => {
+    Snap2Js.parseScript = function(script) {
         var rootNode,
             blocks = script.children,
             last;
 
         for (var i = blocks.length; i--;) {
-            last = createAstNode(blocks[i], last);
+            last = this.createAstNode(blocks[i], last);
         }
         return last;
     };
@@ -174,8 +174,8 @@
             id: model.attributes.collabId,
             name: model.attributes.name,
             variables: parseInitialVariables(model.childNamed('variables').children),
-            scripts: parseSpriteScripts(model.childNamed('scripts')),
-            customBlocks: blocks.map(Snap2Js.parseBlockDefinition),
+            scripts: this.parseSpriteScripts(model.childNamed('scripts')),
+            customBlocks: blocks.map(this.parseBlockDefinition),
             position: position,
             draggable: model.attributes.draggable === 'true',
             rotation: model.attributes.rotation,
@@ -189,8 +189,8 @@
         let blocks = model.childNamed('blocks').children;
 
         return {
-            customBlocks: blocks.map(Snap2Js.parseBlockDefinition),
-            scripts: parseSpriteScripts(model.childNamed('scripts')),
+            customBlocks: blocks.map(this.parseBlockDefinition),
+            scripts: this.parseSpriteScripts(model.childNamed('scripts')),
             width: model.attributes.width,
             height: model.attributes.height,
             name: model.attributes.name
@@ -200,8 +200,8 @@
     const DEFAULT_BLOCK_FN_TYPE = 'reifyScript';
     Snap2Js.parseBlockDefinition = function(block) {
         var spec = block.attributes.s,
-            inputs = utils.inputNames(spec).map(createAstNode),
-            ast = parseScript(block.childNamed('script')),
+            inputs = utils.inputNames(spec).map(input => this.createAstNode(input)),
+            ast = this.parseScript(block.childNamed('script')),
             blockType = block.attributes.type,
             inputTypes,
             blockFnType,
@@ -212,7 +212,7 @@
         blockFnType = 'reify' + blockType.substring(0,1).toUpperCase() +
             blockType.substring(1);
 
-        if (!Snap2Js._backend[blockFnType]) {
+        if (!this._backend[blockFnType]) {
             blockFnType = DEFAULT_BLOCK_FN_TYPE;
         }
 
@@ -243,7 +243,7 @@
 
         return {
             name: name,
-            code: Snap2Js.generateCode(root)
+            code: this.generateCode(root)
         };
     };
 
@@ -253,21 +253,22 @@
         variables: {},
         customBlocks: [],
         returnValue: null,
+        initCode: '',
         tempo: 60
     };
 
     Snap2Js.parse = function(element) {
         let type = element.tag;
 
-        if (Snap2Js.parse[type]) {
-            return Snap2Js.parse[type].call(Snap2Js, element);
+        if (this.parse[type]) {
+            return this.parse[type].call(this, element);
         } else {
             throw `Unsupported xml type: ${type}`;
         }
     };
 
     Snap2Js.parse.ref = function(element) {
-        return Snap2Js.parse(element.target);
+        return this.parse(element.target);
     };
 
     Snap2Js.parse.project = function(element) {
@@ -278,12 +279,12 @@
         var tempo = +stage.attributes.tempo;
         var blocks = element.childNamed('blocks').children;
 
-        sprites.forEach(sprite => Snap2Js.parse(sprite));
+        sprites.forEach(sprite => this.parse(sprite));
 
         this.state.variables = globalVars;
         this.state.tempo = tempo;
-        this.state.stage = Snap2Js.parseStage(stage);
-        this.state.customBlocks = blocks.map(Snap2Js.parseBlockDefinition);
+        this.state.stage = this.parseStage(stage);
+        this.state.customBlocks = blocks.map(block => this.parseBlockDefinition(block));
     };
 
     Snap2Js.parse.sprite = function(element) {
@@ -291,7 +292,7 @@
         let name = element.attributes.name;
         let sprite = this.state.sprites.find(sprite => sprite.name === name);
         if (!sprite) {
-            this.state.sprites.push(Snap2Js.parseSprite(element));
+            this.state.sprites.push(this.parseSprite(element));
         } else {
             console.error(`Sprite ${name} already parsed. Skipping...`);
         }
@@ -302,7 +303,7 @@
         if (element.childNamed('receiver')) {  // create the context
             receiver = element.childNamed('receiver').children[0];
             if (receiver.tag === 'ref') receiver = receiver.target;
-            Snap2Js.parse(receiver);
+            this.parse(receiver);
         }
 
         // Add the execution code
@@ -310,18 +311,18 @@
         let fnNode = null;
         let node = null;
         if (block.tag === 'script') {
-            fnNode = parseScript(block);
+            fnNode = this.parseScript(block);
             let inputEls = element.childNamed('inputs').children;
-            let inputNodes = inputEls.map(item => createAstNode(item.contents));
+            let inputNodes = inputEls.map(item => this.createAstNode(item.contents));
             node = {
                 type: 'reifyScript',
                 inputs: [fnNode, {type: 'list', inputs: inputNodes}]
             };
             node.inputs.forEach(input => input.parent = node);
         } else {
-            fnNode = createAstNode(block);
+            fnNode = this.createAstNode(block);
             let inputEls = element.childNamed('inputs').children;
-            let inputNodes = inputEls.map(item => createAstNode(item.contents));
+            let inputNodes = inputEls.map(item => this.createAstNode(item.contents));
             // use autolambda (auto-returns result) if not a script
             let lambda = {
                 type: 'autolambda',
@@ -335,7 +336,7 @@
 
         node.inputs.forEach(input => input.parent = node);
 
-        let body = `return ${Snap2Js.generateCode(node)}`;
+        let body = `return ${this.generateCode(node)}`;
 
         // TODO: set the 'self' and '__CONTEXT' variables
         // TODO: move this code to the backend...
@@ -355,7 +356,7 @@
     };
 
     Snap2Js.transpile = function(xml, pretty=false) {
-        let fn = Snap2Js.compile(xml)
+        let fn = this.compile(xml)
         let code = fn.toString();
         if (pretty) {
             code = prettier.format(fn.toString());
@@ -392,13 +393,17 @@
         var element = new XML_Element();
         element.parseString(xml.toString());
 
-        Snap2Js._resolveRefs(element);
-        Snap2Js.parse(element);
-        let body = boilerplateTpl(this.state);
+        this._resolveRefs(element);
+        this.parse(element);
+        let body = this.generateCodeFromState(this.state);
         let fn = new Function('__ENV', body);
 
         this.resetState();
         return fn;
+    };
+
+    Snap2Js.generateCodeFromState = function(state) {
+        return boilerplateTpl(this.state);
     };
 
     Snap2Js._initNodeMap = {};
