@@ -175,7 +175,7 @@
             name: model.attributes.name,
             variables: parseInitialVariables(model.childNamed('variables').children),
             scripts: this.parseSpriteScripts(model.childNamed('scripts')),
-            customBlocks: blocks.map(this.parseBlockDefinition),
+            customBlocks: blocks.map(block => this.parseBlockDefinition(block)),
             position: position,
             draggable: model.attributes.draggable === 'true',
             rotation: model.attributes.rotation,
@@ -189,7 +189,7 @@
         let blocks = model.childNamed('blocks').children;
 
         return {
-            customBlocks: blocks.map(this.parseBlockDefinition),
+            customBlocks: blocks.map(block => this.parseBlockDefinition(block)),
             scripts: this.parseSpriteScripts(model.childNamed('scripts')),
             width: model.attributes.width,
             height: model.attributes.height,
