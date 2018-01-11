@@ -114,7 +114,7 @@ backend.doReport = function(node) {
     var value = this.generateCode(node.inputs[0]);
     let callback = getCallbackName(node);
     //let reject = getRejectName(node);
-    if (!node.parent) throw 'no parent:' + node.type;
+    if (!node.parent) throw new Error('no parent:' + node.type);
 
     if (callback) {
         return callRawStatementWithArgs(callback, value);
