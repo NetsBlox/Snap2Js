@@ -62,4 +62,13 @@ describe('errors', function() {
         });
     });
 
+    describe('in warp', function() {
+        it.only('should be able to catch error', function(done) {
+            let cxt = snap2js.newContext();
+            let content = utils.getContextXml('list-err-warp');
+            let bin = snap2js.compile(content);
+            let fn = bin(cxt);
+            fn().catch(err => done())
+        });
+    });
 });

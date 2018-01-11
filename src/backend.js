@@ -60,12 +60,14 @@ backend.bounceOffEdge = function(node) {
 ///////////////////// Control /////////////////////
 backend.doWarp = function(node) {
     let body = this.generateCode(node.inputs[0]);
-    let afterFn = `callback_${node.id}_${Date.now()}`;
-    // TODO: handle rejections?
-    return `new SPromise(${afterFn} => ${callStatementWithArgs(node.type, true)}
+    const afterFn = `callback_${node.id}_${Date.now()}`;
+    const reject = `reject_${node.id}_${Date.now()}`;
+
+    return `new SPromise((${afterFn}, ${reject}) => ${callStatementWithArgs(node.type, true)}
         .then(() => ${body})
         .then(() => ${callStatementWithArgs(node.type, false)})
         .then(() => ${afterFn}())
+        .catch(${reject})
     )`;
 
 };
@@ -210,7 +212,6 @@ backend.doForever = function(node) {
         body = recurse;
     }
 
-    // TODO: handle rejections?
     return [
         `new SPromise((${callback}, ${reject}) => {`,
         `function doForever_${node.id} () {`,
