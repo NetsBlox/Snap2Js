@@ -11,6 +11,7 @@ describe('compilation', function() {
 
     utils.getProjectPaths()
         .filter(filename => !filename.includes('all-control'))
+        //.filter(filename => filename.includes('custom-block-inputs'))
         .forEach(filename => {
             it(`should nop every operation in ${filename}`, function() {
                 var content = fs.readFileSync(filename, 'utf8');

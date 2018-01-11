@@ -61,6 +61,7 @@ backend.bounceOffEdge = function(node) {
 backend.doWarp = function(node) {
     let body = this.generateCode(node.inputs[0]);
     let afterFn = `callback_${node.id}_${Date.now()}`;
+    // TODO: handle rejections?
     return `new SPromise(${afterFn} => ${callStatementWithArgs(node.type, true)}
         .then(() => ${body})
         .then(() => ${callStatementWithArgs(node.type, false)})
@@ -73,6 +74,7 @@ backend.doWait = function(node) {
     var time = this.generateCode(node.inputs[0]),
         afterFn = `afterWait_${node.id}`;
 
+    // TODO: handle rejections?
     return [
         `new SPromise(${afterFn} => {`,
         callStatementWithArgs(node.type, time, afterFn),
@@ -108,6 +110,7 @@ backend.doReport = function(node) {
     // Get the current callback name and call it!
     var value = this.generateCode(node.inputs[0]);
     let callback = getCallbackName(node);
+    //let reject = getRejectName(node);
     if (!node.parent) throw 'no parent:' + node.type;
 
     if (callback) {
@@ -168,7 +171,7 @@ backend.fork = function(node) {
 };
 
 backend.doRepeat = function(node) {
-    var count = node.inputs[0] ? this.generateCode(node.inputs[0]) : 0,
+    let count = node.inputs[0] ? this.generateCode(node.inputs[0]) : 0,
         body = this.generateCode(node.inputs[1]),
         next = this.generateCode(node.next),
         iterVar = node.id,
@@ -176,14 +179,16 @@ backend.doRepeat = function(node) {
 
     recurse = callStatementWithArgs('doYield', `doLoop_${node.id}`, node.id);
 
-    let cond = `${node.id}-- > 0`;
-    let doLoop = `() => {${body}.then(() => ${recurse})}`;
-    let callback = `resolve_${node.id}_${Date.now()}`;
-    let doElse = `() => {${next}.then(() => ${callback}());\n}`;
+    const cond = `${node.id}-- > 0`;
+    const callback = `resolve_${node.id}_${Date.now()}`;
+    const reject = `reject_${node.id}_${Date.now()}`;
+
+    let doLoop = `() => {${body}.then(() => ${recurse}).catch(${reject})}`;
+    let doElse = `() => {${next}.then(() => ${callback}()).then(${reject});\n}`;
     loopControl = callStatementWithArgs('doIfElse', cond, doLoop, doElse);
 
     return [
-        `new SPromise(${callback} => {`,
+        `new SPromise((${callback}, ${reject}) => {`,
         `function doLoop_${node.id} (${node.id}) {`,
         `return ${indent(loopControl)};`,
         `}`,
@@ -203,6 +208,7 @@ backend.doForever = function(node) {
         body = recurse;
     }
 
+    // TODO: handle rejections?
     return [
         `new SPromise(() => {`,
         `function doForever_${node.id} () {`,
@@ -235,6 +241,7 @@ backend.doUntil = function(node) {
     let exitLoop = `function() {\n${exitBody}.then(() => \n${callback}());\n}`;
 
     loopControl = callStatementWithArgs('doIfElse', cond, exitLoop, execBody);
+    // TODO: handle rejections?
     return [
         `new SPromise(${callback} => {`,
         `function doLoop_${node.id} () {`,
@@ -290,6 +297,7 @@ backend.doSayFor = function(node) {
         msg = this.generateCode(node.inputs[0]),
         afterFn = `afterSay_${node.id}`;
 
+    // TODO: handle rejections?
     return [
         `new SPromise(${afterFn} => {`,
         callStatementWithArgs(node.type, msg, time, afterFn),
@@ -302,6 +310,7 @@ backend.doThinkFor = function(node) {
         msg = this.generateCode(node.inputs[0]),
         afterFn = `afterThink_${node.id}`;
 
+    // TODO: handle rejections?
     return [
         `new SPromise(${afterFn} => {`,
         callStatementWithArgs(node.type, msg, time, afterFn),
