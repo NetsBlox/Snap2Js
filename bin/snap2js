@@ -40,7 +40,7 @@ prog
     .argument('<files...>', 'Snap xml files to compile')
     .option('-i,--interpret')
     .option('--output <dir>', 'Output directory', fileExists, '.')
-    .option('--context <type>', 'Context to use', isContext, 'cli')
+    .option('--context <type>', 'Context to use', isContext, 'basic')
     .action((args, opts, logger) => {
         if (opts.interpret) {
             if (args.files.length > 1) logger.warn(`Only interpretting ${args.files[0]}`)
@@ -66,7 +66,7 @@ function saveToFile(filename, opts, logger) {
         .then(fn => {
             var relPath = path.resolve(`${path.dirname(__dirname)}/src/context/${context}`);
             var contextPath = path.relative(path.resolve(opts.output), relPath);
-            var code = `(function (__ENV) {${fn.toString()}})(require('./${contextPath}'))`;
+            var code = `(${fn.toString()})(require('./${contextPath}'))`;
             return Q.ninvoke(fs, 'writeFile', tmpfile, code);
         })
         .then(() => {
@@ -88,13 +88,14 @@ function saveToFile(filename, opts, logger) {
 
 function interpretFile(filename, opts, logger) {
     let context = opts.context;
-    return compileFile(filename, opts, logger)
-        .then(code => {
-            var fn = new Function('__ENV', code),
-                env = require(`../src/context/${context}`);
+    return Q.ninvoke(fs, 'readFile', filename)
+        .then(contents => snap2js.compile(contents))
+        .then(fn => {
+            const env = require(`../src/context/${context}`);
 
             return fn(env);
-        });
+        })
+        .catch(err => console.error('error', err));
 }
 
 function fileExists(dir) {
