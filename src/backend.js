@@ -77,6 +77,7 @@ backend.doWait = function(node) {
         afterFn = `afterWait_${node.id}`;
 
     // TODO: handle rejections?
+    // This can only fail if the underlying implementation is faulty...
     return [
         `new SPromise(${afterFn} => {`,
         callStatementWithArgs(node.type, time, afterFn),
@@ -301,6 +302,7 @@ backend.doSayFor = function(node) {
         afterFn = `afterSay_${node.id}`;
 
     // TODO: handle rejections?
+    // This can only fail if the underlying implementation is faulty...
     return [
         `new SPromise(${afterFn} => {`,
         callStatementWithArgs(node.type, msg, time, afterFn),
@@ -314,6 +316,7 @@ backend.doThinkFor = function(node) {
         afterFn = `afterThink_${node.id}`;
 
     // TODO: handle rejections?
+    // This can only fail if the underlying implementation is faulty...
     return [
         `new SPromise(${afterFn} => {`,
         callStatementWithArgs(node.type, msg, time, afterFn),
