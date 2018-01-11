@@ -47,11 +47,9 @@ describe('custom blocks', function() {
                     assert(value(result[index]));
                 } else if (value instanceof Object) {
                     fn = result[index];
-                    return fn(value.in, promise => {
-                        promise.then(output => {
-                            assert.equal(output, value.out);
-                            done();
-                        });
+                    return fn(value.in).then(output => {
+                        assert.equal(output, value.out);
+                        done();
                     });
                 } else {
                     assert.equal(result[index], value);

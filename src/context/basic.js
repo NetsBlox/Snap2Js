@@ -463,24 +463,14 @@ context.reportJoinWords = function() {
 
 context.evaluate = function(fn) {
     var args = Array.prototype.slice.call(arguments, 1);
-    return new SPromise(resolve => {
-        let cxt = args.pop();
-        args.push(resolve);
-        args.push(cxt);
-        return fn.apply(this, args);
-    });
+    return fn.apply(this, args);
 };
 
 context.evaluateCustomBlock = function(name, fnVar) {
     var args = Array.prototype.slice.call(arguments, 2),
         fn = fnVar.value;
 
-    return new SPromise(resolve => {
-        let cxt = args.pop();
-        args.push(resolve);
-        args.push(cxt);
-        return fn.apply(this, args);
-    });
+    return fn.apply(this, args);
 };
 
 module.exports = context;

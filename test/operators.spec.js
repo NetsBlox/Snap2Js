@@ -177,20 +177,16 @@ describe('operators', function() {
             });
 
             it('should eval true correctly (and+and+not)', function(done) {
-                result(true, true, false, result => {
-                    result.then(value => {
-                        assert.equal(value, true);
-                        done();
-                    });
+                result(true, true, false).then(value => {
+                    assert.equal(value, true);
+                    done();
                 });
             });
 
             it('should eval false correctly (and+and+not)', function(done) {
-                result(true, true, true, result => {
-                    result.then(value => {
-                        assert.equal(value, false);
-                        done();
-                    });
+                result(true, true, true).then(value => {
+                    assert.equal(value, false);
+                    done();
                 });
             });
         });
@@ -207,11 +203,9 @@ describe('operators', function() {
             });
 
             it('should eval correctly (sum inputs)', function(done) {
-                result(3, 5, promise => {
-                    promise.then(value => {
-                        assert.equal(value, 8);
-                        done();
-                    });
+                result(3, 5).then(value => {
+                    assert.equal(value, 8);
+                    done();
                 });
             });
         });

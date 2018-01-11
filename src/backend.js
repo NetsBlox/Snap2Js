@@ -478,40 +478,60 @@ const TYPES_WITH_CALLBACKS = [
 let nodeIdCounter = 1;
 
 // Get the name of the callback fn of the closest enclosing fn definition
-const getCallbackName = node => {
+const getFnName = (fn, node) => {
     if (TYPES_WITH_CALLBACKS.includes(node.type)) {
         if (!node.id) {
             node.id = `anon_item__${nodeIdCounter++}`;
         }
-        return `callback${node.id.replace(/-/g, '_')}`;
+        return `${fn}${node.id.replace(/-/g, '_')}`;
     }
 
-    if (node.parent) return getCallbackName(node.parent);
+    if (node.parent) return getFnName(fn, node.parent);
 
     return null;
 };
 
+const getCallbackName = node => getFnName('callback', node);
+const getRejectName = node => getFnName('reject', node);
+
 backend.reifyScript =
 backend.reifyReporter =
 backend.reifyPredicate = function(node) {
-    var body = '',
+    let body = '',
         cb = getCallbackName(node),
+        reject = getRejectName(node),
         args = node.inputs[1].inputs
             .map(this.generateCode);
 
+    // Why is this missing the callback???
     if (node.inputs[0]) {
         body = this.generateCode(node.inputs[0]);
+
+        // Add error handling and callback
+        let lastChar = body[body.length-1];
+
+        let isMissingCallback = !(new RegExp('\\b' + cb + '\\b').test(body));
+        if (isMissingCallback) {
+            body = body.replace(/[;\n]*$/, `.then(${cb})`);
+        }
+
+        body = body.replace(/[;\n]*$/, `.catch(${reject})`);
+        if (lastChar === ';') body += ';';
+    } else {
+        body = `${cb}()`;
     }
 
     // TODO: add the callback name to the function...
     // TODO: doReport should call this callback...
     return [
-        `function(${args.map((e, i) => `a${i}`).join(', ')}${args.length ? ',' : ''}${cb}) {`,
-        indent(`var context = new VariableFrame(arguments[${args.length+1}] || __CONTEXT);`),
+        `function(${args.map((e, i) => `a${i}`).join(', ')}) {`,
+        indent(`return new SPromise((${cb}, ${reject}) => {`),
+        indent(`var context = new VariableFrame(arguments[${args.length}] || __CONTEXT);`),
         indent(`var self = context.get('${CALLER}').value;`),
         indent(args.map((arg, index) => `context.set(${arg}, a${index});`).join('\n')),
         indent(`__CONTEXT = context;`),
         indent(body),
+        indent(`});`),
         `}`
     ].join('\n');
 };
@@ -526,7 +546,7 @@ backend.autolambda = function(node) {
     let callback = getCallbackName(node);
 
     if (callback) {
-        body = `${callback}(${body});`;
+        body = `SPromise.resolve().then(() => ${body}).then(${callback});`;
     }
 
     return `return ${body};`;
