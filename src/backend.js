@@ -200,17 +200,19 @@ backend.doRepeat.async = true;
 
 backend.doForever = function(node) {
     var recurse = callStatementWithArgs('doYield', `doForever_${node.id}`),
+        callback = `resolve_${node.id}_${Date.now()}`,
+        reject = `reject_${node.id}_${Date.now()}`,
         body = recurse;
 
     if (node.inputs[0]) {
-        body = `${this.generateCode(node.inputs[0])}.then(() => ${recurse})`;
+        body = `${this.generateCode(node.inputs[0])}.then(() => ${recurse}).catch(${reject})`;
     } else {
         body = recurse;
     }
 
     // TODO: handle rejections?
     return [
-        `new SPromise(() => {`,
+        `new SPromise((${callback}, ${reject}) => {`,
         `function doForever_${node.id} () {`,
         indent(body),
         `}`,
@@ -503,6 +505,7 @@ const getFnName = (fn, node) => {
 const getCallbackName = node => getFnName('callback', node);
 const getRejectName = node => getFnName('reject', node);
 
+
 backend.reifyScript =
 backend.reifyReporter =
 backend.reifyPredicate = function(node) {
@@ -530,7 +533,6 @@ backend.reifyPredicate = function(node) {
         body = `${cb}()`;
     }
 
-    // TODO: add the callback name to the function...
     // TODO: doReport should call this callback...
     return [
         `function(${args.map((e, i) => `a${i}`).join(', ')}) {`,
