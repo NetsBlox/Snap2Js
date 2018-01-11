@@ -60,11 +60,14 @@ backend.bounceOffEdge = function(node) {
 ///////////////////// Control /////////////////////
 backend.doWarp = function(node) {
     let body = this.generateCode(node.inputs[0]);
-    let afterFn = `callback_${node.id}_${Date.now()}`;
-    return `new SPromise(${afterFn} => ${callStatementWithArgs(node.type, true)}
+    const afterFn = `callback_${node.id}_${Date.now()}`;
+    const reject = `reject_${node.id}_${Date.now()}`;
+
+    return `new SPromise((${afterFn}, ${reject}) => ${callStatementWithArgs(node.type, true)}
         .then(() => ${body})
         .then(() => ${callStatementWithArgs(node.type, false)})
         .then(() => ${afterFn}())
+        .catch(${reject})
     )`;
 
 };
@@ -73,6 +76,8 @@ backend.doWait = function(node) {
     var time = this.generateCode(node.inputs[0]),
         afterFn = `afterWait_${node.id}`;
 
+    // TODO: handle rejections?
+    // This can only fail if the underlying implementation is faulty...
     return [
         `new SPromise(${afterFn} => {`,
         callStatementWithArgs(node.type, time, afterFn),
@@ -108,6 +113,7 @@ backend.doReport = function(node) {
     // Get the current callback name and call it!
     var value = this.generateCode(node.inputs[0]);
     let callback = getCallbackName(node);
+    //let reject = getRejectName(node);
     if (!node.parent) throw 'no parent:' + node.type;
 
     if (callback) {
@@ -168,7 +174,7 @@ backend.fork = function(node) {
 };
 
 backend.doRepeat = function(node) {
-    var count = node.inputs[0] ? this.generateCode(node.inputs[0]) : 0,
+    let count = node.inputs[0] ? this.generateCode(node.inputs[0]) : 0,
         body = this.generateCode(node.inputs[1]),
         next = this.generateCode(node.next),
         iterVar = node.id,
@@ -176,14 +182,16 @@ backend.doRepeat = function(node) {
 
     recurse = callStatementWithArgs('doYield', `doLoop_${node.id}`, node.id);
 
-    let cond = `${node.id}-- > 0`;
-    let doLoop = `() => {${body}.then(() => ${recurse})}`;
-    let callback = `resolve_${node.id}_${Date.now()}`;
-    let doElse = `() => {${next}.then(() => ${callback}());\n}`;
+    const cond = `${node.id}-- > 0`;
+    const callback = `resolve_${node.id}_${Date.now()}`;
+    const reject = `reject_${node.id}_${Date.now()}`;
+
+    let doLoop = `() => {${body}.then(() => ${recurse}).catch(${reject})}`;
+    let doElse = `() => {${next}.then(() => ${callback}()).then(${reject});\n}`;
     loopControl = callStatementWithArgs('doIfElse', cond, doLoop, doElse);
 
     return [
-        `new SPromise(${callback} => {`,
+        `new SPromise((${callback}, ${reject}) => {`,
         `function doLoop_${node.id} (${node.id}) {`,
         `return ${indent(loopControl)};`,
         `}`,
@@ -195,16 +203,18 @@ backend.doRepeat.async = true;
 
 backend.doForever = function(node) {
     var recurse = callStatementWithArgs('doYield', `doForever_${node.id}`),
+        callback = `resolve_${node.id}_${Date.now()}`,
+        reject = `reject_${node.id}_${Date.now()}`,
         body = recurse;
 
     if (node.inputs[0]) {
-        body = `${this.generateCode(node.inputs[0])}.then(() => ${recurse})`;
+        body = `${this.generateCode(node.inputs[0])}.then(() => ${recurse}).catch(${reject})`;
     } else {
         body = recurse;
     }
 
     return [
-        `new SPromise(() => {`,
+        `new SPromise((${callback}, ${reject}) => {`,
         `function doForever_${node.id} () {`,
         indent(body),
         `}`,
@@ -218,6 +228,7 @@ backend.doUntil = function(node) {
         body = newPromise(),
         exitBody = node.next ? this.generateCode(node.next) : newPromise(),
         callback = `resolve_${node.id}_${Date.now()}`,
+        reject = `reject_${node.id}_${Date.now()}`,
         iterVar = node.id,
         recurse;
 
@@ -231,12 +242,12 @@ backend.doUntil = function(node) {
         cond = this.generateCode(node.inputs[0]);
     }
 
-    let execBody = `function() {\n${body}.then(() => ${recurse})}`;
-    let exitLoop = `function() {\n${exitBody}.then(() => \n${callback}());\n}`;
+    let execBody = `function() {\n${body}.then(() => ${recurse}).catch(${reject})}`;
+    let exitLoop = `function() {\n${exitBody}.then(() => \n${callback}()).then(${reject});\n}`;
 
     loopControl = callStatementWithArgs('doIfElse', cond, exitLoop, execBody);
     return [
-        `new SPromise(${callback} => {`,
+        `new SPromise((${callback}, ${reject}) => {`,
         `function doLoop_${node.id} () {`,
         `${indent(loopControl)};`,
         `}`,
@@ -290,6 +301,8 @@ backend.doSayFor = function(node) {
         msg = this.generateCode(node.inputs[0]),
         afterFn = `afterSay_${node.id}`;
 
+    // TODO: handle rejections?
+    // This can only fail if the underlying implementation is faulty...
     return [
         `new SPromise(${afterFn} => {`,
         callStatementWithArgs(node.type, msg, time, afterFn),
@@ -302,6 +315,8 @@ backend.doThinkFor = function(node) {
         msg = this.generateCode(node.inputs[0]),
         afterFn = `afterThink_${node.id}`;
 
+    // TODO: handle rejections?
+    // This can only fail if the underlying implementation is faulty...
     return [
         `new SPromise(${afterFn} => {`,
         callStatementWithArgs(node.type, msg, time, afterFn),
@@ -478,40 +493,60 @@ const TYPES_WITH_CALLBACKS = [
 let nodeIdCounter = 1;
 
 // Get the name of the callback fn of the closest enclosing fn definition
-const getCallbackName = node => {
+const getFnName = (fn, node) => {
     if (TYPES_WITH_CALLBACKS.includes(node.type)) {
         if (!node.id) {
             node.id = `anon_item__${nodeIdCounter++}`;
         }
-        return `callback${node.id.replace(/-/g, '_')}`;
+        return `${fn}${node.id.replace(/-/g, '_')}`;
     }
 
-    if (node.parent) return getCallbackName(node.parent);
+    if (node.parent) return getFnName(fn, node.parent);
 
     return null;
 };
 
+const getCallbackName = node => getFnName('callback', node);
+const getRejectName = node => getFnName('reject', node);
+
+
 backend.reifyScript =
 backend.reifyReporter =
 backend.reifyPredicate = function(node) {
-    var body = '',
+    let body = '',
         cb = getCallbackName(node),
+        reject = getRejectName(node),
         args = node.inputs[1].inputs
             .map(this.generateCode);
 
+    // Why is this missing the callback???
     if (node.inputs[0]) {
         body = this.generateCode(node.inputs[0]);
+
+        // Add error handling and callback
+        let lastChar = body[body.length-1];
+
+        let isMissingCallback = !(new RegExp('\\b' + cb + '\\b').test(body));
+        if (isMissingCallback) {
+            body = body.replace(/[;\n]*$/, `.then(${cb})`);
+        }
+
+        body = body.replace(/[;\n]*$/, `.catch(${reject})`);
+        if (lastChar === ';') body += ';';
+    } else {
+        body = `${cb}()`;
     }
 
-    // TODO: add the callback name to the function...
     // TODO: doReport should call this callback...
     return [
-        `function(${args.map((e, i) => `a${i}`).join(', ')}${args.length ? ',' : ''}${cb}) {`,
-        indent(`var context = new VariableFrame(arguments[${args.length+1}] || __CONTEXT);`),
+        `function(${args.map((e, i) => `a${i}`).join(', ')}) {`,
+        indent(`return new SPromise((${cb}, ${reject}) => {`),
+        indent(`var context = new VariableFrame(arguments[${args.length}] || __CONTEXT);`),
         indent(`var self = context.get('${CALLER}').value;`),
         indent(args.map((arg, index) => `context.set(${arg}, a${index});`).join('\n')),
         indent(`__CONTEXT = context;`),
         indent(body),
+        indent(`});`),
         `}`
     ].join('\n');
 };
@@ -526,7 +561,7 @@ backend.autolambda = function(node) {
     let callback = getCallbackName(node);
 
     if (callback) {
-        body = `${callback}(${body});`;
+        body = `SPromise.resolve().then(() => ${body}).then(${callback});`;
     }
 
     return `return ${body};`;

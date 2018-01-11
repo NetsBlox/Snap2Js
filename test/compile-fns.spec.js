@@ -76,7 +76,7 @@ describe('functions', function() {
             let factory = snap2js.compile(content);
             let env = snap2js.newContext();
             let fn = factory(env);
-            fn.call(null, result => {
+            fn().then(result => {
                 result.forEach((n, i) => assert.equal(n, i+1));
                 done();
             });
