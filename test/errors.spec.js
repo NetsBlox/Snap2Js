@@ -71,4 +71,18 @@ describe('errors', function() {
             fn().catch(err => done())
         });
     });
+
+    describe('undef var', function() {
+        it('should be able to catch error', function(done) {
+            let cxt = snap2js.newContext();
+            let content = utils.getContextXml('undef-var-err');
+            let bin = snap2js.compile(content);
+            let fn = bin(cxt);
+            return fn().catch(err => {
+                assert(err instanceof Error);
+                done();
+            })
+            .catch(done);
+        });
+    });
 });
