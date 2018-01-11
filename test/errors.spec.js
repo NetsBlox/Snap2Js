@@ -33,9 +33,19 @@ describe('errors', function() {
     });
 
     describe('in repeat loop', function() {
-        it.only('should be able to catch error', function(done) {
+        it('should be able to catch error', function(done) {
             let cxt = snap2js.newContext();
             let content = utils.getContextXml('list-err-loop');
+            let bin = snap2js.compile(content);
+            let fn = bin(cxt);
+            fn().catch(err => done())
+        });
+    });
+
+    describe('in repeat until', function() {
+        it.only('should be able to catch error', function(done) {
+            let cxt = snap2js.newContext();
+            let content = utils.getContextXml('list-err-until');
             let bin = snap2js.compile(content);
             let fn = bin(cxt);
             fn().catch(err => done())

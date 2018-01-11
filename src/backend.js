@@ -224,6 +224,7 @@ backend.doUntil = function(node) {
         body = newPromise(),
         exitBody = node.next ? this.generateCode(node.next) : newPromise(),
         callback = `resolve_${node.id}_${Date.now()}`,
+        reject = `reject_${node.id}_${Date.now()}`,
         iterVar = node.id,
         recurse;
 
@@ -237,13 +238,12 @@ backend.doUntil = function(node) {
         cond = this.generateCode(node.inputs[0]);
     }
 
-    let execBody = `function() {\n${body}.then(() => ${recurse})}`;
-    let exitLoop = `function() {\n${exitBody}.then(() => \n${callback}());\n}`;
+    let execBody = `function() {\n${body}.then(() => ${recurse}).catch(${reject})}`;
+    let exitLoop = `function() {\n${exitBody}.then(() => \n${callback}()).then(${reject});\n}`;
 
     loopControl = callStatementWithArgs('doIfElse', cond, exitLoop, execBody);
-    // TODO: handle rejections?
     return [
-        `new SPromise(${callback} => {`,
+        `new SPromise((${callback}, ${reject}) => {`,
         `function doLoop_${node.id} () {`,
         `${indent(loopControl)};`,
         `}`,
