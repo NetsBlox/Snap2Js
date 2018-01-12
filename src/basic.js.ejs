@@ -20,7 +20,7 @@ class VariableFrame {
         } else if (this.parent) {
             result = this.parent.get(name, silent);
         }
-        if (result === null && !silent) throw 'Error: a variable of name \''+name+'\' does not exist in this context';
+        if (result === null && !silent) throw new Error('a variable of name \''+name+'\' does not exist in this context');
         return result;
     }
 
