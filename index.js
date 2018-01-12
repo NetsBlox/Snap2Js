@@ -71,7 +71,7 @@
         } else if (!curr.attributes) {
             type = Object.keys(curr)[0];
             if (type === 'block') {
-                throw 'bad parsing';
+                throw new Error('bad parsing');
             }
         } else if (curr.attributes.var) {
             type = 'variable';
@@ -81,7 +81,7 @@
             node.id = curr.attributes.collabId;
         }
         if (!type) {
-            throw 'bad parsing';
+            throw new Error('bad parsing');
         }
 
         node.type = type;
@@ -263,7 +263,7 @@
         if (this.parse[type]) {
             return this.parse[type].call(this, element);
         } else {
-            throw `Unsupported xml type: ${type}`;
+            throw new Error(`Unsupported xml type: ${type}`);
         }
     };
 
@@ -452,7 +452,7 @@
     Snap2Js.generateCode = function(root) {
         if (!root) return `SPromise.resolve()`;
         if (!Snap2Js._backend[root.type]) {
-            throw `Unsupported node type: ${root.type}`;
+            throw new Error(`Unsupported node type: ${root.type}`);
         }
 
         var code = Snap2Js._backend[root.type].call(Snap2Js, root);
