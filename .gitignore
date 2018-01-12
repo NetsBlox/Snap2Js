@@ -1,2 +1,5 @@
 node_modules
 notes.md
+tmp/
+notes/
+coverage/
