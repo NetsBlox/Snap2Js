@@ -102,7 +102,7 @@ var project = {
     sprites: []
 };
 <% Object.keys(variables).forEach(function(variable) { %>
-project.variables.set('<%= variable %>', JSON.parse('<%= JSON.stringify(variables[variable]) %>'));<% }) %>
+project.variables.set('<%= variable %>', JSON.parse(<%= JSON.stringify(JSON.stringify(variables[variable])) %>));<% }) %>
 <% customBlocks.forEach(function(def) { %>
 project.customBlocks.set('<%= def.name %>', <%= def.code %>);
 <% }) %>
