@@ -28,6 +28,14 @@ describe('variables', function() {
             assert.equal(values[1][1], 2);
             assert.equal(values[1][2], 3);
         });
+
+        it('should load variables with double quotes', function() {
+            let content = utils.getContextXml('quote-var-val');
+            cxt = snap2js.newContext();
+            bin = snap2js.compile(content);
+            // This was throwing an exception before issue #56
+            bin(cxt);
+        });
     });
 
     describe('basic blocks', function() {
