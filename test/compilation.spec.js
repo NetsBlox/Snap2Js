@@ -11,7 +11,6 @@ describe('compilation', function() {
 
     utils.getProjectPaths()
         .filter(filename => !filename.includes('all-control'))
-        //.filter(filename => filename.includes('custom-block-inputs'))
         .forEach(filename => {
             it(`should nop every operation in ${filename}`, function() {
                 var content = fs.readFileSync(filename, 'utf8');
@@ -20,4 +19,11 @@ describe('compilation', function() {
             });
 
         });
+
+    describe('custom blocks', function() {
+        it('should be able to compile custom blocks w/o a def', function() {
+            const content = utils.getContextXml('block-child-null');
+            snap2js.compile(content)
+        });
+    });
 });
