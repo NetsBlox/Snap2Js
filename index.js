@@ -201,12 +201,18 @@
     Snap2Js.parseBlockDefinition = function(block) {
         var spec = block.attributes.s,
             inputs = utils.inputNames(spec).map(input => this.createAstNode(input)),
-            ast = this.parseScript(block.childNamed('script')),
             blockType = block.attributes.type,
             inputTypes,
             blockFnType,
-            root,
-            name;
+            name,
+            root;
+
+        const scriptNode = block.childNamed('script');
+        const ast = scriptNode ? this.parseScript(scriptNode) :
+            {  // Add a string node as a sort of no-op
+                type: 'string',
+                value: 'nop'
+            };
 
         // Detect the fn to use to define the function
         blockFnType = 'reify' + blockType.substring(0,1).toUpperCase() +
