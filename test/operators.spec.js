@@ -41,6 +41,54 @@ describe('operators', function() {
         });
     });
 
+    describe('reportMonadic', function() {
+        it('should support computing the sqrt from context', function(done) {
+            const content = utils.getContextXml('report-monadic');
+            const fn = snap2js.compile(content)(snap2js.newContext());
+            fn().then(result => {
+                assert.equal(+result, 3);
+                done();
+            });
+        });
+
+        describe('all ops', function() {
+            let fns = null;
+            before(done => {
+                utils.compileAndRun('report-monadic').then(result => {
+                    fns = result;
+                    done();
+                });
+            });
+
+            [
+                ['sqrt'],
+                ['abs'],
+                ['ceiling'],
+                ['floor'],
+                ['sin', Math.sin],
+                ['cos', Math.cos],
+                ['tan', Math.tan],
+                ['asin', Math.asin],
+                ['acos', Math.acos],
+                ['atan', Math.atan],
+                ['ln', Math.log],
+                ['log', x => Math.log(x) / Math.LN10],
+                ['e^', Math.exp],
+                ['10^', Math.pow.bind(null, 10)],
+                ['undefined', () => 0]
+            ].forEach((pair, i) => {
+                const [name, grader] = pair;
+                it(`should compute ${name}`, function() {
+                    const blockFn = fns[i];
+                    blockFn().then(result => {
+                        const expected = grader ? grader(3) : 3;
+                        assert.equal(result, expected);
+                    });
+                });
+            });
+        });
+    });
+
     describe('random', function() {
         before(function(done) {
             utils.compileAndRun('random')
