@@ -5,6 +5,8 @@ const SPromise = require('synchronous-promise').SynchronousPromise;
 const WARP_VAR = '__isAtomic';
 const isString = val => typeof val === 'string';
 const isNil = val => val === undefined || val === null;
+const degrees = rads => 180*rads/Math.PI;
+const radians = degs => Math.PI*degs/180;
 
 var context = clone(base);
 

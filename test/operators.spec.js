@@ -60,17 +60,18 @@ describe('operators', function() {
                 });
             });
 
+            const threeRads = 3*Math.PI/180;
             [
                 ['sqrt'],
                 ['abs'],
                 ['ceiling'],
                 ['floor'],
-                ['sin', Math.sin],
-                ['cos', Math.cos],
-                ['tan', Math.tan],
-                ['asin', Math.asin],
-                ['acos', Math.acos],
-                ['atan', Math.atan],
+                ['sin', () => Math.sin(threeRads)],
+                ['cos', () => Math.cos(threeRads)],
+                ['tan', () => Math.tan(threeRads)],
+                ['asin', () => 180/Math.PI*Math.asin(0.5)],
+                ['acos', () => 180/Math.PI*Math.acos(0.5)],
+                ['atan', x => 180/Math.PI*Math.atan(x)],
                 ['ln', Math.log],
                 ['log', x => Math.log(x) / Math.LN10],
                 ['e^', Math.exp],
@@ -78,12 +79,14 @@ describe('operators', function() {
                 ['undefined', () => 0]
             ].forEach((pair, i) => {
                 const [name, grader] = pair;
-                it(`should compute ${name}`, function() {
+                it(`should compute ${name}`, function(done) {
                     const blockFn = fns[i];
                     blockFn().then(result => {
                         const expected = grader ? grader(3) : 3;
                         assert.equal(result, expected);
-                    });
+                        done();
+                    })
+                    .catch(err => done(err));
                 });
             });
         });
