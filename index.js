@@ -86,6 +86,7 @@
 
         node.type = type;
 
+        if (node.id) node.id = node.id.replace(/[^a-zA-Z0-9]/g, '_');
         if (next) {
             next.parent = node;
         }
