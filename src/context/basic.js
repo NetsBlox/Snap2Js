@@ -270,6 +270,57 @@ context.reportIsA = function(thing, type) {
     return typeof thing === type;
 };
 
+context.reportMonadic = function(operation, number) {
+    var x = +number,
+        result = 0;
+
+    switch (operation) {
+    case 'abs':
+        result = Math.abs(x);
+        break;
+    case 'ceiling':
+        result = Math.ceil(x);
+        break;
+    case 'floor':
+        result = Math.floor(x);
+        break;
+    case 'sqrt':
+        result = Math.sqrt(x);
+        break;
+    case 'sin':
+        result = Math.sin(radians(x));
+        break;
+    case 'cos':
+        result = Math.cos(radians(x));
+        break;
+    case 'tan':
+        result = Math.tan(radians(x));
+        break;
+    case 'asin':
+        result = degrees(Math.asin(x));
+        break;
+    case 'acos':
+        result = degrees(Math.acos(x));
+        break;
+    case 'atan':
+        result = degrees(Math.atan(x));
+        break;
+    case 'ln':
+        result = Math.log(x);
+        break;
+    case 'log': // base 10
+        result =  Math.log(x) / Math.LN10;
+        break;
+    case 'e^':
+        result = Math.exp(x);
+        break;
+    case '10^':
+        result = Math.pow(10, x);
+        break;
+    }
+    return result;
+};
+
 context.reportRound = function(number) {
     return Math.round(number);
 };

@@ -426,6 +426,7 @@ backend.getTempo = function(node) {
 };
 
 ///////////////////// Operators /////////////////////
+backend.reportMonadic =
 backend.reportModulus =
 backend.reportQuotient =
 backend.reportProduct =
