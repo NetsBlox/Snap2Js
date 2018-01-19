@@ -249,7 +249,7 @@ backend.doUntil = function(node) {
     return [
         `new SPromise((${callback}, ${reject}) => {`,
         `function doLoop_${node.id} () {`,
-        `${indent(loopControl)};`,
+        `${indent(loopControl)}.catch(${reject});`,
         `}`,
          `doLoop_${node.id}();`,
         `})`
