@@ -193,7 +193,7 @@ backend.doRepeat = function(node) {
     return [
         `new SPromise((${callback}, ${reject}) => {`,
         `function doLoop_${node.id} (${node.id}) {`,
-        `return ${indent(loopControl)};`,
+        `return ${indent(loopControl)}.catch(${reject});`,
         `}`,
          callRawStatementWithArgs(`doLoop_${node.id}`, count),
         `})`
@@ -210,7 +210,7 @@ backend.doForever = function(node) {
     if (node.inputs[0]) {
         body = `${this.generateCode(node.inputs[0])}.then(() => ${recurse}).catch(${reject})`;
     } else {
-        body = recurse;
+        body = `${recurse}.catch(${reject});`;
     }
 
     return [
@@ -249,7 +249,7 @@ backend.doUntil = function(node) {
     return [
         `new SPromise((${callback}, ${reject}) => {`,
         `function doLoop_${node.id} () {`,
-        `${indent(loopControl)};`,
+        `${indent(loopControl)}.catch(${reject});`,
         `}`,
          `doLoop_${node.id}();`,
         `})`

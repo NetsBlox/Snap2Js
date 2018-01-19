@@ -243,7 +243,7 @@ sprite.checkConditions = function() {
 project.sprites.push(sprite);
 <% }) %>
 project.timerStart = Date.now();
-__ENV.__start(project);
+__ENV.__start(project, __ENV);
 
 function callMaybeAsync(self, fn) {
     let args = [].slice.call(arguments, 2);
@@ -255,6 +255,8 @@ function callMaybeAsync(self, fn) {
 
     return result;
 }
+callMaybeAsync = __ENV.callMaybeAsync || callMaybeAsync;
+
 <%= initCode %>
 
 <% // This only executes if there is not context...? %>
