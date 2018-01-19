@@ -193,7 +193,7 @@ backend.doRepeat = function(node) {
     return [
         `new SPromise((${callback}, ${reject}) => {`,
         `function doLoop_${node.id} (${node.id}) {`,
-        `return ${indent(loopControl)};`,
+        `return ${indent(loopControl)}.catch(${reject});`,
         `}`,
          callRawStatementWithArgs(`doLoop_${node.id}`, count),
         `})`
