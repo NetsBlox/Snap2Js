@@ -210,7 +210,7 @@ backend.doForever = function(node) {
     if (node.inputs[0]) {
         body = `${this.generateCode(node.inputs[0])}.then(() => ${recurse}).catch(${reject})`;
     } else {
-        body = recurse;
+        body = `${recurse}.catch(${reject});`;
     }
 
     return [
