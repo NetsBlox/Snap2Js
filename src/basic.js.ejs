@@ -102,15 +102,15 @@ var project = {
     sprites: []
 };
 <% Object.keys(variables).forEach(function(variable) { %>
-project.variables.set('<%= variable %>', JSON.parse(<%= JSON.stringify(JSON.stringify(variables[variable])) %>));<% }) %>
+project.variables.set(<%= variable %>, <%= variables[variable] %>);<% }) %>
 <% customBlocks.forEach(function(def) { %>
-project.customBlocks.set('<%= def.name %>', <%= def.code %>);
+project.customBlocks.set(<%= def.name %>, <%= def.code %>);
 <% }) %>
 
-project.stage = new Stage('<%= stage.name %>', project.variables, project.customBlocks);
+project.stage = new Stage(<%= stage.name %>, project.variables, project.customBlocks);
 
 <% stage.customBlocks.forEach(function(def) { %>
-project.stage.customBlocks.set('<%= def.name %>', <%= def.code %>);
+project.stage.customBlocks.set(<%= def.name %>, <%= def.code %>);
 <% }) %>
 
 project.stage.onFlagPressed = function() {
@@ -157,7 +157,7 @@ project.stage.onKeyPressed = function(key) {
 // for each sprite...
 var sprite;
 <% sprites.forEach(function(rawSprite) { %>
-sprite = new Sprite('<%= rawSprite.name %>', project.variables, project.customBlocks);
+sprite = new Sprite(<%= rawSprite.name %>, project.variables, project.customBlocks);
 sprite.xPosition = <%= rawSprite.position.x %>;
 sprite.yPosition = <%= rawSprite.position.y %>;
 sprite.direction = <%= rawSprite.direction %>;
@@ -166,10 +166,10 @@ sprite.rotation = <%= rawSprite.rotation %>;
 sprite.size = <%= rawSprite.size %>;
 sprite.costumeIdx = <%= rawSprite.costumeIdx %>;
 <% rawSprite.customBlocks.forEach(function(def) { %>
-sprite.customBlocks.set('<%= def.name %>', <%= def.code %>);
+sprite.customBlocks.set(<%= def.name %>, <%= def.code %>);
 <% }) %>
 <% Object.keys(rawSprite.variables).forEach(function(variable) { %>
-sprite.variables.set('<%= variable %>', JSON.parse('<%= JSON.stringify(rawSprite.variables[variable]) %>'));<% }) %>
+sprite.variables.set(<%= variable %>, <%= rawSprite.variables[variable] %>);<% }) %>
 
 sprite.onFlagPressed = function() {
     var self = this;

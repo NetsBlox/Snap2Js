@@ -19,10 +19,6 @@ const callRawStatementWithArgs = function() {
     return callRawFnWithArgs.apply(null, arguments) + '\n';
 };
 
-const sanitize = function(text) {
-    return `JSON.parse(${JSON.stringify(JSON.stringify(text))})`;
-};
-
 const newPromise = (value='') => `SPromise.resolve(${value})`;
 
 module.exports = {
@@ -31,5 +27,4 @@ module.exports = {
     callRawStatementWithArgs,
     callStatementWithArgs,
     newPromise,
-    sanitize
 };

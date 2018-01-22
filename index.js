@@ -358,6 +358,7 @@
                 `${body}`;
         }
 
+        console.log('body', body);
         let fn = new Function(body);
         this.state.returnValue = `(${fn.toString()})()`;
     };
@@ -403,13 +404,45 @@
         this._resolveRefs(element);
         this.parse(element);
         let body = this.generateCodeFromState(this.state);
+        console.log('body', body);
         let fn = new Function('__ENV', body);
 
         this.resetState();
         return fn;
     };
 
+    Snap2Js.sanitizeVariables = function(unsafeVariables) {
+        const safeVariables = {};
+        console.log('unsafeVariables', unsafeVariables);
+        Object.keys(unsafeVariables).forEach(name => {
+            const safeName = utils.sanitize(name);
+            // Need to handle the case where the value is a block!
+            // TODO
+            const safeValue = utils.sanitize(unsafeVariables[name]);
+            safeVariables[safeName] = safeName
+        });
+        return safeVariables;
+    };
+
     Snap2Js.generateCodeFromState = function(state) {
+        // Sanitize all the user fields...
+        //  - [x] sprite names
+        //  - [x] stage name
+        //  - [x] sprite variable names
+        //  - [x] sprite variable values
+        //  - [x] global variable names
+        //  - [x] global variable values
+        //  - [x] sprite custom block names
+        //  - [x] global custom block names
+        this.state.stage.name = utils.sanitize(this.state.stage.name);
+        this.state.stage.customBlocks.forEach(block => utils.sanitize(block.name))
+        this.state.variables = this.sanitizeVariables(this.state.variables);
+
+        this.state.sprites.forEach(sprite => {
+            sprite.name = utils.sanitize(sprite.name);
+            sprite.customBlocks.forEach(block => utils.sanitize(block.name));
+            sprite.variables = this.sanitizeVariables(sprite.variables);
+        });
         return boilerplateTpl(this.state);
     };
 

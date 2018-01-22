@@ -1,6 +1,7 @@
 // Generating the js code from the ast nodes (indexed by node type)
 const utils = require('./utils');
 const indent = utils.indent;
+const sanitize = utils.sanitize;
 const CALLER = '__SELF';
 const callRawFnWithArgs = require('./backend-helpers').callRawFnWithArgs;
 const callFnWithArgs = require('./backend-helpers').callFnWithArgs;
@@ -640,6 +641,7 @@ backend.doAddToList = function(node) {
 
     // FIXME
     if (rawList && rawList.type === 'variable') {
+        // TODO
         list = `'${rawList.value}'`;
     }
     return callStatementWithArgs(node.type, value, list);
@@ -705,13 +707,14 @@ backend.reportCONS = function(node) {
 };
 
 backend.variable = function(node) {
-    return callFnWithArgs(node.type, `'${node.value}'`);
+    return callFnWithArgs(node.type, sanitize(node.value));
 };
 
 backend.evaluateCustomBlock = function(node) {
     var name = node.value,
         args = [],
-        fn = `self.customBlocks.get('${name}')`,
+        safeName = sanitize(name),
+        fn = `self.customBlocks.get(${safeName})`,
         types = utils.inputNames(name);
 
     args = node.inputs
@@ -735,15 +738,15 @@ backend.evaluateCustomBlock = function(node) {
         .map(this.generateCode);
 
     if (args.length) {
-        return callFnWithArgs(node.type, `'${name}'`, fn, args);
+        return callFnWithArgs(node.type, safeName, fn, args);
     } else {
-        return callFnWithArgs(node.type, `'${name}'`, fn);
+        return callFnWithArgs(node.type, safeName, fn);
     }
 };
 
 ///////////////////// Primitives /////////////////////
 backend.string = function(node) {
-    return `\`${node.value.replace(/'/g, "\\'")}\``;
+    return sanitize(node.value);
 };
 
 backend.option = function(node) {

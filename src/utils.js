@@ -37,9 +37,14 @@ const clone = obj => {
     return newObj;
 };
 
+const sanitize = function(text) {
+    return `JSON.parse(${JSON.stringify(JSON.stringify(text))})`;
+};
+
 module.exports = {
     indent: indent,
     clone: clone,
     parseSpec: parseSpec,
-    inputNames: inputNames
+    inputNames: inputNames,
+    sanitize
 };
