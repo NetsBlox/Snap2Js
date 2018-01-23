@@ -26,5 +26,5 @@ module.exports = {
     callFnWithArgs,
     callRawStatementWithArgs,
     callStatementWithArgs,
-    newPromise
+    newPromise,
 };

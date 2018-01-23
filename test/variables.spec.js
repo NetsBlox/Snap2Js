@@ -36,6 +36,14 @@ describe('variables', function() {
             // This was throwing an exception before issue #56
             bin(cxt);
         });
+
+        it('should load variables with block values', function(done) {
+            utils.compileAndRun('initial-var-fn')
+                .then(result => {
+                })
+                .nodeify(done);
+            cxt = snap2js.newContext();
+        });
     });
 
     describe('basic blocks', function() {

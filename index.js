@@ -136,28 +136,33 @@
         return last;
     };
 
-    parseVariableValue = function(variable) {
+    Snap2Js.parseVariableValue = function(variable) {
+        let result = 0;
 
         if (variable.tag === 'bool') {
-            return variable.contents === 'true';
+            result = variable.contents === 'true';
         } else if (variable.tag === 'l') {
-            return variable.contents;
+            result = utils.sanitize(variable.contents);
         } else if (variable.tag === 'list') {
-            return variable.children.map(child => {
-                return parseVariableValue(child.children[0]);
-            });
+            result = '[' + variable.children.map(child => {
+                return this.parseVariableValue(child.children[0]);
+            }).join(',') + ']';
+        } else if (variable.tag) {
+            result = this.parse.call(this, variable, true);
         }
-        return 0;
+        return result;
     };
 
-    parseInitialVariables = function(vars) {
+    Snap2Js.parseInitialVariables = function(vars) {
         var context = {},
-            variable;
+            variable,
+            name;
 
         vars = vars || [];
         for (var i = vars.length; i--;) {
             variable = vars[i];
-            context[variable.attributes.name] = parseVariableValue(variable.children[0]);
+            name = utils.sanitize(variable.attributes.name);
+            context[name] = this.parseVariableValue(variable.children[0]);
         }
         return context;
     };
@@ -174,7 +179,7 @@
         return {
             id: model.attributes.collabId,
             name: model.attributes.name,
-            variables: parseInitialVariables(model.childNamed('variables').children),
+            variables: this.parseInitialVariables(model.childNamed('variables').children),
             scripts: this.parseSpriteScripts(model.childNamed('scripts')),
             customBlocks: blocks.map(block => this.parseBlockDefinition(block)),
             position: position,
@@ -256,7 +261,11 @@
 
     const DEFAULT_STATE = {
         sprites: [],
-        stage: {customBlocks: [], scripts: {}},
+        stage: {
+            name: 'Stage',
+            customBlocks: [],
+            scripts: {}
+        },
         variables: {},
         customBlocks: [],
         returnValue: null,
@@ -264,11 +273,11 @@
         tempo: 60
     };
 
-    Snap2Js.parse = function(element) {
+    Snap2Js.parse = function(element, isVariable) {
         let type = element.tag;
 
         if (this.parse[type]) {
-            return this.parse[type].call(this, element);
+            return this.parse[type].call(this, element, isVariable);
         } else {
             throw new Error(`Unsupported xml type: ${type}`);
         }
@@ -282,7 +291,7 @@
         var stage = element.childNamed('stage');
         var sprites = stage.childNamed('sprites').childrenNamed('sprite');
 
-        var globalVars = parseInitialVariables(element.childNamed('variables').children);
+        var globalVars = this.parseInitialVariables(element.childNamed('variables').children);
         var tempo = +stage.attributes.tempo;
         var blocks = element.childNamed('blocks').children;
 
@@ -305,7 +314,7 @@
         }
     };
 
-    Snap2Js.parse.context = function(element) {
+    Snap2Js.parse.context = function(element, isVariable) {
         let receiver = null;
         if (element.childNamed('receiver')) {  // create the context
             receiver = element.childNamed('receiver').children[0];
@@ -348,8 +357,8 @@
         // TODO: set the 'self' and '__CONTEXT' variables
         // TODO: move this code to the backend...
         if (receiver && receiver.tag === 'sprite') {
-            let name = receiver.attributes.name;
-            body = `let self = project.sprites.find(sprite => sprite.name === '${name}');\n` +
+            let name = utils.sanitize(receiver.attributes.name);
+            body = `let self = project.sprites.find(sprite => sprite.name === ${name});\n` +
                 `let __CONTEXT = new VariableFrame(self.variables);\n` +
                 `${body}`;
         } else {
@@ -359,7 +368,11 @@
         }
 
         let fn = new Function(body);
-        this.state.returnValue = `(${fn.toString()})()`;
+        let code = `(${fn.toString()})()`;
+        if (!isVariable) {
+            this.state.returnValue = code;
+        }
+        return code;
     };
 
     Snap2Js.transpile = function(xml, pretty=false) {
@@ -410,6 +423,16 @@
     };
 
     Snap2Js.generateCodeFromState = function(state) {
+        // Sanitize all user entered values
+        this.state.stage.name = utils.sanitize(this.state.stage.name);
+
+        this.state.stage.customBlocks.forEach(block => block.name = utils.sanitize(block.name))
+        this.state.customBlocks.forEach(block => block.name = utils.sanitize(block.name))
+
+        this.state.sprites.forEach(sprite => {
+            sprite.name = utils.sanitize(sprite.name);
+            sprite.customBlocks.forEach(block => utils.sanitize(block.name));
+        });
         return boilerplateTpl(this.state);
     };
 
@@ -427,7 +450,7 @@
 
     Snap2Js._initNodeMap.receiveMessage = function(code, node) {
         var event = Snap2Js.generateCode(node.inputs[0]),
-            cond = event === "`any message`" ? 'true' : `event === ${event}`;
+            cond = event === utils.sanitize(`any message`) ? 'true' : `event === ${event}`;
         return [
             `if (${cond}) {`,
             'let __CONTEXT = new VariableFrame(self.variables);',
