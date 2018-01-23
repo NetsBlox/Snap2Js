@@ -136,28 +136,32 @@
         return last;
     };
 
-    parseVariableValue = function(variable) {
+    Snap2Js.parseVariableValue = function(variable) {
 
         if (variable.tag === 'bool') {
             return variable.contents === 'true';
         } else if (variable.tag === 'l') {
-            return variable.contents;
+            return utils.sanitize(variable.contents);
         } else if (variable.tag === 'list') {
-            return variable.children.map(child => {
-                return parseVariableValue(child.children[0]);
-            });
+            return '[' + variable.children.map(child => {
+                return this.parseVariableValue(child.children[0]);
+            }).join(',') + ']';
+        } else if (variable.tag) {
+            return this.parse.call(this, variable, true);
         }
         return 0;
     };
 
-    parseInitialVariables = function(vars) {
+    Snap2Js.parseInitialVariables = function(vars) {
         var context = {},
-            variable;
+            variable,
+            name;
 
         vars = vars || [];
         for (var i = vars.length; i--;) {
             variable = vars[i];
-            context[variable.attributes.name] = parseVariableValue(variable.children[0]);
+            name = utils.sanitize(variable.attributes.name);
+            context[name] = this.parseVariableValue(variable.children[0]);
         }
         return context;
     };
@@ -174,7 +178,7 @@
         return {
             id: model.attributes.collabId,
             name: model.attributes.name,
-            variables: parseInitialVariables(model.childNamed('variables').children),
+            variables: this.parseInitialVariables(model.childNamed('variables').children),
             scripts: this.parseSpriteScripts(model.childNamed('scripts')),
             customBlocks: blocks.map(block => this.parseBlockDefinition(block)),
             position: position,
@@ -268,11 +272,11 @@
         tempo: 60
     };
 
-    Snap2Js.parse = function(element) {
+    Snap2Js.parse = function(element, isVariable) {
         let type = element.tag;
 
         if (this.parse[type]) {
-            return this.parse[type].call(this, element);
+            return this.parse[type].call(this, element, isVariable);
         } else {
             throw new Error(`Unsupported xml type: ${type}`);
         }
@@ -286,7 +290,7 @@
         var stage = element.childNamed('stage');
         var sprites = stage.childNamed('sprites').childrenNamed('sprite');
 
-        var globalVars = parseInitialVariables(element.childNamed('variables').children);
+        var globalVars = this.parseInitialVariables(element.childNamed('variables').children);
         var tempo = +stage.attributes.tempo;
         var blocks = element.childNamed('blocks').children;
 
@@ -309,7 +313,7 @@
         }
     };
 
-    Snap2Js.parse.context = function(element) {
+    Snap2Js.parse.context = function(element, isVariable) {
         let receiver = null;
         if (element.childNamed('receiver')) {  // create the context
             receiver = element.childNamed('receiver').children[0];
@@ -363,7 +367,11 @@
         }
 
         let fn = new Function(body);
-        this.state.returnValue = `(${fn.toString()})()`;
+        let code = `(${fn.toString()})()`;
+        if (!isVariable) {
+            this.state.returnValue = code;
+        }
+        return code;
     };
 
     Snap2Js.transpile = function(xml, pretty=false) {
@@ -413,18 +421,6 @@
         return fn;
     };
 
-    Snap2Js.sanitizeVariables = function(unsafeVariables) {
-        const safeVariables = {};
-        Object.keys(unsafeVariables).forEach(name => {
-            const safeName = utils.sanitize(name);
-            // Need to handle the case where the value is a block!
-            // TODO
-            const safeValue = utils.sanitize(unsafeVariables[name]);
-            safeVariables[safeName] = safeValue;
-        });
-        return safeVariables;
-    };
-
     Snap2Js.generateCodeFromState = function(state) {
         // Sanitize all user entered values
         this.state.stage.name = utils.sanitize(this.state.stage.name);
@@ -432,12 +428,9 @@
         this.state.stage.customBlocks.forEach(block => block.name = utils.sanitize(block.name))
         this.state.customBlocks.forEach(block => block.name = utils.sanitize(block.name))
 
-        this.state.variables = this.sanitizeVariables(this.state.variables);
-
         this.state.sprites.forEach(sprite => {
             sprite.name = utils.sanitize(sprite.name);
             sprite.customBlocks.forEach(block => utils.sanitize(block.name));
-            sprite.variables = this.sanitizeVariables(sprite.variables);
         });
         return boilerplateTpl(this.state);
     };

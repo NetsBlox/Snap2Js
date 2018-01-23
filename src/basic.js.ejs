@@ -101,12 +101,6 @@ var project = {
     tempo: <%= tempo %>,
     sprites: []
 };
-<% Object.keys(variables).forEach(function(variable) { %>
-project.variables.set(<%= variable %>, <%= variables[variable] %>);<% }) %>
-<% customBlocks.forEach(function(def) { %>
-project.customBlocks.set(<%= def.name %>, <%= def.code %>);
-<% }) %>
-
 project.stage = new Stage(<%= stage.name %>, project.variables, project.customBlocks);
 
 <% stage.customBlocks.forEach(function(def) { %>
@@ -256,6 +250,12 @@ function callMaybeAsync(self, fn) {
     return result;
 }
 callMaybeAsync = __ENV.callMaybeAsync || callMaybeAsync;
+
+<% Object.keys(variables).forEach(function(variable) { %>
+project.variables.set(<%= variable %>, <%= variables[variable] %>);<% }) %>
+<% customBlocks.forEach(function(def) { %>
+project.customBlocks.set(<%= def.name %>, <%= def.code %>);
+<% }) %>
 
 <%= initCode %>
 
