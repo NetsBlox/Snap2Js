@@ -425,17 +425,12 @@
     };
 
     Snap2Js.generateCodeFromState = function(state) {
-        // Sanitize all the user fields...
-        //  - [x] sprite names
-        //  - [x] stage name
-        //  - [x] sprite variable names
-        //  - [x] sprite variable values
-        //  - [x] global variable names
-        //  - [x] global variable values
-        //  - [x] sprite custom block names
-        //  - [x] global custom block names
+        // Sanitize all user entered values
         this.state.stage.name = utils.sanitize(this.state.stage.name);
-        this.state.stage.customBlocks.forEach(block => utils.sanitize(block.name))
+
+        this.state.stage.customBlocks.forEach(block => block.name = utils.sanitize(block.name))
+        this.state.customBlocks.forEach(block => block.name = utils.sanitize(block.name))
+
         this.state.variables = this.sanitizeVariables(this.state.variables);
 
         this.state.sprites.forEach(sprite => {

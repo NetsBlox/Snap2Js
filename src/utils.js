@@ -38,7 +38,7 @@ const clone = obj => {
 };
 
 const sanitize = function(text) {
-    return `JSON.parse(${JSON.stringify(JSON.stringify(text))})`;
+    return `unescape('${escape(text)}')`;
 };
 
 module.exports = {

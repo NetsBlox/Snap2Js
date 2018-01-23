@@ -10,7 +10,7 @@ describe.only('sanitize', function() {
         fn().then(() => done()).catch(done);
     });
 
-    it('should compile with invalid var,sprite names, values', function(done) {
+    it('should compile with invalid var,sprite names, values', function() {
         const content = utils.getProjectXml('sanitize-inputs');
         const context = snap2js.newContext();
 
