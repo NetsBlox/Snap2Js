@@ -137,19 +137,20 @@
     };
 
     Snap2Js.parseVariableValue = function(variable) {
+        let result = 0;
 
         if (variable.tag === 'bool') {
-            return variable.contents === 'true';
+            result = variable.contents === 'true';
         } else if (variable.tag === 'l') {
-            return utils.sanitize(variable.contents);
+            result = utils.sanitize(variable.contents);
         } else if (variable.tag === 'list') {
-            return '[' + variable.children.map(child => {
+            result = '[' + variable.children.map(child => {
                 return this.parseVariableValue(child.children[0]);
             }).join(',') + ']';
         } else if (variable.tag) {
-            return this.parse.call(this, variable, true);
+            result = this.parse.call(this, variable, true);
         }
-        return 0;
+        return result;
     };
 
     Snap2Js.parseInitialVariables = function(vars) {
