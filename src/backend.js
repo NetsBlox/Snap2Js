@@ -639,10 +639,8 @@ backend.doAddToList = function(node) {
         rawList = node.inputs[1],
         list = null;
 
-    // FIXME
     if (rawList && rawList.type === 'variable') {
-        // TODO
-        list = `'${rawList.value}'`;
+        list = sanitize(rawList.value);
     }
     return callStatementWithArgs(node.type, value, list);
 };
