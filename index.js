@@ -358,7 +358,6 @@
                 `${body}`;
         }
 
-        console.log('body', body);
         let fn = new Function(body);
         this.state.returnValue = `(${fn.toString()})()`;
     };
@@ -404,7 +403,6 @@
         this._resolveRefs(element);
         this.parse(element);
         let body = this.generateCodeFromState(this.state);
-        console.log('body', body);
         let fn = new Function('__ENV', body);
 
         this.resetState();
@@ -413,13 +411,12 @@
 
     Snap2Js.sanitizeVariables = function(unsafeVariables) {
         const safeVariables = {};
-        console.log('unsafeVariables', unsafeVariables);
         Object.keys(unsafeVariables).forEach(name => {
             const safeName = utils.sanitize(name);
             // Need to handle the case where the value is a block!
             // TODO
             const safeValue = utils.sanitize(unsafeVariables[name]);
-            safeVariables[safeName] = safeName
+            safeVariables[safeName] = safeValue;
         });
         return safeVariables;
     };

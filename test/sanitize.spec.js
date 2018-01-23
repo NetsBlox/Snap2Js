@@ -1,4 +1,4 @@
-describe.only('sanitize', function() {
+describe('sanitize', function() {
     const utils = require('./utils');
     const snap2js = require('..');
 

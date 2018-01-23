@@ -38,7 +38,12 @@ const clone = obj => {
 };
 
 const sanitize = function(text) {
-    return `unescape('${escape(text)}')`;
+    if (typeof text === 'string') {
+        return `unescape('${escape(text)}')`;
+    } else if (text instanceof Array){
+        return '[' + text.map(val => sanitize(val)).join(',') + ']';
+    }
+    return text;
 };
 
 module.exports = {
