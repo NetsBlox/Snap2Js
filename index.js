@@ -256,7 +256,11 @@
 
     const DEFAULT_STATE = {
         sprites: [],
-        stage: {customBlocks: [], scripts: {}},
+        stage: {
+            name: 'Stage',
+            customBlocks: [],
+            scripts: {}
+        },
         variables: {},
         customBlocks: [],
         returnValue: null,
