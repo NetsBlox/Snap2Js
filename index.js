@@ -356,8 +356,8 @@
         // TODO: set the 'self' and '__CONTEXT' variables
         // TODO: move this code to the backend...
         if (receiver && receiver.tag === 'sprite') {
-            let name = receiver.attributes.name;
-            body = `let self = project.sprites.find(sprite => sprite.name === '${name}');\n` +
+            let name = utils.sanitize(receiver.attributes.name);
+            body = `let self = project.sprites.find(sprite => sprite.name === ${name});\n` +
                 `let __CONTEXT = new VariableFrame(self.variables);\n` +
                 `${body}`;
         } else {
