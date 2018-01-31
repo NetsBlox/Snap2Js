@@ -36,6 +36,7 @@ class Stage {
         this.customBlocks = new VariableFrame(project.customBlocks);
         this.isSprite = false;
         this.variables.set('__SELF', this);
+        this.project = project;
     }
 
     onFlagPressed() {
@@ -83,7 +84,6 @@ class Sprite extends Stage {
         this.direction = 90;
         this.costume = 0;
         this.size = 100;
-        this.project = project;
     }
 
     clone() {
