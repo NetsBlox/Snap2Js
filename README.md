@@ -10,7 +10,7 @@ Snap2Js requires [NodeJS](https://nodejs.org) LTS (v6). Snap2JS can be installed
 npm install -g snap2js
 ```
 
-Next, you can compile your favorite Snap! application by first exporting it to xml then using snap2js to compile it to a js file!
+Next, you can compile your favorite Snap! application by first exporting it to xml then using snap2js to compile it to a js file! A "hello world" example project is provided [here](https://github.com/NetsBlox/Snap2Js/blob/master/test/test-cases/projects/hello-world.xml).
 
 ```
 snap2js hello-world.xml
