@@ -328,18 +328,23 @@
 
     Snap2Js.parse.project = function(element) {
         var stage = element.childNamed('stage');
-        var sprites = stage.childNamed('sprites').childrenNamed('sprite');
+        this.parse(stage);
 
         var globalVars = this.parseInitialVariables(element.childNamed('variables').children);
-        var tempo = +stage.attributes.tempo;
         var blocks = element.childNamed('blocks').children;
 
+        this.state.variables = globalVars;
+        this.state.customBlocks = blocks.map(block => this.parseBlockDefinition(block));
+    };
+
+    Snap2Js.parse.stage = function(stage) {
+        var sprites = stage.childNamed('sprites').childrenNamed('sprite');
         sprites.forEach(sprite => this.parse(sprite));
 
-        this.state.variables = globalVars;
+        var tempo = +stage.attributes.tempo;
+
         this.state.tempo = tempo;
         this.state.stage = this.parseStage(stage);
-        this.state.customBlocks = blocks.map(block => this.parseBlockDefinition(block));
     };
 
     Snap2Js.parse.sprite = function(element) {
