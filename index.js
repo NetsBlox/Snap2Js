@@ -136,6 +136,31 @@
         return last;
     };
 
+    Snap2Js.getReferenceIndex = function(id) {
+        for (let i = this.state.references.length; i--;) {
+            if (this.state.references[i].attributes.id === id) {
+                return i;
+            }
+        }
+        return -1;
+    };
+
+    Snap2Js.REFERENCE_DICT = 'SNAP2JS_REFERENCES';
+    Snap2Js.getContentReference = function(id) {
+        const index = this.getReferenceIndex(id);
+        if (index > -1) {
+            return `${Snap2Js.REFERENCE_DICT}[${index}]`;
+        }
+        return `''`;
+    };
+
+    Snap2Js.recordContentReference = function(element) {
+        const index = this.getReferenceIndex(element.attributes.id);
+        if (index === -1) {
+            this.state.references.push(element);
+        }
+    };
+
     Snap2Js.parseVariableValue = function(variable) {
         let result = 0;
 
@@ -144,9 +169,15 @@
         } else if (variable.tag === 'l') {
             result = utils.sanitize(variable.contents);
         } else if (variable.tag === 'list') {
-            result = '[' + variable.children.map(child => {
-                return this.parseVariableValue(child.children[0]);
-            }).join(',') + ']';
+            if (variable.attributes.id) {
+                result = this.getContentReference(variable.attributes.id);
+            } else {  // unreferenced list literal
+                result = '[' + variable.children.map(child => {
+                    return this.parseVariableValue(child.children[0]);
+                }).join(',') + ']';
+            }
+        } else if (variable.tag === 'ref') {
+            result = this.getContentReference(variable.attributes.id);
         } else if (variable.tag) {
             result = this.parse.call(this, variable, true);
         }
@@ -269,6 +300,8 @@
         variables: {},
         customBlocks: [],
         returnValue: null,
+        references: [],
+        initRefs: '',
         initCode: '',
         tempo: 60
     };
@@ -287,6 +320,8 @@
         return this.parse(element.target);
     };
 
+    Snap2Js.parse.sound =
+    Snap2Js.parse.costume =
     Snap2Js.parse.media = function(element) {
         // nop - ignore media for now
     };
@@ -397,10 +432,15 @@
             allChildren = allChildren.concat(elements[i].allChildren());
         }
 
+        // For each of the references, record it in the REFERENCES obj.
+        // Lists should be created by making an empty list to start and then modifying it
         for (let i = allChildren.length; i--;) {
             if (allChildren[i].tag === 'ref') {
                 refs.push(allChildren[i]);
             } else if (allChildren[i].attributes.id) {
+                if (allChildren[i].tag !== 'event') {
+                    this.recordContentReference(allChildren[i]);
+                }
                 refValues[allChildren[i].attributes.id] = allChildren[i];
             }
         }
@@ -410,7 +450,37 @@
             refs[i].target = refValues[id];
         }
 
+        // Create the initialization code for the references
+        this.state.initRefs = this.getInitRefs();
         return elements;
+    };
+
+    Snap2Js.getInitRefs = function() {
+        return this.state.references
+            .map((ref, i) => this.getInitRefCodeFor(ref, i))
+            .join('\n');
+    };
+
+    Snap2Js.getInitRefCodeFor = function(ref, index) {
+        const name = `${Snap2Js.REFERENCE_DICT}[${index}]`;
+        let content = `'0'`;
+
+        // Stage, sprites should look up the sprite/stage from the project
+        if (ref.tag === 'stage') {
+            content = 'project.stage';
+        } else if (ref.tag === 'sprite') {
+            const spriteName = utils.sanitize(ref.attributes.name);
+            content = `project.sprites.find(sprite => sprite.name === ${spriteName})`;
+        } else if (ref.tag === 'list') {  // lists may self-reference
+            let initCode = [`${name} = [];`];
+            initCode = initCode.concat(ref.children
+                .map(child => this.parseVariableValue(child.children[0]))
+                .map((content, i) => `${name}[${i}] = ${content};`));
+            return initCode.join('\n');
+        } else {
+            console.error(`unknown xml tag for reference: ${ref.tag}`);
+        }
+        return `${name} = ${content};`;
     };
 
     Snap2Js.resetState = function() {
