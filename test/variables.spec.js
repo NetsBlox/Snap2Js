@@ -170,4 +170,35 @@ describe('variables', function() {
             assert.equal(result[1], 2);
         });
     });
+
+    describe('include global vars in ctx', function() {
+        let result,
+            list,
+            cxt,
+            fn;
+
+        before(function() {
+            content = utils.getContextXml('global-vars-with-ctx');
+            var bin = snap2js.compile(content)
+            cxt = snap2js.newContext();
+            cxt['doReport'] = val => result = val;
+            fn = bin(cxt);
+            fn().then(_list => {
+                list = _list;
+                done();
+            });
+        });
+
+        it('should support script vars', function() {
+            assert.equal(list[0], 'set a script variable!');
+        });
+
+        it('should support sprite vars', function() {
+            assert.equal(list[1], 'I am a sprite variable!');
+        });
+
+        it('should support global vars', function() {
+            assert.equal(list[2], 'I am a global variable!');
+        });
+    });
 });
