@@ -181,7 +181,6 @@ describe('variables', function() {
             content = utils.getContextXml('global-vars-with-ctx');
             var bin = snap2js.compile(content)
             cxt = snap2js.newContext();
-            cxt['doReport'] = val => result = val;
             fn = bin(cxt);
             fn().then(_list => {
                 list = _list;
