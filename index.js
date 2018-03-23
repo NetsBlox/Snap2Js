@@ -287,6 +287,10 @@
         return this.parse(element.target);
     };
 
+    Snap2Js.parse.media = function(element) {
+        // nop - ignore media for now
+    };
+
     Snap2Js.parse.project = function(element) {
         var stage = element.childNamed('stage');
         var sprites = stage.childNamed('sprites').childrenNamed('sprite');
@@ -384,10 +388,14 @@
         return code;
     };
 
-    Snap2Js._resolveRefs = function(element) {
+    Snap2Js._resolveRefs = function(elements) {
         let refValues = {},
-            allChildren = element.allChildren(),
+            allChildren = [],
             refs = [];
+
+        for (let i = elements.length; i--;) {
+            allChildren = allChildren.concat(elements[i].allChildren());
+        }
 
         for (let i = allChildren.length; i--;) {
             if (allChildren[i].tag === 'ref') {
@@ -402,7 +410,7 @@
             refs[i].target = refValues[id];
         }
 
-        return element;
+        return elements;
     };
 
     Snap2Js.resetState = function() {
@@ -410,11 +418,22 @@
     };
 
     Snap2Js.compile = function(xml) {
-        var element = new XML_Element();
-        element.parseString(xml.toString());
+        var endIndex = 0,
+            startIndex = 0,
+            len = xml.length,
+            elements = [],
+            element;
 
-        this._resolveRefs(element);
-        this.parse(element);
+        xml = `<root>${xml.toString()}</root>`;
+        element = new XML_Element();
+        element.parseString(xml);
+        elements = element.children;
+
+        this._resolveRefs(elements);
+        // Compile all the text...
+        for (let i = elements.length; i--;) {
+            this.parse(elements[i]);
+        }
         let body = this.generateCodeFromState(this.state);
         let fn = new Function('__ENV', body);
 
