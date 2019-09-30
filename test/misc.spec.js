@@ -20,4 +20,11 @@ describe('misc', function() {
         const content = utils.getContextXml('empty-receiver');
         const fn = snap2js.compile(content);
     });
+
+    it('should hoist sprite declaration before stage logic', function() {
+        const queryXml = utils.getContextXml('hoist-sprite');
+        const factory = snap2js.compile(queryXml);
+        const env = snap2js.newContext();
+		const fn = factory(env);  // throws an error if undefined sprites
+    });
 });
