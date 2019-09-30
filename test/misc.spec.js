@@ -15,4 +15,9 @@ describe('misc', function() {
         };
         fn(env)
     });
+
+    it('should compile w/ empty receiver elements', function() {
+        const content = utils.getContextXml('empty-receiver');
+        const fn = snap2js.compile(content);
+    });
 });

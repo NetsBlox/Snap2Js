@@ -360,8 +360,9 @@
 
     Snap2Js.parse.context = function(element, isVariable) {
         let receiver = null;
-        if (element.childNamed('receiver')) {  // create the context
-            receiver = element.childNamed('receiver').children[0];
+        const receiverNode = element.childNamed('receiver');
+        if (receiverNode && receiverNode.children.length) {  // create the context
+            receiver = receiverNode.children[0];
             if (receiver.tag === 'ref') receiver = receiver.target;
             this.parse(receiver);
         }
