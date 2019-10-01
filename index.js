@@ -14,12 +14,13 @@
     const boilerplateTpl = _.template(boilerplate);
 
     Snap2Js.parseSpriteScripts = function(model) {
-        var asts = model.children.map(child => this.parseScript(child)),
-            eventHandlers = {},
-            code;
+        const eventHandlers = {};
+        const asts = model.children
+            .filter(child => child.tag !== 'comment')
+            .map(child => this.parseScript(child));
 
         for (var i = asts.length; i--;) {
-            code = this.generateScriptCode(asts[i]);
+            const code = this.generateScriptCode(asts[i]);
             if (code) {
                 if (!eventHandlers[asts[i].type]) {
                     eventHandlers[asts[i].type] = [];

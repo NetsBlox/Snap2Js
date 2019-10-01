@@ -27,4 +27,11 @@ describe('misc', function() {
         const env = snap2js.newContext();
 		const fn = factory(env);  // throws an error if undefined sprites
     });
+
+    it('should ignore comments', function() {
+        const content = utils.getProjectXml('comments');
+        const fn = snap2js.compile(content);
+        const env = snap2js.newContext();
+        fn(env);
+    });
 });
