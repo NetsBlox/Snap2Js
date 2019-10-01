@@ -20,4 +20,11 @@ describe('misc', function() {
         const content = utils.getContextXml('empty-receiver');
         const fn = snap2js.compile(content);
     });
+
+    it('should ignore comments', function() {
+        const content = utils.getProjectXml('comments');
+        const fn = snap2js.compile(content);
+        const env = snap2js.newContext();
+        fn(env);
+    });
 });
