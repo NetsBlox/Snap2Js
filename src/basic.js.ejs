@@ -103,6 +103,19 @@ var project = {
 };
 project.stage = new Stage(<%= stage.name %>, project.variables, project.customBlocks);
 
+var sprite;
+<% sprites.forEach(function(rawSprite) { %>
+sprite = new Sprite(<%= rawSprite.name %>, project.variables, project.customBlocks);
+sprite.xPosition = <%= rawSprite.position.x %>;
+sprite.yPosition = <%= rawSprite.position.y %>;
+sprite.direction = <%= rawSprite.direction %>;
+sprite.draggable = <%= rawSprite.draggable %>;
+sprite.rotation = <%= rawSprite.rotation %>;
+sprite.size = <%= rawSprite.size %>;
+sprite.costumeIdx = <%= rawSprite.costumeIdx %>;
+project.sprites.push(sprite);
+<% }); %>
+
 <% stage.customBlocks.forEach(function(def) { %>
 project.stage.customBlocks.set(<%= def.name %>, <%= def.code %>);
 <% }) %>
@@ -152,15 +165,8 @@ SNAP2JS_REFERENCES = [];
 
 // for each sprite...
 var sprite;
-<% sprites.forEach(function(rawSprite) { %>
-sprite = new Sprite(<%= rawSprite.name %>, project.variables, project.customBlocks);
-sprite.xPosition = <%= rawSprite.position.x %>;
-sprite.yPosition = <%= rawSprite.position.y %>;
-sprite.direction = <%= rawSprite.direction %>;
-sprite.draggable = <%= rawSprite.draggable %>;
-sprite.rotation = <%= rawSprite.rotation %>;
-sprite.size = <%= rawSprite.size %>;
-sprite.costumeIdx = <%= rawSprite.costumeIdx %>;
+<% sprites.forEach(function(rawSprite, i) { %>
+sprite = project.sprites[<%= i %>];
 <% rawSprite.customBlocks.forEach(function(def) { %>
 sprite.customBlocks.set(<%= def.name %>, <%= def.code %>);
 <% }) %>
@@ -236,7 +242,6 @@ sprite.checkConditions = function() {
     // TODO: add arbitrary hat block code here
 };
 
-project.sprites.push(sprite);
 <% }) %>
 project.timerStart = Date.now();
 __ENV.__start(project, __ENV);
