@@ -34,4 +34,13 @@ describe('misc', function() {
         const env = snap2js.newContext();
         fn(env);
     });
+
+    it('should get random numbers', async function() {
+        const queryXml = utils.getContextXml('get-random-numbers');
+        const factory = snap2js.compile(queryXml);
+        const env = snap2js.newContext();
+		const fn = factory(env);
+        const randoms = await fn([1,2]);
+        assert.equal(randoms.length, 2);
+    });
 });
