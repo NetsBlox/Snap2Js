@@ -120,7 +120,7 @@
                 return childNode;
             });
 
-        if (curr.contents) {
+        if (!node.value && curr.contents) {
             node.value = curr.contents;
         }
         return node;
