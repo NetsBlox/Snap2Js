@@ -56,7 +56,7 @@ describe('functions', function() {
             if (INPUT_OUTPUTS[name]) {
                 let input = INPUT_OUTPUTS[name].input;
                 let output = INPUT_OUTPUTS[name].output;
-                it(`should return fn where ${input}->${output}`, async function() {
+                it(`should return fn where ${input || '()'}->${output}`, async function() {
                     const factory = snap2js.compile(content);
                     const fn = factory(env);
                     if (input) {
