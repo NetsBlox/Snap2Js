@@ -35,7 +35,6 @@ describe('functions', function() {
 
     utils.getContextNames().forEach((name, i) => {
         describe(name, () => {
-            if (name !== 'build-list') return;
             let content = null;
 
             before(() => content = utils.getContextXml(name));
@@ -57,12 +56,13 @@ describe('functions', function() {
             if (INPUT_OUTPUTS[name]) {
                 let input = INPUT_OUTPUTS[name].input;
                 let output = INPUT_OUTPUTS[name].output;
-                it(`should return fn where ${input}->${output}`, function() {
-                    let fn = snap2js.compile(content);
+                it(`should return fn where ${input || '()'}->${output}`, async function() {
+                    const factory = snap2js.compile(content);
+                    const fn = factory(env);
                     if (input) {
-                        assert.equal(fn(env).apply(null, input), output);
+                        assert.equal(await fn.apply(null, input), output);
                     } else {
-                        assert.equal(fn(env)(), output);
+                        assert.equal(await fn(), output);
                     }
                 });
             }
