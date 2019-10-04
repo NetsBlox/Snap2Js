@@ -527,7 +527,7 @@
 
         this.state.sprites.forEach(sprite => {
             sprite.name = utils.sanitize(sprite.name);
-            sprite.customBlocks.forEach(block => utils.sanitize(block.name));
+            sprite.customBlocks.forEach(block => block.name = utils.sanitize(block.name));
         });
         return boilerplateTpl(this.state);
     };
