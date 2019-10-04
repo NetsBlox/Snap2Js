@@ -35,7 +35,6 @@ describe('functions', function() {
 
     utils.getContextNames().forEach((name, i) => {
         describe(name, () => {
-            if (name !== 'build-list') return;
             let content = null;
 
             before(() => content = utils.getContextXml(name));
