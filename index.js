@@ -400,16 +400,16 @@
 
         let body = `return ${this.generateCode(node)}`;
 
-        // TODO: set the 'self' and '__CONTEXT' variables
+        // TODO: set the 'self' and 'DEFAULT_CONTEXT' variables
         // TODO: move this code to the backend...
         if (receiver && receiver.tag === 'sprite') {
             let name = utils.sanitize(receiver.attributes.name);
             body = `let self = project.sprites.find(sprite => sprite.name === ${name});\n` +
-                `let __CONTEXT = new VariableFrame(self.variables);\n` +
+                `let DEFAULT_CONTEXT = new VariableFrame(self.variables);\n` +
                 `${body}`;
         } else {
             body = `let self = project.stage;\n` +
-                `let __CONTEXT = new VariableFrame(self.variables);\n` +
+                `let DEFAULT_CONTEXT = new VariableFrame(self.variables);\n` +
                 `${body}`;
         }
 
@@ -538,7 +538,7 @@
     Snap2Js._initNodeMap.receiveGo = function(code, node) {
         return [
             '(function() {',
-            'var __CONTEXT = new VariableFrame(self.variables);',
+            'var DEFAULT_CONTEXT = new VariableFrame(self.variables);',
             indent(code),
             '})();'
         ].join('\n');
@@ -549,7 +549,7 @@
             cond = event === utils.sanitize(`any message`) ? 'true' : `event === ${event}`;
         return [
             `if (${cond}) {`,
-            'let __CONTEXT = new VariableFrame(self.variables);',
+            'let DEFAULT_CONTEXT = new VariableFrame(self.variables);',
             indent(code),
             '}'
         ].join('\n');
@@ -561,7 +561,7 @@
 
         return [
             `if (${cond}) {`,
-            'let __CONTEXT = new VariableFrame(self.variables);',
+            'let DEFAULT_CONTEXT = new VariableFrame(self.variables);',
             indent(code),
             '}'
         ].join('\n');

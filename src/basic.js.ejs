@@ -102,6 +102,7 @@ var project = {
     sprites: []
 };
 project.stage = new Stage(<%= stage.name %>, project.variables, project.customBlocks);
+let DEFAULT_CONTEXT = new VariableFrame(project.stage.variables);
 
 var sprite;
 <% sprites.forEach(function(rawSprite) { %>

@@ -533,22 +533,22 @@ backend.reifyPredicate = function(node) {
             body = body.replace(/[;\n]*$/, `.then(${cb})`);
         }
 
-        body = body.replace(/[;\n]*$/, `.catch(${reject}).then(() => __CONTEXT = OUTER_CONTEXT)`);
+        body = body.replace(/[;\n]*$/, `.catch(${reject}).then(() => DEFAULT_CONTEXT = OUTER_CONTEXT)`);
         if (lastChar === ';') body += ';';
     } else {
         body = `${cb}();`;
-        body += `__CONTEXT = OUTER_CONTEXT;`;
+        body += `DEFAULT_CONTEXT = OUTER_CONTEXT;`;
     }
 
     // TODO: doReport should call this callback...
     return [
         `function(${args.map((e, i) => `a${i}`).join(', ')}) {`,
         indent(`return new SPromise((${cb}, ${reject}) => {`),
-        indent(`var context = new VariableFrame(arguments[${args.length}] || __CONTEXT);`),
+        indent(`var context = new VariableFrame(arguments[${args.length}] || DEFAULT_CONTEXT);`),
         indent(`var self = context.get('${CALLER}').value;`),
         indent(args.map((arg, index) => `context.set(${arg}, a${index});`).join('\n')),
-        indent(`let OUTER_CONTEXT = __CONTEXT;`),
-        indent(`__CONTEXT = context;`),
+        indent(`let OUTER_CONTEXT = DEFAULT_CONTEXT;`),
+        indent(`DEFAULT_CONTEXT = context;`),
         indent(body),
         indent(`});`),
         `}`
