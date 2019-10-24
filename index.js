@@ -494,7 +494,7 @@
         let body = this.generateCodeFromState(this.state);
         //console.log(body);
         let fn = new Function('__ENV', body);
-        require('fs').writeFileSync('code.js', fn.toString());
+        require('fs').writeFileSync('code.js', `const fn = ${fn.toString()};async function test(){console.log(await fn(require('.').newContext()))};test();`);
 
         this.resetState();
         return fn;
