@@ -1,7 +1,7 @@
 const snap2js = require('..');
+const utils = require('../src/utils');
 const assert = require('assert');
 const fs = require('fs');
-const Q = require('q');
 const path = require('path');
 const TEST_CASE_DIR = path.join(__dirname, 'test-cases');
 

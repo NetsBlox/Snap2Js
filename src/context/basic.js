@@ -1,6 +1,5 @@
 const base = require('./nop');
 const clone = require('../utils').clone;
-const SPromise = require('synchronous-promise').SynchronousPromise;
 
 const WARP_VAR = '__isAtomic';
 const isString = val => typeof val === 'string';

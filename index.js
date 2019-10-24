@@ -2,7 +2,6 @@
 (function(Snap2Js) {
     const XML_Element = require('./lib/snap/xml');
     const {AstNode, Block, Yield} = require('./src/ast');
-    const Q = require('q');
     const prettier = require('prettier');
     const fs = require('fs');
     const path = require('path');

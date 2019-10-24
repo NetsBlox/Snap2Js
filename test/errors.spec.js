@@ -2,7 +2,6 @@ describe('errors', function() {
     const snap2js = require('..');
     const assert = require('assert');
     const utils = require('./utils');
-    const Q = require('q');
 
     describe('basic', function() {
         it('should be able to catch error', function(done) {
@@ -13,7 +12,7 @@ describe('errors', function() {
             fn().catch(err => done())
         });
 
-        it.skip('should return the failing block id', function() {
+        it.skip('should return the failing block id', async function() {
             let cxt = snap2js.newContext();
 
             let content = utils.getContextXml('list-err');
@@ -23,8 +22,7 @@ describe('errors', function() {
             let fn = bin(cxt);
             console.log(fn.toString());
             try {
-                Q(fn())
-                    .catch(err => console.error('error:', err));
+                await fn();
                 console.log('no error');
             } catch (e) {
                 console.log('err', e);
