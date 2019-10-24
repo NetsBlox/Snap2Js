@@ -1,5 +1,3 @@
-const SPromise = __ENV.SPromise;
-
 class Variable {
     constructor(name, value) {
         this.name = name;
@@ -121,17 +119,26 @@ project.sprites.push(sprite);
 project.stage.customBlocks.set(<%= def.name %>, <%= def.code %>);
 <% }) %>
 
-project.stage.onFlagPressed = function() {
+project.stage.onFlagPressed = async function() {
     var self = this;
 <%
 (stage.scripts.receiveGo || [])
-    .forEach(function(code) {
+    .forEach(function(code, i) {
 %>
-    <%= code %>
-
+    const handler_<%= i %> = <%= code %>
 <%
 });
 %>
+
+    return Promise.all([
+<%
+(stage.scripts.receiveGo || [])
+    .forEach(function(_, i) {
+%>
+    handler_<%=i%>,
+<%
+    });
+%>    ]);
 };
 
 project.stage.onUserEventReceived = function(event) {
@@ -178,13 +185,20 @@ sprite.onFlagPressed = function() {
     var self = this;
 <%
 (rawSprite.scripts.receiveGo || [])
-    .forEach(function(code) {
+    .forEach(function(code, i) {
 %>
-    <%= code %>
-
+    const handler_<%= i %> = <%= code %>
 <%
 });
 %>
+    return Promise.all([
+<%
+(rawSprite.scripts.receiveGo || [])
+    .forEach(function(_, i) {
+%>handler_<%=i%>,
+<%
+    });
+%>    ]);
 };
 
 sprite.onKeyPressed = function(key) {
@@ -247,18 +261,6 @@ sprite.checkConditions = function() {
 project.timerStart = Date.now();
 __ENV.__start(project, __ENV);
 
-function callMaybeAsync(self, fn) {
-    let args = [].slice.call(arguments, 2);
-
-    // Wait for any args to resolve
-    let result = __ENV.SPromise.all(args);
-
-    result = result.then(args => fn.apply(self, args));
-
-    return result;
-}
-callMaybeAsync = __ENV.callMaybeAsync || callMaybeAsync;
-
 <% Object.keys(variables).forEach(function(variable) { %>
 project.variables.set(<%= variable %>, <%= variables[variable] %>);<% }) %>
 <% customBlocks.forEach(function(def) { %>
@@ -273,6 +275,5 @@ project.customBlocks.set(<%= def.name %>, <%= def.code %>);
 <% if (returnValue) { %>
 return <%= returnValue %>;
 <% } else { %>
-project.sprites.forEach(sprite => sprite.onFlagPressed());
-project.stage.onFlagPressed();
+return Promise.all(project.sprites.concat(project.stage).map(sprite => sprite.onFlagPressed()));
 <% } %>

@@ -97,31 +97,89 @@ describe('control', function() {
 
     describe('doIf', function() {
 
-        describe('repeat loop', function() {
-            it('should support async conditions (true)', function(done) {
-                utils.compileAndRun('do-if-true-async')
-                    .then(result => assert.equal(result, true))
-                    .nodeify(done);
+        describe('basic compilation', function() {
+            it('should correctly detect the body', async function() {
+                const result = await utils.compileAndRun('empty-if-cond');
             });
+        });
 
-            it('should support async conditions (false)', function(done) {
-                utils.compileAndRun('do-if-false-async')
-                    .then(result => assert.equal(result, false))
-                    .nodeify(done);
+        describe.only('repeat loop', function() {
+            [true, false].forEach(cond => {
+                const COND_FN = '2';
+                const COND_FN_LOOP = '2.5';
+                const IF_BODY = '3';
+                const AFTER_IF = '4';
+                const CONC_CODE = '1';
+
+                describe(`async conditions (${cond})`, function() {
+                    let trace;
+                    before(async () => {
+                        trace = await utils.compileAndRun(`do-if-${cond}-async`);
+                    });
+
+                    it('should evaluate the condition once', function() {
+                        const evalCount = trace.filter(i => i === COND_FN).length;
+                        assert.equal(evalCount, 1);
+                    });
+
+                    it('should evaluate loop 5 times', function() {
+                        const evalCount = trace.filter(i => i === COND_FN_LOOP).length;
+                        assert.equal(evalCount, 5);
+                    });
+
+                    it('should alternate btwn loops', function() {
+                        trace.forEach((value, index) => {
+                            if (value === COND_FN_LOOP) {
+                                assert.notEqual(COND_FN_LOOP, trace[index + 1])
+                            }
+                        });
+                    });
+
+                    it(`should ${cond ? 'not ' : ''}evaluate after if`, function() {
+                        assert.equal(!trace.find(i => i == AFTER_IF), cond);
+                    });
+
+                    it(`should ${cond ? '': 'not '}evaluate body of if statement`, function() {
+                        assert.equal(!!trace.find(i => i == IF_BODY), cond);
+                    });
+
+                });
+
+                describe(`sync conditions (${cond})`, function() {
+                    let trace;
+                    before(async () => {
+                        trace = await utils.compileAndRun(`do-if-${cond}-sync`);
+                    });
+
+                    it('should evaluate the condition once', function() {
+                        const evalCount = trace.filter(i => i === COND_FN).length;
+                        assert.equal(evalCount, 1);
+                    });
+
+                    it('should evaluate condition before loop runs twice', function() {
+                        assert.notDeepEqual(trace.slice(0, 2), ['1', '1']);
+                    });
+
+                    it(`should ${cond ? 'not ' : ''}evaluate after if`, function() {
+                        assert.equal(!trace.find(i => i == AFTER_IF), cond);
+                    });
+
+                    it(`should ${cond ? '': 'not '}evaluate body of if statement`, function() {
+                        assert.equal(!!trace.find(i => i == IF_BODY), cond);
+                    });
+                });
             });
         });
 
         describe('repeatUntil', function() {
-            it('should support async conditions (true)', function(done) {
-                utils.compileAndRun('do-if-true-async-repeat-until')
-                    .then(result => assert.equal(result, true))
-                    .nodeify(done);
+            it('should support async conditions (true)', async function() {
+                const result = await utils.compileAndRun('do-if-true-async-repeat-until')
+                assert.equal(result, true);
             });
 
-            it('should support async conditions (false)', function(done) {
-                utils.compileAndRun('do-if-false-async-repeat-until')
-                    .then(result => assert.equal(result, false))
-                    .nodeify(done);
+            it('should support async conditions (false)', async function() {
+                const result = await utils.compileAndRun('do-if-false-async-repeat-until')
+                assert.equal(result, false);
             });
         });
     });

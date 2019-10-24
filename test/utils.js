@@ -30,15 +30,18 @@ function getCompiledVersionOf(projectName) {
     return snap2js.compile(content);
 }
 
-function compileAndRun(projectName) {
-    let deferred = Q.defer();
-    let content = getProjectXml(projectName);
-    let cxt = snap2js.newContext();
+async function compileAndRun(projectName) {
+    let lastReportedValue = null;
+    const cxt = snap2js.newContext();
+    cxt['doReport'] = val => {
+        console.log('reporting', val);
+        lastReportedValue = val;
+        return val;
+    };
 
-    cxt['doReport'] = val => deferred.resolve(val);
-    bin = getCompiledVersionOf(projectName);
-    bin(cxt);
-    return deferred.promise;
+    const bin = getCompiledVersionOf(projectName);
+    await bin(cxt);
+    return lastReportedValue;
 }
 
 function getProjectPaths() {

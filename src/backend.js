@@ -21,7 +21,7 @@ backend.setYPosition =
 backend.changeXPosition =
 backend.changeYPosition =
 backend.forward = function(node) {
-    var dist = this.generateCode(node.inputs[0]);
+    const dist = node.first().code(this);
     return callStatementWithArgs(node.type, dist);
 };
 
@@ -87,15 +87,11 @@ backend.doWait = function(node) {
 };
 
 backend.doIf = function(node) {
-    var cond = this.generateCode(node.inputs[0]),
-        ifTrue = '';
+    const [condition, body] = node.inputs().map(input => input.code(this));
 
-    if (node.inputs[1]) {
-        ifTrue = this.generateCode(node.inputs[1]);
-    }
-    ifTrue = `function() {\n${ifTrue}\n}`;
+    return `if (${condition}) ${body}`;
 
-    return callStatementWithArgs(node.type, cond, ifTrue);
+    //return callStatementWithArgs(node.type, condition, ifTrue);
 };
 
 backend.doIfElse = function(node) {
@@ -112,16 +108,8 @@ backend.doIfElse = function(node) {
 
 backend.doReport = function(node) {
     // Get the current callback name and call it!
-    var value = this.generateCode(node.inputs[0]);
-    let callback = getCallbackName(node);
-    //let reject = getRejectName(node);
-    if (!node.parent) throw new Error('no parent:' + node.type);
-
-    if (callback) {
-        return callRawStatementWithArgs(callback, value);
-    } else {
-        return callStatementWithArgs(node.type, value);
-    }
+    const value = node.first() ? node.first().code(this) : '';
+    return `return ${callStatementWithArgs(node.type, value)}`;
 };
 
 backend.removeClone =
@@ -141,10 +129,12 @@ backend.doBroadcastAndWait = function(node) {
 
 backend.reportCallCC =
 backend.evaluate = function(node) {
-    var fn = this.generateCode(node.inputs[0]),
-        argInputs = node.inputs[1] ? node.inputs[1].inputs : [],
-        args = argInputs.map(this.generateCode);
+    const fn = node.first() ? node.first().code(this) : '';
+    const argInputs = node.inputs()[1] ? node.inputs()[1].inputs() : [];
+    const args = argInputs.map(arg => arg.code(this));
 
+    // TODO: Check if it is async...
+    return `await ${fn}()`;
     if (args.length) {
         return callFnWithArgs(node.type, fn, args);
     } else {
@@ -164,23 +154,24 @@ backend.doCallCC = function(node) {
 };
 
 backend.fork = function(node) {
-    var fn = this.generateCode(node.inputs[0]),
-        argInputs = node.inputs[1] ? node.inputs[1].inputs : [],
-        args = argInputs.map(this.generateCode);
+    var fn = node.first() ? node.first().code(this) : '() => {}',
+        argInputs = node.inputs()[1] ? node.inputs()[1].inputs() : [],
+        args = argInputs.map(input => input.code(this));
 
-    if (args.length) {
-        return callStatementWithArgs('doYield', fn, args);
-    }
-    return callStatementWithArgs('doYield', fn);
+    return `await ${fn}(${args.join(',')})`;
+    //if (args.length) {
+        //return callStatementWithArgs('doYield', fn, args);
+    //}
+    //return callStatementWithArgs('doYield', fn);
 };
 
 backend.doRepeat = function(node) {
-    let count = node.inputs[0] ? this.generateCode(node.inputs[0]) : 0,
-        body = this.generateCode(node.inputs[1]),
-        next = this.generateCode(node.next),
-        iterVar = node.id,
-        recurse;
+    const count = node.first() ? node.first().code(this) : 0;
+    const body = node.inputs()[1];
+    const iterVar = node.id;
+    return `;for (let ${iterVar} = +${count}; ${iterVar}--;) ${body.code(this)}`;
 
+    // TODO: Generate a basic for loop... Ignore yielding...
     recurse = callStatementWithArgs('doYield', `doLoop_${node.id}`, node.id);
 
     const cond = `${node.id}-- > 0`;
@@ -200,63 +191,39 @@ backend.doRepeat = function(node) {
         `})`
     ].join('\n');
 };
-backend.doRepeat.async = true;
 
-backend.doForever = function(node) {
-    var recurse = callStatementWithArgs('doYield', `doForever_${node.id}`),
-        callback = `resolve_${node.id}_${Date.now()}`,
-        reject = `reject_${node.id}_${Date.now()}`,
-        body = recurse;
-
-    if (node.inputs[0]) {
-        body = `${this.generateCode(node.inputs[0])}.then(() => ${recurse}).catch(${reject})`;
-    } else {
-        body = `${recurse}.catch(${reject});`;
-    }
-
-    return [
-        `new SPromise((${callback}, ${reject}) => {`,
-        `function doForever_${node.id} () {`,
-        indent(body),
-        `}`,
-         `doForever_${node.id}();`,
-        `})`
-    ].join('\n');
+backend.doYield = function(node) {
+    return `await ${callStatementWithArgs('doYield')}`;
 };
+
+//backend.doForever = function(node) {
+    //var recurse = callStatementWithArgs('doYield', `doForever_${node.id}`),
+        //callback = `resolve_${node.id}_${Date.now()}`,
+        //reject = `reject_${node.id}_${Date.now()}`,
+        //body = recurse;
+
+    //if (node.inputs[0]) {
+        //body = `${this.generateCode(node.inputs[0])}.then(() => ${recurse}).catch(${reject})`;
+    //} else {
+        //body = `${recurse}.catch(${reject});`;
+    //}
+
+    //return [
+        //`new SPromise((${callback}, ${reject}) => {`,
+        //`function doForever_${node.id} () {`,
+        //indent(body),
+        //`}`,
+         //`doForever_${node.id}();`,
+        //`})`
+    //].join('\n');
+//};
 
 backend.doUntil = function(node) {
-    var cond = newPromise(false),
-        body = newPromise(),
-        exitBody = node.next ? this.generateCode(node.next) : newPromise(),
-        callback = `resolve_${node.id}_${Date.now()}`,
-        reject = `reject_${node.id}_${Date.now()}`,
-        iterVar = node.id,
-        recurse;
-
-    // Convert the doUntil to a recursive doIfElse
-    recurse = callStatementWithArgs('doYield', `doLoop_${node.id}`);
-
-    if (node.inputs[1]) {
-        body = this.generateCode(node.inputs[1]);
-    }
-    if (node.inputs[0]) {
-        cond = this.generateCode(node.inputs[0]);
-    }
-
-    let execBody = `function() {\n${body}.then(() => ${recurse}).catch(${reject})}`;
-    let exitLoop = `function() {\n${exitBody}.then(() => \n${callback}()).then(${reject});\n}`;
-
-    loopControl = callStatementWithArgs('doIfElse', cond, exitLoop, execBody);
-    return [
-        `new SPromise((${callback}, ${reject}) => {`,
-        `function doLoop_${node.id} () {`,
-        `${indent(loopControl)}.catch(${reject});`,
-        `}`,
-         `doLoop_${node.id}();`,
-        `})`
-    ].join('\n');
+    // TODO: Check if the cond is async!
+    const cond = node.first() ? node.first().code(this) : 'false';
+    const block = node.inputs()[1];
+    return `while(!${cond}) ${block.code(this)}`;
 };
-backend.doUntil.async = true;
 
 ///////////////////// Looks /////////////////////
 backend.doSwitchToCostume = function(node) {
@@ -331,7 +298,7 @@ backend.bubble = function(node) {
 };
 
 backend.doThink = function(node) {
-    var msg = this.generateCode(node.inputs[0]);
+    const msg = node.first() ? node.first().code(this) : '""';
     return callStatementWithArgs(node.type, msg);
 };
 
@@ -454,9 +421,11 @@ backend.reportTextSplit =
 backend.reportGreaterThan =
 backend.reportLessThan =
 backend.reportEquals = function(node) {
-    var left = this.generateCode(node.inputs[0]),
-        right = this.generateCode(node.inputs[1]);
+    const [leftNode, rightNode] = node.inputs();
+    const left = leftNode ? leftNode.code(this) : 'false';
+    const right = rightNode ? rightNode.code(this) : 'false';
 
+    // TODO: replace ternary with a safe get method?
     return callFnWithArgs(node.type, left, right);
 };
 
@@ -477,7 +446,7 @@ backend.reportStringSize = function(node) {
 };
 
 backend.reportBoolean = function(node) {
-    return this.generateCode(node.inputs[0]);
+    return node.first().code(this);
 };
 
 backend.reportJSFunction = function(node) {
@@ -515,44 +484,41 @@ const getRejectName = node => getFnName('reject', node);
 backend.reifyScript =
 backend.reifyReporter =
 backend.reifyPredicate = function(node) {
-    let body = '',
-        cb = getCallbackName(node),
-        reject = getRejectName(node),
-        args = node.inputs[1].inputs
-            .map(this.generateCode);
-
+    const body = node.first();
+    //const [body='{}', args=[]] = node.inputs().map(input => input.code(this));
+    return `(async function() ${body.code(this)}).bind(self)`;
     // Why is this missing the callback???
-    if (node.inputs[0]) {
-        body = this.generateCode(node.inputs[0]);
+    //if (node.inputs[0]) {
+        //body = this.generateCode(node.inputs[0]);
 
-        // Add error handling and callback
-        let lastChar = body[body.length-1];
+        //// Add error handling and callback
+        //let lastChar = body[body.length-1];
 
-        let isMissingCallback = !(new RegExp('\\b' + cb + '\\b').test(body));
-        if (isMissingCallback) {
-            body = body.replace(/[;\n]*$/, `.then(${cb})`);
-        }
+        //let isMissingCallback = !(new RegExp('\\b' + cb + '\\b').test(body));
+        //if (isMissingCallback) {
+            //body = body.replace(/[;\n]*$/, `.then(${cb})`);
+        //}
 
-        body = body.replace(/[;\n]*$/, `.catch(${reject}).then(() => DEFAULT_CONTEXT = OUTER_CONTEXT)`);
-        if (lastChar === ';') body += ';';
-    } else {
-        body = `${cb}();`;
-        body += `DEFAULT_CONTEXT = OUTER_CONTEXT;`;
-    }
+        //body = body.replace(/[;\n]*$/, `.catch(${reject}).then(() => DEFAULT_CONTEXT = OUTER_CONTEXT)`);
+        //if (lastChar === ';') body += ';';
+    //} else {
+        //body = `${cb}();`;
+        //body += `DEFAULT_CONTEXT = OUTER_CONTEXT;`;  // TODO
+    //}
 
     // TODO: doReport should call this callback...
-    return [
-        `function(${args.map((e, i) => `a${i}`).join(', ')}) {`,
-        indent(`return new SPromise((${cb}, ${reject}) => {`),
-        indent(`var context = new VariableFrame(arguments[${args.length}] || DEFAULT_CONTEXT);`),
-        indent(`var self = context.get('${CALLER}').value;`),
-        indent(args.map((arg, index) => `context.set(${arg}, a${index});`).join('\n')),
-        indent(`let OUTER_CONTEXT = DEFAULT_CONTEXT;`),
-        indent(`DEFAULT_CONTEXT = context;`),
-        indent(body),
-        indent(`});`),
-        `}`
-    ].join('\n');
+    //return [
+        //`function(${args.map((e, i) => `a${i}`).join(', ')}) {`,
+        //indent(`return new SPromise((${cb}, ${reject}) => {`),
+        //indent(`var context = new VariableFrame(arguments[${args.length}] || DEFAULT_CONTEXT);`),
+        //indent(`var self = context.get('${CALLER}').value;`),
+        //indent(args.map((arg, index) => `context.set(${arg}, a${index});`).join('\n')),
+        //indent(`let OUTER_CONTEXT = DEFAULT_CONTEXT;`),
+        //indent(`DEFAULT_CONTEXT = context;`),
+        //indent(body),
+        //indent(`});`),
+        //`}`
+    //].join('\n');
 };
 
 //backend.reifyScript = function(node) {
@@ -616,9 +582,9 @@ backend.changeSize = function(node) {
 ///////////////////// Variables /////////////////////
 backend.doChangeVar =
 backend.doSetVar = function(node) {
-    var name = this.generateCode(node.inputs[0]);
-    var value = this.generateCode(node.inputs[1]) || '';
+    if (!node.inputs().length) return '';
 
+    const [name, value=''] = node.inputs().map(input => input.code(this));
     return callStatementWithArgs(node.type, name, value);
 };
 
@@ -630,15 +596,14 @@ backend.doHideVar = function(node) {
 };
 
 backend.doDeclareVariables = function(node) {
-    var names = node.inputs[0].inputs
-        .map(input => this.generateCode(input));
+    const names = node.inputs().map(input => input.code(this));
 
     return callStatementWithArgs(node.type, names.join(', '));
 };
 
 backend.doAddToList = function(node) {
-    var value = this.generateCode(node.inputs[0]),
-        rawList = node.inputs[1],
+    var value = node.first() ? node.first().code(this) : '',
+        rawList = node.inputs()[1],
         list = null;
 
     if (rawList && rawList.type === 'variable') {
@@ -666,7 +631,7 @@ backend.reportCDR = function(node) {
 };
 
 backend.reportNewList = function(node) {
-    var items = node.inputs.map(this.generateCode),
+    var items = node.inputs().map(input => input.code(this)),
         args = [node.type].concat(items);
 
     return callFnWithArgs.apply(null, args);
@@ -758,13 +723,51 @@ backend.bool = function(node) {
 };
 
 backend.list = function(node) {
-    var inputs = node.inputs.map(this.generateCode);
-    return `SPromise.all([${inputs.join(', ')}])`;
+    const inputs = node.inputs().map(input => input.code(this));
+    return `[${inputs.join(', ')}]`;
 };
 
 backend.getJSFromRPCStruct = function(node) {
     let args = node.inputs.map(this.generateCode);
     return callFnWithArgs(node.type, args.join(','));
 };
+
+//backend.script = function(node) {
+// TODO
+//};
+
+backend.eventHandlers = {};
+backend.eventHandlers.receiveOnClone =
+backend.eventHandlers.receiveGo = function(node, code) {
+    return [
+        '(async function() {',
+        'var DEFAULT_CONTEXT = new VariableFrame(self.variables);',
+        indent(code),
+        '})();'
+    ].join('\n');
+};
+
+//Snap2Js.receiveMessage = function(code, node) {
+    //var event = Snap2Js.generateCode(node.inputs()),
+        //cond = event === utils.sanitize(`any message`) ? 'true' : `event === ${event}`;
+    //return [
+        //`if (${cond}) {`,
+        //'let DEFAULT_CONTEXT = new VariableFrame(self.variables);',
+        //indent(code),
+        //'}'
+    //].join('\n');
+//};
+
+//Snap2Js.receiveKey = function(code, node) {
+    //var key = Snap2Js.generateCode(node.inputs()),
+        //cond = key === "'any key'" ? 'true' : `key === ${key}`;
+
+    //return [  // TODO: Remove this code!
+        //`if (${cond}) {`,
+        //'let DEFAULT_CONTEXT = new VariableFrame(self.variables);',
+        //indent(code),
+        //'}'
+    //].join('\n');
+//};
 
 module.exports = backend;

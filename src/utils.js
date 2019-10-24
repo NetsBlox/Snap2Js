@@ -46,10 +46,29 @@ const sanitize = function(text) {
     return text;
 };
 
+const isWarping = function(node) {
+    let parent = node.parent;
+    while (parent) {
+        if (parent.type === 'doWarp') {
+            return true;
+        }
+        parent = parent.parent;
+    }
+    // TODO: Will this work?
+    return false;
+};
+
+const isAtomic = function(node) {
+    const YIELD_IF_NOT_WARPING = ['doUntil']
+    const ALWAYS_YIELD = ['doYield', ''];
+    // Check that there are no child nodes which will yield control
+};
+
 module.exports = {
     indent: indent,
     clone: clone,
     parseSpec: parseSpec,
     inputNames: inputNames,
-    sanitize
+    sanitize,
+    isWarping,
 };

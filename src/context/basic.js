@@ -87,16 +87,27 @@ context.doReport = function(value) {
     return value;
 };
 
-context.doYield = function(fn) {
-    var args = Array.prototype.slice.call(arguments, 1),
-        context = args.pop();
+function defer() {
+    const deferred = {
+        resolve: null,
+        reject: null
+    };
+    const promise = new Promise((resolve, reject) => {
+        deferred.resolve = resolve;
+        deferred.reject = reject;
+    });
+    deferred.promise = promise;
+    return deferred;
+}
 
-    var isAtomic = context.get(WARP_VAR, true);
-    if (isAtomic && isAtomic.value) {
-        fn.apply(this, args);
-    } else {
-        setTimeout(() => fn.apply(this, args), 5);
-    }
+function sleep(duration) {
+    const deferred = defer();
+    setTimeout(deferred.resolve, duration);
+    return deferred.promise;
+}
+
+context.doYield = async function() {
+    return await sleep(0);
 };
 
 context.doWarp = function(isStart, context) {

@@ -1,6 +1,7 @@
 // We will be generating JavaScript code which will call the primitive fns
 (function(Snap2Js) {
     const XML_Element = require('./lib/snap/xml');
+    const {AstNode, Block, Yield} = require('./src/ast');
     const Q = require('q');
     const prettier = require('prettier');
     const fs = require('fs');
@@ -14,127 +15,97 @@
     const boilerplateTpl = _.template(boilerplate);
 
     Snap2Js.parseSpriteScripts = function(model) {
+        const validEventHandlers = Object.keys(this._backend.eventHandlers);
         const eventHandlers = {};
         const asts = model.children
             .filter(child => child.tag !== 'comment')
-            .map(child => this.parseScript(child));
+            .map(child => AstNode.from(child));
 
-        for (var i = asts.length; i--;) {
-            const code = this.generateScriptCode(asts[i]);
-            if (code) {
-                if (!eventHandlers[asts[i].type]) {
-                    eventHandlers[asts[i].type] = [];
+        for (let i = asts.length; i--;) {
+            const root = asts[i];
+
+            root.addConcurrencyNodes();
+
+            const eventHandler = root instanceof Block ? root.first().type : root.type;
+            const code = this.generateCode(root);
+            if (validEventHandlers.includes(eventHandler) && code) {
+                if (!eventHandlers[eventHandler]) {
+                    eventHandlers[eventHandler] = [];
                 }
-                eventHandlers[asts[i].type].push(code);
+                eventHandlers[eventHandler].push(code);
             }
         }
         return eventHandlers;
     };
 
-    Snap2Js.createAstNode = function(curr, next) {
+    Snap2Js.addConcurrencyNodes = function(node) {
+        // TODO: Add doYield nodes if:
+        //  - [ ] warping disabled or (not warping
+        //  - [ ] 
+        // - conditional: doRepeat, doForever, doUntil
+        // - always: fork (doesn't yield - just kicks off an async function)?
+        // - async: doSayFor, doThinkFor
+        node.inputs().forEach(node => node.addConcurrencyNodes())
+        node.addConcurrencyNodes();
+        const isLoop = ['doRepeat', 'doForever', 'doUntil'].includes(node.type);
+        if (isLoop) {
+            const isWarping = utils.isWarping(node);
+            if (!isWarping) {
+                const body = node.inputs().pop();
+                body.addChild(new Yield());
+            }
+        }
+        // TODO: Add async nodes
+    };
+
+    Snap2Js.createAstNode = function(curr) {
         if (typeof curr !== 'object') {
-            return {
-                parent: null,
-                type: typeof curr,
-                value: curr
-            };
+            return AstNode.fromPrimitive(curr);
         }
 
         if (curr.tag === 'color' || curr.tag === 'option')
             return this.createAstNode(curr.contents)
 
-        var node,
-            type;
+        var type;
 
-        node = {
-            id: null,
-            parent: null,
-            type: null,
-            inputs: null,
-            next: next || null
-        };
-
-        if (curr.tag === 'custom-block') {
-            type = 'evaluateCustomBlock';
-            node.value = curr.attributes.s;
-            node.id = curr.attributes.collabId;
-
-            // remove receiver if not a global block
-            // FIXME: This should actually load the definitions from the receiver
-            let lastChild = curr.children[curr.children.length-1];
-            if (lastChild && lastChild.tag === 'receiver') {
-                let receiver = lastChild.children[0];
-                curr.children.pop();
-                if (receiver) {
-                    this.parse(receiver);
-                }
-            }
-        } else if (!curr.attributes) {
-            type = Object.keys(curr)[0];
-            if (type === 'block') {
-                throw new Error('bad parsing');
-            }
-        } else if (curr.attributes.var) {
-            type = 'variable';
-            node.value = curr.attributes.var;
-        } else {
-            type = curr.attributes.s || curr.tag;
-            node.id = curr.attributes.collabId;
+        const node = AstNode.from(curr);
+        for (let i = curr.children.length; i--;) {
+            const child = this.createAstNode(curr.children[i]);
+            node.addChild(child);
         }
-        if (!type) {
-            throw new Error('bad parsing');
-        }
+        //node.inputs = curr.children
+            //.map(child => {
+                //let key = child.tag;
+                //let childNode = null;
 
-        node.type = type;
+                //if (key === 'script') {
+                    //childNode = this.parseScript(child);
+                    //if (childNode) childNode.parent = node;
 
-        if (node.id) node.id = node.id.replace(/[^a-zA-Z0-9]/g, '_');
-        if (next) {
-            next.parent = node;
-        }
-        node.inputs = curr.children
-            .map(child => {
-                let key = child.tag;
-                let childNode = null;
-
-                if (key === 'script') {
-                    childNode = this.parseScript(child);
-                    if (childNode) childNode.parent = node;
-
-                    return childNode;
-                } else if (key === 'l') {
-                    if (child.children.length === 1) {
-                        childNode = this.createAstNode(child.children[0]);
-                        if (childNode) childNode.parent = node;
-                        return childNode;
-                    } else if (child.children.length) {
-                        let children = child.children.map(child => this.createAstNode(child));
-                        children.forEach(child => child.parent = node);
-                        return children;
-                    }
-                    childNode = this.createAstNode(child.contents);
-                    if (childNode) childNode.parent = node;
-                    return childNode;
-                }
-                childNode = this.createAstNode(child);
-                if (childNode) childNode.parent = node;
-                return childNode;
-            });
+                    //return childNode;
+                //} else if (key === 'l') {
+                    //if (child.children.length === 1) {
+                        //childNode = this.createAstNode(child.children[0]);
+                        //if (childNode) childNode.parent = node;
+                        //return childNode;
+                    //} else if (child.children.length) {
+                        //let children = child.children.map(child => this.createAstNode(child));
+                        //children.forEach(child => child.parent = node);
+                        //return children;
+                    //}
+                    //childNode = this.createAstNode(child.contents);
+                    //if (childNode) childNode.parent = node;
+                    //return childNode;
+                //}
+                //childNode = this.createAstNode(child);
+                //if (childNode) childNode.parent = node;
+                //return childNode;
+            //});
 
         if (!node.value && curr.contents) {
             node.value = curr.contents;
         }
         return node;
-    };
-
-    Snap2Js.parseScript = function(script) {
-        var rootNode,
-            blocks = script.children,
-            last;
-
-        for (var i = blocks.length; i--;) {
-            last = this.createAstNode(blocks[i], last);
-        }
-        return last;
     };
 
     Snap2Js.getReferenceIndex = function(id) {
@@ -237,6 +208,7 @@
 
     const DEFAULT_BLOCK_FN_TYPE = 'reifyScript';
     Snap2Js.parseBlockDefinition = function(block) {
+        // TODO: Update this
         var spec = block.attributes.s,
             inputs = utils.inputNames(spec).map(input => this.createAstNode(input)),
             blockType = block.attributes.type,
@@ -246,11 +218,7 @@
             root;
 
         const scriptNode = block.childNamed('script');
-        const ast = scriptNode ? this.parseScript(scriptNode) :
-            {  // Add a string node as a sort of no-op
-                type: 'string',
-                value: 'nop'
-            };
+        const ast = AstNode.from(scriptNode || '');
 
         // Detect the fn to use to define the function
         blockFnType = 'reify' + blockType.substring(0,1).toUpperCase() +
@@ -272,6 +240,7 @@
         }).join(' ');
 
         // Modify the ast to get it to generate an entire fn
+        // TODO: UPDATE THIS
         root = {
             type: blockFnType,
             id: block.attributes.collabId,
@@ -372,6 +341,7 @@
         let block = element.children[2];
         let fnNode = null;
         let node = null;
+        // TODO: UPDATE
         if (block.tag === 'script') {
             fnNode = this.parseScript(block);
             let inputEls = element.childNamed('inputs').children;
@@ -507,15 +477,49 @@
         elements = element.children;
 
         this._resolveRefs(elements);
-        // Compile all the text...
+        const printScripts = () => {
+            const stage = element.children[0].children.find(c => c.tag === 'stage');
+            const sprite = stage.children.find(c => c.tag === 'sprites').children[0];
+            const script = sprite.children.find(c => c.tag === 'scripts').children[0];
+            // TODO: Find the scripts in the if statement
+            const evaluate = script.children[1].children[0].children[1];
+            console.log(evaluate.children[0].children)
+        };
+        //printScripts();
+        element = this._flatten(element);
+        //printScripts();
         for (let i = elements.length; i--;) {
             this.parse(elements[i]);
         }
+        //console.log('code:', this.state.sprites[0].scripts.receiveGo[0]);
         let body = this.generateCodeFromState(this.state);
+        //console.log(body);
         let fn = new Function('__ENV', body);
+        require('fs').writeFileSync('code.js', fn.toString());
 
         this.resetState();
         return fn;
+    };
+
+    Snap2Js._flatten = function(node) {
+        let children = [];
+
+        for (let i = 0; i < node.children.length; i++) {
+            let child = node.children[i];
+            if (child.tag === 'l' && child.children.length === 1) {
+                //if (child.children.length === 1) {
+                    children.push(this._flatten(child.children[0]));
+                //} else if (child.children.length) {
+                    //console.log('children', children);
+                    //children = children.concat(child.children
+                        //.map(child => this._flatten(child)));
+                //}
+            } else {
+                children.push(this._flatten(child));
+            }
+        }
+        node.children = children;
+        return node;
     };
 
     Snap2Js.generateCodeFromState = function(state) {
@@ -532,58 +536,23 @@
         return boilerplateTpl(this.state);
     };
 
-    Snap2Js._initNodeMap = {};
-    // TODO: move this to the backend...
-    Snap2Js._initNodeMap.receiveOnClone =
-    Snap2Js._initNodeMap.receiveGo = function(code, node) {
-        return [
-            '(function() {',
-            'var DEFAULT_CONTEXT = new VariableFrame(self.variables);',
-            indent(code),
-            '})();'
-        ].join('\n');
-    };
-
-    Snap2Js._initNodeMap.receiveMessage = function(code, node) {
-        var event = Snap2Js.generateCode(node.inputs[0]),
-            cond = event === utils.sanitize(`any message`) ? 'true' : `event === ${event}`;
-        return [
-            `if (${cond}) {`,
-            'let DEFAULT_CONTEXT = new VariableFrame(self.variables);',
-            indent(code),
-            '}'
-        ].join('\n');
-    };
-
-    Snap2Js._initNodeMap.receiveKey = function(code, node) {
-        var key = Snap2Js.generateCode(node.inputs[0]),
-            cond = key === "'any key'" ? 'true' : `key === ${key}`;
-
-        return [
-            `if (${cond}) {`,
-            'let DEFAULT_CONTEXT = new VariableFrame(self.variables);',
-            indent(code),
-            '}'
-        ].join('\n');
-    };
-
     Snap2Js.generateScriptCode = function(root) {
-        if (Snap2Js._initNodeMap[root.type]) {
-            return Snap2Js._initNodeMap[root.type](Snap2Js.generateCode(root.next), root);
+        const triggerType = root instanceof Block ? root.first().type : root.type;
+        if (Snap2Js._initNodeMap[triggerType]) {
+            // TODO: How would I like to change this??
+            return Snap2Js._initNodeMap[triggerType](Snap2Js.generateCode(root.next()), root);
         } else {
             console.error('warn: script does not start with supported init node:', root.type);
         }
     };
 
-    Snap2Js.generateCode = function(root) {
-        if (!root) return `SPromise.resolve()`;
-        if (!Snap2Js._backend[root.type]) {
-            throw new Error(`Unsupported node type: ${root.type}`);
-        }
+    Snap2Js.generateCode = function(node) {
+        return node.code(Snap2Js._backend) || '';
 
         var code = Snap2Js._backend[root.type].call(Snap2Js, root);
         if (!Snap2Js._backend[root.type].async && root.next) {
-            code += `\n.then(() => ${Snap2Js.generateCode(root.next)})`;
+            // FIXME: UPDATE
+            code += `\n.then(() => ${Snap2Js.generateCode(root.next())})`;
         }
         return code.replace(/\);/g, ');\n');
     };
