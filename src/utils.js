@@ -54,14 +54,17 @@ const isWarping = function(node) {
         }
         parent = parent.parent;
     }
-    // TODO: Will this work?
+
     return false;
 };
 
-const isAtomic = function(node) {
-    const YIELD_IF_NOT_WARPING = ['doUntil']
-    const ALWAYS_YIELD = ['doYield', ''];
-    // Check that there are no child nodes which will yield control
+const defer = function () {
+    const deferred = {resolve: null, reject: null};
+    deferred.promise = new Promise((resolve, reject) => {
+        deferred.resolve = resolve;
+        deferred.reject = reject;
+    });
+    return deferred;
 };
 
 module.exports = {
@@ -71,4 +74,5 @@ module.exports = {
     inputNames: inputNames,
     sanitize,
     isWarping,
+    defer,
 };

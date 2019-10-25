@@ -44,9 +44,10 @@ class Stage {
     }
 
     emit(event, wait) {
+        console.log('emitting', event);
         if (wait) {
-            project.sprites.concat([project.stage])
-                .forEach(obj => obj.onUserEventReceived(event));
+            return project.sprites.concat([project.stage])
+                .map(obj => obj.onUserEventReceived(event));
         } else {
             setTimeout(() => {
                 project.sprites.concat([project.stage])
@@ -87,7 +88,7 @@ class Sprite extends Stage {
     clone() {
         let clone = Object.create(this);
         this.clones.push(clone);
-        setTimeout(() => clone.onCloneStart(), 0);
+        clone.onCloneStart();
     }
 }
 
@@ -146,13 +147,21 @@ project.stage.onUserEventReceived = function(event) {
 
 <%
 (stage.scripts.receiveMessage || [])
-    .forEach(function(code) {
+    .forEach(function(code, i) {
 %>
-    <%= code %>
-
+    const handler_<%= i %> = <%= code %>
 <%
 });
 %>
+    return Promise.all([
+<%
+(stage.scripts.receiveMessage || [])
+    .forEach(function(_, i) {
+%>
+    handler_<%=i%>,
+<%
+    });
+%>    ]);
 };
 
 project.stage.onKeyPressed = function(key) {
@@ -219,14 +228,20 @@ sprite.onUserEventReceived = function(event) {
 
 <%
 (rawSprite.scripts.receiveMessage || [])
-    .forEach(function(code) {
+    .forEach(function(code, i) {
 %>
-    <%= code %>
-
+    const handler_<%= i %> = <%= code %>
 <%
 });
 %>
-
+    return Promise.all([
+<%
+(rawSprite.scripts.receiveMessage || [])
+    .forEach(function(_, i) {
+%>handler_<%=i%>,
+<%
+    });
+%>    ]);
 };
 
 sprite.onCloneStart = function(event) {

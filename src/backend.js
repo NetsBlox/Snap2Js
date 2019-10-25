@@ -60,30 +60,14 @@ backend.bounceOffEdge = function(node) {
 
 ///////////////////// Control /////////////////////
 backend.doWarp = function(node) {
-    let body = this.generateCode(node.inputs[0]);
-    const afterFn = `callback_${node.id}_${Date.now()}`;
-    const reject = `reject_${node.id}_${Date.now()}`;
-
-    return `new SPromise((${afterFn}, ${reject}) => ${callStatementWithArgs(node.type, true)}
-        .then(() => ${body})
-        .then(() => ${callStatementWithArgs(node.type, false)})
-        .then(() => ${afterFn}())
-        .catch(${reject})
-    )`;
-
+    // doWarp is essentially compiled away since we add explicit
+    // doYield nodes to the AST
+    return node.first().code(this);
 };
 
 backend.doWait = function(node) {
-    var time = this.generateCode(node.inputs[0]),
-        afterFn = `afterWait_${node.id}`;
-
-    // TODO: handle rejections?
-    // This can only fail if the underlying implementation is faulty...
-    return [
-        `new SPromise(${afterFn} => {`,
-        callStatementWithArgs(node.type, time, afterFn),
-        `})`
-    ].join('\n');
+    const time = node.first().code(this);
+    return `await ${callStatementWithArgs(node.type, time)}`;
 };
 
 backend.doIf = function(node) {
@@ -121,10 +105,13 @@ backend.createClone =
 backend.doStopThis =
 backend.doStopOthers =
 backend.doWaitUntil =
-backend.doBroadcast =
-backend.doBroadcastAndWait = function(node) {
-    var event = this.generateCode(node.inputs[0]);
+backend.doBroadcast = function(node) {
+    const event = node.first().code(this);
     return callStatementWithArgs(node.type, event);
+};
+
+backend.doBroadcastAndWait = function(node) {
+    return `await ${backend.doBroadcast(node)}`;
 };
 
 backend.reportCallCC =
@@ -143,26 +130,12 @@ backend.evaluate = function(node) {
 };
 
 backend.doCallCC = function(node) {
-    var fn = this.generateCode(node.inputs[0]),
-        argInputs = node.inputs[1] ? node.inputs[1].inputs : [],
-        args = argInputs.map(this.generateCode);
-
-    if (args.length) {
-        return callStatementWithArgs(node.type, fn, args);
-    }
-    return callStatementWithArgs(node.type, fn);
+    return node.first().code(this);
 };
 
 backend.fork = function(node) {
-    var fn = node.first() ? node.first().code(this) : '() => {}',
-        argInputs = node.inputs()[1] ? node.inputs()[1].inputs() : [],
-        args = argInputs.map(input => input.code(this));
-
-    return `await ${fn}(${args.join(',')})`;
-    //if (args.length) {
-        //return callStatementWithArgs('doYield', fn, args);
-    //}
-    //return callStatementWithArgs('doYield', fn);
+    const [fn, argInputs] = node.inputs();
+    return `setTimeout(() => ${fn.code(this)}.apply(null, ${argInputs.code(this)}), 0)`;
 };
 
 backend.doRepeat = function(node) {
@@ -170,53 +143,17 @@ backend.doRepeat = function(node) {
     const body = node.inputs()[1];
     const iterVar = node.id;
     return `;for (let ${iterVar} = +${count}; ${iterVar}--;) ${body.code(this)}`;
-
-    // TODO: Generate a basic for loop... Ignore yielding...
-    recurse = callStatementWithArgs('doYield', `doLoop_${node.id}`, node.id);
-
-    const cond = `${node.id}-- > 0`;
-    const callback = `resolve_${node.id}_${Date.now()}`;
-    const reject = `reject_${node.id}_${Date.now()}`;
-
-    let doLoop = `() => {${body}.then(() => ${recurse}).catch(${reject})}`;
-    let doElse = `() => {${next}.then(() => ${callback}()).then(${reject});\n}`;
-    loopControl = callStatementWithArgs('doIfElse', cond, doLoop, doElse);
-
-    return [
-        `new SPromise((${callback}, ${reject}) => {`,
-        `function doLoop_${node.id} (${node.id}) {`,
-        `return ${indent(loopControl)}.catch(${reject});`,
-        `}`,
-         callRawStatementWithArgs(`doLoop_${node.id}`, count),
-        `})`
-    ].join('\n');
 };
 
 backend.doYield = function(node) {
     return `await ${callStatementWithArgs('doYield')}`;
 };
 
-//backend.doForever = function(node) {
-    //var recurse = callStatementWithArgs('doYield', `doForever_${node.id}`),
-        //callback = `resolve_${node.id}_${Date.now()}`,
-        //reject = `reject_${node.id}_${Date.now()}`,
-        //body = recurse;
-
-    //if (node.inputs[0]) {
-        //body = `${this.generateCode(node.inputs[0])}.then(() => ${recurse}).catch(${reject})`;
-    //} else {
-        //body = `${recurse}.catch(${reject});`;
-    //}
-
-    //return [
-        //`new SPromise((${callback}, ${reject}) => {`,
-        //`function doForever_${node.id} () {`,
-        //indent(body),
-        //`}`,
-         //`doForever_${node.id}();`,
-        //`})`
-    //].join('\n');
-//};
+backend.doForever = function(node) {
+    // Yield at the end of the loop...
+    const block = node.first().code(this);
+    return `while (1) ${block}`;
+};
 
 backend.doUntil = function(node) {
     // TODO: Check if the cond is async!
@@ -293,7 +230,7 @@ backend.doThinkFor = function(node) {
 };
 
 backend.bubble = function(node) {
-    var inputs = this.generateCode(node.inputs[0]);
+    const inputs = node.first().code(this);
     return callStatementWithArgs(node.type, inputs);
 };
 
@@ -430,8 +367,8 @@ backend.reportEquals = function(node) {
 };
 
 backend.reportJoinWords = function(node) {
-    var listInput = node.inputs[0],
-        inputs = listInput.inputs.map(this.generateCode),
+    const listInput = node.first(),
+        inputs = listInput.inputs().map(input => input.code(this)),
         args = inputs.slice();
 
     args.unshift(node.type);
@@ -456,86 +393,30 @@ backend.reportJSFunction = function(node) {
     return callFnWithArgs(node.type, args, body);
 };
 
-const TYPES_WITH_CALLBACKS = [
-    'reifyScript',
-    'reifyReporter',
-    'reifyPredicate'
-];
-let nodeIdCounter = 1;
-
-// Get the name of the callback fn of the closest enclosing fn definition
-const getFnName = (fn, node) => {
-    if (TYPES_WITH_CALLBACKS.includes(node.type)) {
-        if (!node.id) {
-            node.id = `anon_item__${nodeIdCounter++}`;
-        }
-        return `${fn}${node.id.replace(/-/g, '_')}`;
-    }
-
-    if (node.parent) return getFnName(fn, node.parent);
-
-    return null;
-};
-
-const getCallbackName = node => getFnName('callback', node);
-const getRejectName = node => getFnName('reject', node);
-
-
-backend.reifyScript =
-backend.reifyReporter =
-backend.reifyPredicate = function(node) {
-    const body = node.first();
+backend.reifyScript = function(node) {
+    const [body, argList] = node.inputs();
+    const args = argList.inputs().map(input => input.code(this));
+    const tmpArgs = args.map((_, i) => `a${i}`);
     //const [body='{}', args=[]] = node.inputs().map(input => input.code(this));
-    return `(async function() ${body.code(this)}).bind(self)`;
-    // Why is this missing the callback???
-    //if (node.inputs[0]) {
-        //body = this.generateCode(node.inputs[0]);
-
-        //// Add error handling and callback
-        //let lastChar = body[body.length-1];
-
-        //let isMissingCallback = !(new RegExp('\\b' + cb + '\\b').test(body));
-        //if (isMissingCallback) {
-            //body = body.replace(/[;\n]*$/, `.then(${cb})`);
-        //}
-
-        //body = body.replace(/[;\n]*$/, `.catch(${reject}).then(() => DEFAULT_CONTEXT = OUTER_CONTEXT)`);
-        //if (lastChar === ';') body += ';';
-    //} else {
-        //body = `${cb}();`;
-        //body += `DEFAULT_CONTEXT = OUTER_CONTEXT;`;  // TODO
-    //}
-
-    // TODO: doReport should call this callback...
-    //return [
-        //`function(${args.map((e, i) => `a${i}`).join(', ')}) {`,
-        //indent(`return new SPromise((${cb}, ${reject}) => {`),
-        //indent(`var context = new VariableFrame(arguments[${args.length}] || DEFAULT_CONTEXT);`),
-        //indent(`var self = context.get('${CALLER}').value;`),
-        //indent(args.map((arg, index) => `context.set(${arg}, a${index});`).join('\n')),
-        //indent(`let OUTER_CONTEXT = DEFAULT_CONTEXT;`),
-        //indent(`DEFAULT_CONTEXT = context;`),
-        //indent(body),
-        //indent(`});`),
-        //`}`
-    //].join('\n');
+    return [
+    `(async function(${tmpArgs.join(', ')}) {`,
+        indent(`let context = new VariableFrame(arguments[${args.length}] || DEFAULT_CONTEXT);`),
+        indent(`let self = context.get('${CALLER}').value;`),
+        indent(args.map((arg, index) => `context.set(${arg}, a${index});`).join('\n')),
+        indent(`let OUTER_CONTEXT = DEFAULT_CONTEXT;`),
+        indent(`DEFAULT_CONTEXT = context;`),
+        // TODO: Check if async?
+        indent(`const result_${node.id} = await (async function()${body.code(this)})();`),
+        indent(`;DEFAULT_CONTEXT = OUTER_CONTEXT;`),
+        indent(`return result_${node.id};`),
+    `}).bind(self)`,
+    ].join('\n');
 };
 
 //backend.reifyScript = function(node) {
     //// TODO: do the same thing as before but only return the doReport value...
     //// we need to handle
 //};
-
-backend.autolambda = function(node) {
-    let body = this.generateCode(node.inputs[0]);
-    let callback = getCallbackName(node);
-
-    if (callback) {
-        body = `SPromise.resolve().then(() => ${body}).then(${callback});`;
-    }
-
-    return `return ${body};`;
-};
 
 backend.doRun = function(node) {
     var fn = this.generateCode(node.inputs[0]),
@@ -597,7 +478,6 @@ backend.doHideVar = function(node) {
 
 backend.doDeclareVariables = function(node) {
     const names = node.inputs().map(input => input.code(this));
-
     return callStatementWithArgs(node.type, names.join(', '));
 };
 
@@ -715,7 +595,7 @@ backend.string = function(node) {
 };
 
 backend.option = function(node) {
-    return this.generateCode(node.inputs[0]);
+    return utils.sanitize(node.value);
 };
 
 backend.bool = function(node) {
@@ -728,7 +608,7 @@ backend.list = function(node) {
 };
 
 backend.getJSFromRPCStruct = function(node) {
-    let args = node.inputs.map(this.generateCode);
+    const args = node.inputs().map(input => input.code(this));
     return callFnWithArgs(node.type, args.join(','));
 };
 
@@ -741,33 +621,38 @@ backend.eventHandlers.receiveOnClone =
 backend.eventHandlers.receiveGo = function(node, code) {
     return [
         '(async function() {',
-        'var DEFAULT_CONTEXT = new VariableFrame(self.variables);',
+        'let DEFAULT_CONTEXT = new VariableFrame(self.variables);',
         indent(code),
         '})();'
     ].join('\n');
 };
 
-//Snap2Js.receiveMessage = function(code, node) {
-    //var event = Snap2Js.generateCode(node.inputs()),
-        //cond = event === utils.sanitize(`any message`) ? 'true' : `event === ${event}`;
-    //return [
-        //`if (${cond}) {`,
-        //'let DEFAULT_CONTEXT = new VariableFrame(self.variables);',
-        //indent(code),
-        //'}'
-    //].join('\n');
-//};
+backend.eventHandlers.receiveMessage = function(node, code) {
+    var event = node.first().code(this),
+        cond = event === utils.sanitize(`any message`) ? 'true' : `event === ${event}`;
 
-//Snap2Js.receiveKey = function(code, node) {
-    //var key = Snap2Js.generateCode(node.inputs()),
-        //cond = key === "'any key'" ? 'true' : `key === ${key}`;
+    return [
+        '(async function() {',
+        `if (${cond}) {`,
+        'let DEFAULT_CONTEXT = new VariableFrame(self.variables);',
+        indent(code),
+        '}',
+        '})();',
+    ].join('\n');
+};
 
-    //return [  // TODO: Remove this code!
-        //`if (${cond}) {`,
-        //'let DEFAULT_CONTEXT = new VariableFrame(self.variables);',
-        //indent(code),
-        //'}'
-    //].join('\n');
-//};
+backend.eventHandlers.receiveKey = function(node, code) {
+    const key = node.first().code(this);
+    const cond = key === `'any key'` ? 'true' : `key === ${key}`;
+
+    return [
+        '(async function() {',
+        `if (${cond}) {`,
+        'let DEFAULT_CONTEXT = new VariableFrame(self.variables);',
+        indent(code),
+        '}',
+        '})();',
+    ].join('\n');
+};
 
 module.exports = backend;

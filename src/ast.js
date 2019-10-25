@@ -1,9 +1,10 @@
 const Node = require('../lib/snap/node');
+const assert = require('assert');
 
 class AstNode extends Node {
-    constructor(id=`id_${Date.now()}`) {
+    constructor(id) {
         super();
-        this.id = id.replace(/[^a-zA-Z0-9]/g, '_');
+        this.id = (id || `id_${Date.now()}`).replace(/[^a-zA-Z0-9]/g, '_');
     }
 
     first() {
@@ -28,6 +29,15 @@ class AstNode extends Node {
         }
         const myIndex = this.parent.children.indexOf(this);
         return this.parent.children[myIndex - 1];
+    }
+
+    prepare() {
+        this.simplify();
+        this.addConcurrencyNodes();
+    }
+
+    simplify() {
+        this.children.forEach(node => node.simplify());
     }
 
     addConcurrencyNodes() {
@@ -57,12 +67,12 @@ class AstNode extends Node {
                     //this.parse(receiver);
                 //}
             //}
-        //} else if (xmlElement.tag === 'block') {
-            //return new Statement(xmlElement);  // Could this be a reporter??
         } else if (attributes.var) {
             block = new Variable(attributes.var);
+        } else if (xmlElement.tag === 'block') {
+            block = new BuiltIn(attributes.collabId, attributes.s);
+        //} else if (xmlElement.tag === 'context') {
         } else if (xmlElement.contents) {
-            // TODO: Get the type!
             const type = xmlElement.tag === 'l' ?
                 typeof xmlElement.contents : xmlElement.tag;
             block = new Primitive(type, xmlElement.contents);
@@ -71,7 +81,7 @@ class AstNode extends Node {
         } else {
             const type = attributes.s || xmlElement.tag;
             const id = attributes.collabId;
-            block = new BuiltInFunction(id, type);
+            block = new BuiltIn(id, type);
         }
 
         for (let i = 0; i < xmlElement.children.length; i++) {
@@ -94,7 +104,7 @@ class Block extends AstNode {
 
     code(backend) {
         const topBlock = this.first();
-        const handlerType = topBlock.type;
+        const handlerType = topBlock && topBlock.type;
         const isEventHandler = !!backend.eventHandlers[handlerType];
         if (isEventHandler) {
             const code = this.children.slice(1)
@@ -115,7 +125,7 @@ class Block extends AstNode {
 
 // It might be better to make a type for 'block's and then add
 // a method for isStatement() or something...
-class BuiltInFunction extends AstNode {  // FIXME: Not the best 
+class BuiltIn extends AstNode {  // FIXME: Not the best 
     constructor(id, type) {
         super(id);
         this.type = type;
@@ -153,7 +163,6 @@ class BuiltInFunction extends AstNode {  // FIXME: Not the best
 
     code(backend) {
         if (!backend[this.type]) {
-            //console.log(this.children[0].children[0].children[0].children);
             throw new Error(`Backend does not support builtin: ${this.type}`);
         }
         const suffix = this.isStatement() ? ';' : '';
@@ -161,14 +170,14 @@ class BuiltInFunction extends AstNode {  // FIXME: Not the best
     }
 }
 
-class Primitive extends BuiltInFunction {
+class Primitive extends BuiltIn {
     constructor(type, value) {
         super(undefined, type);
         this.value = value;
     }
 }
 
-class Yield extends BuiltInFunction {
+class Yield extends BuiltIn {
     constructor() {
         super(undefined, 'doYield');
     }
@@ -178,7 +187,7 @@ class Yield extends BuiltInFunction {
     }
 }
 
-class EmptyNode extends BuiltInFunction {
+class EmptyNode extends BuiltIn {
     constructor() {
         super();
     }
@@ -198,7 +207,7 @@ class CallCustomFunction extends AstNode {
     }
 }
 
-class Variable extends BuiltInFunction {
+class Variable extends BuiltIn {
     constructor(value) {
         super();
         this.value = value;
@@ -271,7 +280,6 @@ const EXPRESSION_TYPES = [
     'reifyScript',
     'reifyReporter',
     'reifyPredicate',
-    'autolambda',
     'reportListLength',
     'reportListItem',
     'reportCDR',
@@ -289,5 +297,6 @@ const EXPRESSION_TYPES = [
 
 module.exports.AstNode = AstNode;
 module.exports.Block = Block;
+module.exports.BuiltIn = BuiltIn;
 module.exports.Primitive = Primitive;
 module.exports.EXPRESSION_TYPES = EXPRESSION_TYPES;

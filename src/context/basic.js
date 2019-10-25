@@ -117,8 +117,11 @@ context.doBroadcast = function(event) {
     this.emit(event);
 };
 
-context.doBroadcastAndWait = function(event) {
-    this.emit(event, true);
+context.doBroadcastAndWait = async function(event) {
+    console.log('doBroadcastAndWait');
+    const results = this.emit(event, true);
+    return Promise.all(results);
+    //return this.emit(event, true);
 };
 
 context.doWait = function(duration, after) {

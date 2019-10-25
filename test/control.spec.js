@@ -13,85 +13,46 @@ describe('control', function() {
     });
 
     describe('doUntil', function() {
-        let iterCount = 0;
-
-        before(function(done) {
-            let cxt = snap2js.newContext();
-
-            cxt['bubble'] = () => {
-                iterCount++;
-            };
-            cxt['doReport'] = () => done();
-            bin = utils.getCompiledVersionOf('repeat-until');
-            bin(cxt);
-        });
-
-        it('should loop at least once', function() {
-            assert.notEqual(iterCount, 0);
-        });
-
-        it('should perform 16 iterations ', function() {
-            assert.equal(iterCount, 16);
+        it('should loop until count == 61', async function() {
+            const count = await utils.compileAndRun('repeat-until');
+            assert.equal(count, 61);
         });
     });
 
     describe('broadcast', function() {
 
-        it('should trigger given hat block', function(done) {
-            utils.compileAndRun('broadcast-any-msg')
-                .then(result => {
-                    assert.equal(result, 'success!');
-                })
-                .nodeify(done);
+        it('should trigger given hat block', async function() {
+            const result = await utils.compileAndRun('broadcast-and-wait-any-msg');
+            assert.equal(result, 'success!');
         });
 
-        it('should trigger given hat block w/ any-msg', function(done) {
-            utils.compileAndRun('broadcast-any-msg')
-                .then(result => {
-                    assert.equal(result, 'success!');
-                })
-                .nodeify(done);
+        it('should trigger given hat block w/ any-msg', async function() {
+            const result = await utils.compileAndRunUntilReport('broadcast-any-msg');
+            assert.equal(result, 'success!');
         });
 
-        it('should support broadcast and wait', function(done) {
-            utils.compileAndRun('broadcast-wait')
-                .then(list => {
-                    list.forEach((el, i) => {
-                        assert.equal(i+1, el);
-                    });
-                })
-                .nodeify(done);
+        it('should support broadcast and wait', async function() {
+            const list = await utils.compileAndRunUntilReport('broadcast-wait');
+            list.forEach((el, i) => assert.equal(i+1, el));
         });
     });
 
     describe('cloning', function() {
-        it('should support cloning self', function(done) {
-            utils.compileAndRun('cloning')
-                .then(result => assert.equal(result, 'success'))
-                .nodeify(done);
+        it('should support cloning self', async function() {
+            const trace = await utils.compileAndRunUntilReport('cloning');
+            assert.deepEqual(trace, ['1', '3', '2']);
         });
 
-        it('should support cloning others', function(done) {
-            utils.compileAndRun('clone-other')
-                .then(result => assert.equal(result, 'success'))
-                .nodeify(done);
+        it('should support cloning others', async function() {
+            const trace = await utils.compileAndRun('clone-other');
+            assert.equal(trace, 'success');
         });
     });
 
     describe('forking', function() {
-        it('should support forking', function(done) {
-            let cxt = snap2js.newContext();
-
-            cxt['bubble'] = () => {
-                iterCount++;
-            };
-            cxt['doThink'] = list => {
-                assert.equal(list[0], 2);
-                assert.equal(list[1], 1);
-                done();
-            };
-            bin = utils.getCompiledVersionOf('fork');
-            bin(cxt);
+        it('should support forking', async function() {
+            const trace = await utils.compileAndRunUntilReport('fork');
+            assert.deepEqual(trace, ['1', '3', '2']);
         });
     });
 
@@ -103,7 +64,7 @@ describe('control', function() {
             });
         });
 
-        describe.only('repeat loop', function() {
+        describe('repeat loop', function() {
             [true, false].forEach(cond => {
                 const COND_FN = '2';
                 const COND_FN_LOOP = '2.5';

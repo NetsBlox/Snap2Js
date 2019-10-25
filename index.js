@@ -1,7 +1,7 @@
 // We will be generating JavaScript code which will call the primitive fns
 (function(Snap2Js) {
     const XML_Element = require('./lib/snap/xml');
-    const {AstNode, Block, Yield} = require('./src/ast');
+    const {AstNode, Block, Yield, BuiltIn} = require('./src/ast');
     const prettier = require('prettier');
     const fs = require('fs');
     const path = require('path');
@@ -23,7 +23,7 @@
         for (let i = asts.length; i--;) {
             const root = asts[i];
 
-            root.addConcurrencyNodes();
+            root.prepare();
 
             const eventHandler = root instanceof Block ? root.first().type : root.type;
             const code = this.generateCode(root);
@@ -37,26 +37,6 @@
         return eventHandlers;
     };
 
-    Snap2Js.addConcurrencyNodes = function(node) {
-        // TODO: Add doYield nodes if:
-        //  - [ ] warping disabled or (not warping
-        //  - [ ] 
-        // - conditional: doRepeat, doForever, doUntil
-        // - always: fork (doesn't yield - just kicks off an async function)?
-        // - async: doSayFor, doThinkFor
-        node.inputs().forEach(node => node.addConcurrencyNodes())
-        node.addConcurrencyNodes();
-        const isLoop = ['doRepeat', 'doForever', 'doUntil'].includes(node.type);
-        if (isLoop) {
-            const isWarping = utils.isWarping(node);
-            if (!isWarping) {
-                const body = node.inputs().pop();
-                body.addChild(new Yield());
-            }
-        }
-        // TODO: Add async nodes
-    };
-
     Snap2Js.createAstNode = function(curr) {
         if (typeof curr !== 'object') {
             return AstNode.fromPrimitive(curr);
@@ -64,8 +44,6 @@
 
         if (curr.tag === 'color' || curr.tag === 'option')
             return this.createAstNode(curr.contents)
-
-        var type;
 
         const node = AstNode.from(curr);
         for (let i = curr.children.length; i--;) {
@@ -513,6 +491,8 @@
                     //children = children.concat(child.children
                         //.map(child => this._flatten(child)));
                 //}
+            } else if (child.tag === 'autolambda') {
+                children.push(this._flatten(child.children[0]));
             } else {
                 children.push(this._flatten(child));
             }

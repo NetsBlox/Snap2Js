@@ -44,6 +44,19 @@ async function compileAndRun(projectName) {
     return lastReportedValue;
 }
 
+function compileAndRunUntilReport(projectName) {
+    const deferred = utils.defer();
+    const cxt = snap2js.newContext();
+    cxt['doReport'] = val => {
+        deferred.resolve(val);
+        return val;
+    };
+
+    const bin = getCompiledVersionOf(projectName);
+    bin(cxt);
+    return deferred.promise;
+}
+
 function getProjectPaths() {
     return fs.readdirSync(path.join(TEST_CASE_DIR, 'projects'))
         .map(name => path.join(TEST_CASE_DIR, 'projects', name));
@@ -67,6 +80,7 @@ module.exports = {
     isRightBefore,
     getCompiledVersionOf,
     compileAndRun,
+    compileAndRunUntilReport,
     checkBlockValue,
 
     getProjectXml,
