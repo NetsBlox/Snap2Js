@@ -46,10 +46,6 @@
             return this.createAstNode(curr.contents)
 
         const node = AstNode.from(curr);
-        for (let i = curr.children.length; i--;) {
-            const child = this.createAstNode(curr.children[i]);
-            node.addChild(child);
-        }
         //node.inputs = curr.children
             //.map(child => {
                 //let key = child.tag;
