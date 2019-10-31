@@ -46,38 +46,10 @@
             return this.createAstNode(curr.contents)
 
         const node = AstNode.from(curr);
-        //node.inputs = curr.children
-            //.map(child => {
-                //let key = child.tag;
-                //let childNode = null;
 
-                //if (key === 'script') {
-                    //childNode = this.parseScript(child);
-                    //if (childNode) childNode.parent = node;
-
-                    //return childNode;
-                //} else if (key === 'l') {
-                    //if (child.children.length === 1) {
-                        //childNode = this.createAstNode(child.children[0]);
-                        //if (childNode) childNode.parent = node;
-                        //return childNode;
-                    //} else if (child.children.length) {
-                        //let children = child.children.map(child => this.createAstNode(child));
-                        //children.forEach(child => child.parent = node);
-                        //return children;
-                    //}
-                    //childNode = this.createAstNode(child.contents);
-                    //if (childNode) childNode.parent = node;
-                    //return childNode;
-                //}
-                //childNode = this.createAstNode(child);
-                //if (childNode) childNode.parent = node;
-                //return childNode;
-            //});
-
-        if (!node.value && curr.contents) {
-            node.value = curr.contents;
-        }
+        //if (!node.value && curr.contents) {
+            //node.value = curr.contents;
+        //}
         return node;
     };
 
@@ -213,19 +185,12 @@
         }).join(' ');
 
         // Modify the ast to get it to generate an entire fn
-        // TODO: UPDATE THIS
-        root = {
-            type: blockFnType,
-            id: block.attributes.collabId,
-            inputs: [
-                ast,
-                {
-                    type: 'list',
-                    inputs: inputs
-                }
-            ]
-        };
-        ast.parent = root;
+        const root = new BuiltIn(block.attributes.collabId, 'reifyScript');  // TODO: Make these custom types?
+        root.addChild(ast);
+        const inputList = new BuiltIn(null, 'list');  // TODO: Make custom types?
+        inputs.forEach(input => inputList.addChild(input));
+        root.addChild(inputList);
+        root.prepare();
 
         return {
             name: name,
@@ -309,39 +274,25 @@
             if (receiver.tag === 'ref') receiver = receiver.target;
             this.parse(receiver);
         }
+        // TODO: Should I just resolve the ref to the receiver then pass to AstNode.from?
 
         // Add the execution code
-        let block = element.children[2];
-        let fnNode = null;
-        let node = null;
-        // TODO: UPDATE
-        if (block.tag === 'script') {
-            fnNode = this.parseScript(block);
-            let inputEls = element.childNamed('inputs').children;
-            let inputNodes = inputEls.map(item => this.createAstNode(item.contents));
-            node = {
-                type: 'reifyScript',
-                inputs: [fnNode, {type: 'list', inputs: inputNodes}]
-            };
-            node.inputs.forEach(input => input.parent = node);
-        } else {
-            fnNode = this.createAstNode(block);
-            let inputEls = element.childNamed('inputs').children;
-            let inputNodes = inputEls.map(item => this.createAstNode(item.contents));
-            // use autolambda (auto-returns result) if not a script
-            let lambda = {
-                type: 'autolambda',
-                inputs: [fnNode]
-            }
-            node = {
-                type: 'reifyScript',
-                inputs: [lambda, {type: 'list', inputs: inputNodes}]
-            };
-        }
+        const [inputs, variables, fnBody] = element.children;
+        // FIXME: How is "variables" used???
+        // Could this be used to store variables captured from the closure?
+        const type = fnBody.tag === 'script' ? 'reifyScript' : 'reifyReporter';
+        const node = new BuiltIn(null, type);  // TODO: Make these custom types?
+        const fnNode = this.createAstNode(fnBody);
+        node.addChild(fnNode);
+        const inputNodes = inputs.children.map(item => this.createAstNode(item.contents));
+        const inputList = new BuiltIn(null, 'list');  // TODO: Make custom types?
+        inputNodes.forEach(node => inputList.addChild(node));
+        node.addChild(inputList);
 
-        node.inputs.forEach(input => input.parent = node);
+        node.simplify();
 
-        let body = `return ${this.generateCode(node)}`;
+        // TODO: Move this to the backend...?
+        let body = `return ${node.code(this._backend)}`;
 
         // TODO: set the 'self' and 'DEFAULT_CONTEXT' variables
         // TODO: move this code to the backend...
@@ -456,7 +407,6 @@
             const script = sprite.children.find(c => c.tag === 'scripts').children[0];
             // TODO: Find the scripts in the if statement
             const evaluate = script.children[1].children[0].children[1];
-            console.log(evaluate.children[0].children)
         };
         //printScripts();
         element = this._flatten(element);
@@ -467,8 +417,8 @@
         //console.log('code:', this.state.sprites[0].scripts.receiveGo[0]);
         let body = this.generateCodeFromState(this.state);
         //console.log(body);
+        require('fs').writeFileSync('code.js', `const fn = function (__ENV) {${body}};async function test(){console.log(await fn(require('.').newContext()))};test();`);
         let fn = new Function('__ENV', body);
-        require('fs').writeFileSync('code.js', `const fn = ${fn.toString()};async function test(){console.log(await fn(require('.').newContext()))};test();`);
 
         this.resetState();
         return fn;

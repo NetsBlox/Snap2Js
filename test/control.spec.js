@@ -3,9 +3,8 @@ describe('control', function() {
     const assert = require('assert');
     const snap2js = require('..');
 
-    // It's not really safe to run the generated code...
     describe('all blocks', function() {
-
+        // It's not really safe to run the generated code...
         it('should compile', function() {
             bin = utils.getCompiledVersionOf('all-control');
             assert.equal(typeof bin, 'function');

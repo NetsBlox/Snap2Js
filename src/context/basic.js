@@ -504,10 +504,7 @@ context.doChangeVar = function(name, val, context) {
     variable.value = +variable.value + (+val);
 };
 
-context.doDeclareVariables = function() {
-    var args = Array.prototype.slice.call(arguments),
-        context = args.pop();
-
+context.doDeclareVariables = function(args, context) {
     for (var i = args.length; i--;) {
         context.set(args[i], 0);
     }

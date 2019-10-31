@@ -32,8 +32,7 @@ backend.yPosition = function(node) {
 };
 
 backend.gotoXY = function(node) {
-    var x = this.generateCode(node.inputs[0]);
-    var y = this.generateCode(node.inputs[1]);
+    const [x, y] = node.inputs().map(input => input.code(this));
     return callStatementWithArgs(node.type, x, y);
 };
 
@@ -202,17 +201,8 @@ backend.hide = function(node) {
 };
 
 backend.doSayFor = function(node) {
-    var time = this.generateCode(node.inputs[1]),
-        msg = this.generateCode(node.inputs[0]),
-        afterFn = `afterSay_${node.id}`;
-
-    // TODO: handle rejections?
-    // This can only fail if the underlying implementation is faulty...
-    return [
-        `new SPromise(${afterFn} => {`,
-        callStatementWithArgs(node.type, msg, time, afterFn),
-        `})`
-    ].join('\n');
+    const [msg, time] = node.inputs().map(input => input.code(this));
+    return callStatementWithArgs(node.type, msg, time);
 };
 
 backend.doThinkFor = function(node) {
@@ -267,7 +257,7 @@ backend.reportTouchingColor = function(node) {
 backend.reportDate =
 backend.reportURL =
 backend.reportGet = function(node) {
-    var thing = this.generateCode(node.inputs[0]);
+    const thing = node.first().code(this);
     return callFnWithArgs(node.type, thing);
 };
 
@@ -338,9 +328,7 @@ backend.reportProduct =
 backend.reportDifference =
 backend.reportRandom =
 backend.reportSum = function(node) {
-    var left = this.generateCode(node.inputs[0]),
-        right = this.generateCode(node.inputs[1]);
-
+    const [left, right] = node.inputs().map(input => input.code(this));
     return callFnWithArgs(node.type, left, right);
 };
 
@@ -377,8 +365,7 @@ backend.reportJoinWords = function(node) {
 
 backend.reportNot =
 backend.reportStringSize = function(node) {
-    var str = this.generateCode(node.inputs[0]);
-
+    const str = node.first().code(this);
     return callFnWithArgs(node.type, str);
 };
 
@@ -409,14 +396,9 @@ backend.reifyScript = function(node) {
         indent(`const result_${node.id} = await (async function()${body.code(this)})();`),
         indent(`;DEFAULT_CONTEXT = OUTER_CONTEXT;`),
         indent(`return result_${node.id};`),
-    `}).bind(self)`,
+    `})`,
     ].join('\n');
 };
-
-//backend.reifyScript = function(node) {
-    //// TODO: do the same thing as before but only return the doReport value...
-    //// we need to handle
-//};
 
 backend.doRun = function(node) {
     var fn = this.generateCode(node.inputs[0]),
@@ -493,14 +475,12 @@ backend.doAddToList = function(node) {
 };
 
 backend.reportListLength = function(node) {
-    var variable = this.generateCode(node.inputs[0]);
-
+    const variable = node.first().code(this);
     return callFnWithArgs(node.type, variable);
 };
 
 backend.reportListItem = function(node) {
-    var index = this.generateCode(node.inputs[0]),
-        list = this.generateCode(node.inputs[1]);
+    const [index, list] = node.inputs().map(input => input.code(this));
 
     return callFnWithArgs(node.type, index, list);
 };
@@ -518,21 +498,17 @@ backend.reportNewList = function(node) {
 };
 
 backend.reportListContainsItem = function(node) {
-    var list = this.generateCode(node.inputs[0]);
-    var item = this.generateCode(node.inputs[1]);
+    const [list, item] = node.inputs().map(input => input.code(this));
     return callFnWithArgs(node.type, list, item);
 };
 
 backend.doDeleteFromList = function(node) {
-    var list = this.generateCode(node.inputs[1]);
-    var index = this.generateCode(node.inputs[0]);
+    const [index, list] = node.inputs().map(input => input.code(this));
     return callStatementWithArgs(node.type, index, list);
 };
 
 backend.doReplaceInList = function(node) {
-    var index = this.generateCode(node.inputs[0]);
-    var item = this.generateCode(node.inputs[2]);
-    var list = this.generateCode(node.inputs[1]);
+    const [index, list, item] = node.inputs().map(input => input.code(this));
 
     return callStatementWithArgs(node.type, index, list, item);
 };
@@ -556,16 +532,18 @@ backend.variable = function(node) {
 };
 
 backend.evaluateCustomBlock = function(node) {
-    var name = node.value,
+    var {name} = node,
         args = [],
         safeName = sanitize(name),
         fn = `self.customBlocks.get(${safeName})`,
         types = utils.inputNames(name);
 
-    args = node.inputs
+    // TODO: Update this
+    args = node.inputs()
         .map((input, index) => {
             var type = types[index];
             if (type === 'cs') {  // cslots should be wrapped in fn
+                throw new Error('Need to update handling of command slot inputs');
                 return {
                     type: 'reifyScript',
                     inputs: [
@@ -580,8 +558,9 @@ backend.evaluateCustomBlock = function(node) {
             return input;
 
         })
-        .map(this.generateCode);
+        .map(input => input.code(this));
 
+    console.log(name, types, args);
     if (args.length) {
         return callFnWithArgs(node.type, safeName, fn, args);
     } else {

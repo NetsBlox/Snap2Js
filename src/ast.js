@@ -1,6 +1,9 @@
 const Node = require('../lib/snap/node');
 const assert = require('assert');
 
+const SKIP_SNAP_TAGS = ['receiver', 'comment'];
+const INVALID_SNAP_TAGS = ['receiver'];
+const FLATTEN_SNAP_TAGS = ['autolambda'];
 class AstNode extends Node {
     constructor(id) {
         super();
@@ -50,6 +53,13 @@ class AstNode extends Node {
 
     static from(xmlElement) {
         const {attributes, tag} = xmlElement;
+        if (INVALID_SNAP_TAGS.includes(tag)) {
+            throw new Error(`Invalid xml type for AST generation: ${tag}`);
+        } else if (FLATTEN_SNAP_TAGS.includes(tag)) {
+            assert.equal(xmlElement.children.length, 1, 'Cannot flatten node w/ multiple children.');
+            return AstNode.from(xmlElement.children[0]);
+        }
+
         let block;
         if (tag === 'script') {
             block = new Block();
@@ -71,7 +81,6 @@ class AstNode extends Node {
             block = new Variable(attributes.var);
         } else if (xmlElement.tag === 'block') {
             block = new BuiltIn(attributes.collabId, attributes.s);
-        //} else if (xmlElement.tag === 'context') {
         } else if (xmlElement.contents) {
             const type = xmlElement.tag === 'l' ?
                 typeof xmlElement.contents : xmlElement.tag;
@@ -85,6 +94,10 @@ class AstNode extends Node {
         }
 
         for (let i = 0; i < xmlElement.children.length; i++) {
+            const childTag = xmlElement.children[i].tag;
+            if (SKIP_SNAP_TAGS.includes(childTag)) {
+                continue;
+            }
             const node = AstNode.from(xmlElement.children[i]);
             block.addChild(node);
         }
@@ -147,13 +160,29 @@ class BuiltIn extends AstNode {  // FIXME: Not the best
         return false;
     }
 
+    simplify() {
+        super.simplify();
+
+        // Convert all reifyPredicate/reifyReporter to reifyScript's
+        const isImplicitReturnFn = ['reifyReporter', 'reifyPredicate'].includes(this.type);
+        if (isImplicitReturnFn) {
+            const body = new Block();
+            const doReport = new BuiltIn(null, 'doReport');
+            doReport.addChild(this.first());
+            body.addChild(doReport);
+            assert(this.children.length === 2, `Expected 2 child for ${this.type}. Found ${this.children.length}`);
+            this.children[0] = body;
+            this.type = 'reifyScript';
+        }
+    }
+
     addConcurrencyNodes() {
         super.addConcurrencyNodes();
         const isLoop = ['doRepeat', 'doForever', 'doUntil'].includes(this.type);
 
         if (isLoop) {
             const isWarping = this.isContainedIn('doWarp');
-            console.log('\n\n>>> isWarping?', isWarping);
+            // TODO: Add support for disabling warping
             if (!isWarping) {
                 const body = this.inputs().pop();
                 body.addChild(new Yield());
@@ -194,15 +223,19 @@ class EmptyNode extends BuiltIn {
 
     code(backend) {
         const parentType = this.parent.type;
+        if (!DEFAULT_INPUTS[parentType]) {
+            console.log(this.parent);
+            throw new Error(`Default values unknown for ${parentType}`);
+        }
         const inputs = DEFAULT_INPUTS[parentType]();
         const index = this.parent.inputs().indexOf(this);
         return inputs[index].code(backend);
     }
 }
 
-class CallCustomFunction extends AstNode {
+class CallCustomFunction extends BuiltIn {
     constructor(id, name) {
-        super(id);
+        super(id, 'evaluateCustomBlock');
         this.name = name;
     }
 }
@@ -227,9 +260,18 @@ class EmptyString extends Primitive {
     }
 }
 
+class EmptyList extends Primitive {
+    constructor() {
+        super('list');
+    }
+}
+
 const DEFAULT_INPUTS = {
     doIf: () => [new False(), new Block()],
-    forward: () => [new EmptyString()]
+    forward: () => [new EmptyString()],
+    list: () => [new EmptyString()],
+    reportJSFunction: () => [new EmptyList(), new Block()],
+    getJSFromRPCStruct: () => [...new Array(10)].map(_ => new EmptyString()),
 };
 
 const EXPRESSION_TYPES = [
