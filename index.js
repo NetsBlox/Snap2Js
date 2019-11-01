@@ -81,26 +81,24 @@
     };
 
     Snap2Js.parseVariableValue = function(variable) {
-        let result = 0;
-
+        // FIXME: Can this be made simpler?
         if (variable.tag === 'bool') {
-            result = variable.contents === 'true';
+            return variable.contents === 'true';
         } else if (variable.tag === 'l') {
-            result = utils.sanitize(variable.contents);
+            return utils.sanitize(variable.contents);
         } else if (variable.tag === 'list') {
             if (variable.attributes.id) {
-                result = this.getContentReference(variable.attributes.id);
+                return this.getContentReference(variable.attributes.id);
             } else {  // unreferenced list literal
-                result = '[' + variable.children.map(child => {
+                return '[' + variable.children.map(child => {
                     return this.parseVariableValue(child.children[0]);
                 }).join(',') + ']';
             }
         } else if (variable.tag === 'ref') {
-            result = this.getContentReference(variable.attributes.id);
-        } else if (variable.tag) {
-            result = this.parse.call(this, variable, true);
+            return this.getContentReference(variable.attributes.id);
+        } else {
+            return this.parse.call(this, variable, true);
         }
-        return result;
     };
 
     Snap2Js.parseInitialVariables = function(vars) {
@@ -126,11 +124,12 @@
         position.y = model.attributes.y;
         dir = model.attributes.heading;
         blocks = model.childNamed('blocks').children;
+        const variables = this.parseInitialVariables(model.childNamed('variables').children);
         return {
             id: model.attributes.collabId,
             name: model.attributes.name,
             customBlocks: blocks.map(block => this.parseBlockDefinition(block)),
-            variables: this.parseInitialVariables(model.childNamed('variables').children),
+            variables: variables,
             scripts: this.parseSpriteScripts(model.childNamed('scripts')),
             position: position,
             draggable: model.attributes.draggable === 'true',
@@ -146,6 +145,7 @@
 
         return {
             customBlocks: blocks.map(block => this.parseBlockDefinition(block)),
+            variables: this.parseInitialVariables(model.childNamed('variables').children),
             scripts: this.parseSpriteScripts(model.childNamed('scripts')),
             width: model.attributes.width,
             height: model.attributes.height,
@@ -204,7 +204,8 @@
         stage: {
             name: 'Stage',
             customBlocks: [],
-            scripts: {}
+            scripts: {},
+            variables: {},
         },
         variables: {},
         customBlocks: [],
@@ -275,7 +276,6 @@
             if (receiver.tag === 'ref') receiver = receiver.target;
             this.parse(receiver);
         }
-        // TODO: Should I just resolve the ref to the receiver then pass to AstNode.from?
 
         // Add the execution code
         const [inputs, variables, fnBody] = element.children;
@@ -297,7 +297,7 @@
         const context = new BoundFunction(receiverName);
         context.addChild(node);
 
-        this.state.returnValue = context;
+        return context;
     };
 
     Snap2Js.transpile = function(xml, pretty=false) {
@@ -384,20 +384,23 @@
         element = new XML_Element();
         element.parseString(xml);
         elements = element.children;
-
         this._resolveRefs(elements);
-        const printScripts = () => {
-            const stage = element.children[0].children.find(c => c.tag === 'stage');
-            const sprite = stage.children.find(c => c.tag === 'sprites').children[0];
-            const script = sprite.children.find(c => c.tag === 'scripts').children[0];
-            // TODO: Find the scripts in the if statement
-            const evaluate = script.children[1].children[0].children[1];
-        };
+        element = elements[0];
+
+        //const printScripts = () => {
+            //const stage = element.children[0].children.find(c => c.tag === 'stage');
+            //const sprite = stage.children.find(c => c.tag === 'sprites').children[0];
+            //const script = sprite.children.find(c => c.tag === 'scripts').children[0];
+            //// TODO: Find the scripts in the if statement
+            //const evaluate = script.children[1].children[0].children[1];
+        //};
         //printScripts();
         element = this._flatten(element);
         //printScripts();
-        for (let i = elements.length; i--;) {
-            this.parse(elements[i]);
+        if (element.tag === 'project') {
+            this.parse(element);
+        } else if (element.tag === 'context') {
+            this.state.returnValue = this.parse(element);
         }
         //console.log('code:', this.state.sprites[0].scripts.receiveGo[0]);
         let body = this.generateCodeFromState(this.state);
@@ -457,6 +460,23 @@
             Object.values(sprite.scripts).forEach(trees => {
                 trees.forEach(root => root.prepare(localCustomDefs));
             });
+
+
+            Object.entries(sprite.variables).forEach(entry => {
+                const [name, value] = entry;
+                if (value instanceof AstNode) {
+                    value.prepare(localCustomDefs);
+                    sprite.variables[name] = this.generateCode(value);
+                }
+            });
+        });
+
+        Object.entries(this.state.variables).forEach(entry => {
+            const [name, value] = entry;
+            if (value instanceof AstNode) {
+                value.prepare(customBlockDefs);
+                this.state.variables[name] = this.generateCode(value);
+            }
         });
 
         // FIXME:
