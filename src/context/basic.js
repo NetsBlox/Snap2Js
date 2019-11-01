@@ -265,9 +265,7 @@ context.reportEquals = function(a, b) {
     return x === y;
 };
 
-context.doRun = function(fn) {
-    var args = Array.prototype.slice.call(arguments, 1);
-    
+context.doRun = function(fn, args) {
     return fn.apply(this, args);
 };
 

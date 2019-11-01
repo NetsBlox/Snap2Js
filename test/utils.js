@@ -34,7 +34,6 @@ async function compileAndRun(projectName) {
     let lastReportedValue = null;
     const cxt = snap2js.newContext();
     cxt['doReport'] = val => {
-        console.log('reporting', val);
         lastReportedValue = val;
         return val;
     };

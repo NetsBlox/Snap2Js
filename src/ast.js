@@ -1,5 +1,6 @@
 const Node = require('../lib/snap/node');
 const assert = require('assert');
+const utils = require('./utils');
 
 const SKIP_SNAP_TAGS = ['receiver', 'comment'];
 const INVALID_SNAP_TAGS = ['receiver'];
@@ -18,6 +19,10 @@ class AstNode extends Node {
         return this.children.slice();
     }
 
+    inputsAsCode(backend) {
+        return this.inputs().map(input => input.code(backend));
+    }
+
     next() {
         if (!this.parent) {
             return null;
@@ -34,9 +39,10 @@ class AstNode extends Node {
         return this.parent.children[myIndex - 1];
     }
 
-    prepare() {
+    prepare(blockDefinitions={}) {
         this.simplify();
         this.addConcurrencyNodes();
+        this.addBlockDefinitions(blockDefinitions);
     }
 
     simplify() {
@@ -47,8 +53,16 @@ class AstNode extends Node {
         this.children.forEach(node => node.addConcurrencyNodes());
     }
 
+    addBlockDefinitions(definitions) {
+        this.children.forEach(node => node.addBlockDefinitions(definitions));
+    }
+
     code(backend) {
         throw new Error(`code not implemented for ${this.constructor.name}`);
+    }
+
+    isAsync() {
+        return !!this.children.find(child => child.isAsync());
     }
 
     static from(xmlElement) {
@@ -149,6 +163,13 @@ class BuiltIn extends AstNode {  // FIXME: Not the best
         return !EXPRESSION_TYPES.includes(this.type);
     }
 
+    isAsync() {
+        if (ASYNC_TYPES.includes(this.type)) {
+            return true;
+        }
+        return super.isAsync();
+    }
+
     isContainedIn(type) {
         let parent = this.parent;
         while (parent) {
@@ -194,8 +215,27 @@ class BuiltIn extends AstNode {  // FIXME: Not the best
         if (!backend[this.type]) {
             throw new Error(`Backend does not support builtin: ${this.type}`);
         }
-        const suffix = this.isStatement() ? ';' : '';
-        return backend[this.type](this) + suffix;
+
+        if (this.isStatement()) {
+            return backend[this.type](this) + ';';
+        } else {
+            if (backend[this.type](this).indexOf('(async function') == 0)
+                throw new Error('Type: '+ this.type);
+            const prefix = this.getCodePrefix();
+            return prefix + backend[this.type](this);
+        }
+    }
+
+    getCodePrefix() {
+        if (!this.isAsync()) {
+            return '';
+        }
+
+        if (this.type.startsWith('reify')) {
+            return 'async ';
+        }
+
+        return 'await ';
     }
 }
 
@@ -213,6 +253,10 @@ class Yield extends BuiltIn {
 
     isStatement() {
         return false;
+    }
+
+    isAsync() {
+        return true;
     }
 }
 
@@ -237,6 +281,51 @@ class CallCustomFunction extends BuiltIn {
     constructor(id, name) {
         super(id, 'evaluateCustomBlock');
         this.name = name;
+        this.definition = null;
+    }
+
+    addChild(node) {
+        const type = this.getChildType(this.children.length);
+        if (type === 'cs') {  // Make the implicit fn explicit
+            const reifyScript = new BuiltIn(null, 'reifyScript');
+            reifyScript.addChild(node);
+            reifyScript.addChild(new EmptyNode());
+            node = reifyScript;
+        }
+
+        super.addChild(node);
+    }
+
+    getChildType(index) {
+        return utils.inputNames(this.name)[index];
+    }
+
+    isAsync() {
+        const inRecursiveStep = this.allParents().includes(this.definition);
+        if (inRecursiveStep) {
+            return false;
+        }
+
+        return this.definition.isAsync();
+    }
+
+    addBlockDefinitions(defs) {
+        super.addBlockDefinitions(defs);
+        this.definition = defs[this.name];
+
+        if (!this.definition) {
+            throw new Error(`Missing block definition for ${this.name}`);
+        }
+    }
+}
+
+/**
+ * Function bound to a given sprite or stage
+ */
+class BoundFunction extends BuiltIn {
+    constructor(receiverName) {
+        super(null, 'context');
+        this.receiver = receiverName;
     }
 }
 
@@ -272,8 +361,14 @@ const DEFAULT_INPUTS = {
     list: () => [new EmptyString()],
     reportJSFunction: () => [new EmptyList(), new Block()],
     getJSFromRPCStruct: () => [...new Array(10)].map(_ => new EmptyString()),
+    reifyScript: () => [new Block(), new EmptyList()],
+    reportListItem: () => [new EmptyString(), new EmptyList()],
+    reportCDR: () => [new EmptyList()],
 };
 
+const ASYNC_TYPES = [
+    'doWait', 'doBroadcastAndWait',
+];
 const EXPRESSION_TYPES = [
     'xPosition',
     'direction',
@@ -341,4 +436,5 @@ module.exports.AstNode = AstNode;
 module.exports.Block = Block;
 module.exports.BuiltIn = BuiltIn;
 module.exports.Primitive = Primitive;
+module.exports.BoundFunction = BoundFunction;
 module.exports.EXPRESSION_TYPES = EXPRESSION_TYPES;

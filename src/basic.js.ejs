@@ -284,10 +284,10 @@ project.customBlocks.set(<%= def.name %>, <%= def.code %>);
 
 <%= initCode %>
 
-<% // This only executes if there is not context...? %>
-<% // This should be the default fn to call when this runs... %>
-<% // or should this  %>
-<% if (returnValue) { %>
+<% // This only executes if there is not context...?
+   // This should be the default fn to call when this runs...
+   // or should this
+  if (returnValue) { %>
 return <%= returnValue %>;
 <% } else { %>
 return Promise.all(project.sprites.concat(project.stage).map(sprite => sprite.onFlagPressed()));

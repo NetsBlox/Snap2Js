@@ -1,14 +1,12 @@
-describe('custom blocks', function() {
+describe.only('custom blocks', function() {
     let result;
     const utils = require('./utils');
     const snap2js = require('..');
     const assert = require('assert');
 
     describe('sum numbers', function() {
-        before(function(done) {
-            utils.compileAndRun('custom-block')
-                .then(res => result = res)
-                .nodeify(done);
+        before(async function() {
+            result = await utils.compileAndRun('custom-block');
         });
 
         it('should evaluate custom block correctly', function() {
@@ -18,10 +16,8 @@ describe('custom blocks', function() {
     });
 
     describe('all inputs', function() {
-        before(function(done) {
-            utils.compileAndRun('custom-block-inputs')
-                .then(res => result = res)
-                .nodeify(done);
+        before(async function() {
+            result = await utils.compileAndRun('custom-block-inputs');
         });
 
         [
@@ -38,7 +34,7 @@ describe('custom blocks', function() {
         ].forEach((pair, index) => {
             let [type, value] = pair;
 
-            it(`should evaluate ${type}`, function(done) {
+            it(`should evaluate ${type}`, function() {
                 if (value instanceof Array) {
                     value.forEach((el, i) => {
                         assert.equal(result[index][i], el);
@@ -47,14 +43,15 @@ describe('custom blocks', function() {
                     assert(value(result[index]));
                 } else if (value instanceof Object) {
                     fn = result[index];
-                    return fn(value.in).then(output => {
-                        assert.equal(output, value.out);
-                        done();
-                    });
+
+                    console.log(fn.toString());
+                    console.log('-----\n', fn(value.in));
+
+                    const output = fn(value.in);
+                    assert.equal(output, value.out);
                 } else {
                     assert.equal(result[index], value);
                 }
-                done();
             });
         });
 
@@ -132,10 +129,8 @@ describe('custom blocks', function() {
 
     describe('local sum numbers', function() {
         describe('sprite', function() {
-            before(function(done) {
-                utils.compileAndRun('local-custom-sum')
-                    .then(res => result = res)
-                    .nodeify(done);
+            before(async function() {
+                result = await utils.compileAndRun('local-custom-sum');
             });
 
             it('should evaluate custom block correctly', function() {
@@ -144,10 +139,8 @@ describe('custom blocks', function() {
         });
 
         describe('stage', function() {
-            before(function(done) {
-                utils.compileAndRun('stage-custom-sum')
-                    .then(res => result = res)
-                    .nodeify(done);
+            before(async function() {
+                result = await utils.compileAndRun('stage-custom-sum');
             });
 
             it('should evaluate custom block correctly', function() {
@@ -156,4 +149,92 @@ describe('custom blocks', function() {
         });
     });
 
+    describe('yielding', function() {
+        let trace, recResult, iterResult;
+        const AFTER_ITER = -7;
+        const AFTER_REC = 7;
+        const isIterativeStep = value => value < 0;
+        const isRecursiveStep = value => value > 0;
+        before(async () => {
+            const name = 'recursive-and-iterative-custom-blocks';
+            [trace, recResult, iterResult] = await utils.compileAndRun(name);
+            trace = trace.map(v => +v);
+        });
+
+        it('should wait until iter block completes before next command', function() {
+            const nextCommandIndex = trace.findIndex(v => v === AFTER_ITER);
+            const nextIterative = trace.slice(nextCommandIndex + 1).find(isIterativeStep);
+            assert(
+                !nextIterative,
+                'Found iterative step after iterative block termination: ' + nextIterative
+            );
+        });
+
+        it('should wait until rec block completes before next command', function() {
+            const nextCommandIndex = trace.findIndex(v => v === AFTER_REC);
+            const nextRec = trace.slice(nextCommandIndex + 1).find(isRecursiveStep);
+            assert(
+                !nextRec,
+                'Found iterative step after iterative block termination: ' + nextRec
+            );
+        });
+
+        it('should yield during iterative block', function() {
+            const iterIndices = trace.map((v, i) => {
+                if (isIterativeStep(v)) {
+                    return i;
+                }
+                return -1;
+            })
+            .filter(index => index !== -1);
+
+            let doesYield = false;
+            iterIndices.reduce((current, next) => {
+                if (next - current !== 1) {
+                    doesYield = true;
+                }
+                return next;
+            });
+            assert(doesYield, 'Iterative block yields. Trace: ' + trace.join(', '));
+        });
+
+        it('should not yield during recursion', function() {
+            const recIndices = trace.map((v, i) => {
+                if (isRecursiveStep(v)) {
+                    return i;
+                }
+                return -1;
+            })
+            .filter(index => index !== -1);
+
+            let doesYield = false;
+            recIndices.reduce((current, next) => {
+                if (next - current !== 1) {
+                    doesYield = true;
+                }
+                return next;
+            });
+            assert(!doesYield, 'Yield found. Trace: ' + trace.join(', '));
+        });
+
+        it('should not yield on (iter) custom block termination', function() {
+            const nextCommandIndex = trace.findIndex(v => v === AFTER_ITER);
+            const prevStep = trace[nextCommandIndex - 1];
+            assert(isIterativeStep(prevStep), 'Yield found after iterative block');
+        });
+
+        it('should not yield on (rec) custom block termination', function() {
+            const nextCommandIndex = trace.findIndex(v => v === AFTER_REC);
+            const prevStep = trace[nextCommandIndex - 1];
+            assert(isRecursiveStep(prevStep), 'Yield found after recursive block');
+        });
+
+        it('should correct value from iterative block', function() {
+            assert.equal(iterResult, 120);
+        });
+
+        it('should correct value from recursive block', function() {
+            assert.equal(recResult, 120);
+        });
+    });
 });
