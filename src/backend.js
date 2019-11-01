@@ -38,7 +38,7 @@ backend.gotoXY = function(node) {
 
 backend.doGotoObject =
 backend.doFaceTowards = function(node) {
-    const target = node.first.code(this);
+    const target = node.first().code(this);
     return callStatementWithArgs(node.type, target);
 };
 

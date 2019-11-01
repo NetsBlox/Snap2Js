@@ -514,13 +514,6 @@
     Snap2Js.generateCode = function(node) {
         if (!node.code) console.log('node is', node);
         return node.code(Snap2Js._backend) || '';
-
-        var code = Snap2Js._backend[root.type].call(Snap2Js, root);
-        if (!Snap2Js._backend[root.type].async && root.next) {
-            // FIXME: UPDATE
-            code += `\n.then(() => ${Snap2Js.generateCode(root.next())})`;
-        }
-        return code.replace(/\);/g, ');\n');
     };
 
     Snap2Js._backend = {};

@@ -1,4 +1,4 @@
-describe.only('custom blocks', function() {
+describe('custom blocks', function() {
     let result;
     const utils = require('./utils');
     const snap2js = require('..');
