@@ -364,12 +364,15 @@ const DEFAULT_INPUTS = {
     reifyScript: () => [new Block(), new EmptyList()],
     reportListItem: () => [new EmptyString(), new EmptyList()],
     reportCDR: () => [new EmptyList()],
+    doReport: () => [new EmptyString()],
+    reportModulus: () => [new EmptyString(), new EmptyString()],
 };
 
 const ASYNC_TYPES = [
     'doWait', 'doBroadcastAndWait',
 ];
 const EXPRESSION_TYPES = [
+    'context',
     'xPosition',
     'direction',
     'yPosition',

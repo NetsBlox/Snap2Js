@@ -36,20 +36,14 @@ backend.gotoXY = function(node) {
     return callStatementWithArgs(node.type, x, y);
 };
 
+backend.doGotoObject =
 backend.doFaceTowards = function(node) {
-    var target = this.generateCode(node.inputs[0]);
-    return callStatementWithArgs(node.type, target);
-};
-
-backend.doGotoObject = function(node) {
-    var target = this.generateCode(node.inputs[0]);
+    const target = node.first.code(this);
     return callStatementWithArgs(node.type, target);
 };
 
 backend.doGlide = function(node) {
-    var time = this.generateCode(node.inputs[0]);
-    var x = this.generateCode(node.inputs[1]);
-    var y = this.generateCode(node.inputs[2]);
+    const [time, x, y] = node.inputsAsCode(this);
     return callStatementWithArgs(node.type, x, y, time);
 };
 
@@ -322,8 +316,7 @@ backend.reportSum = function(node) {
 };
 
 backend.reportRound = function(node) {
-    var number = this.generateCode(node.inputs[0]);
-
+    const number = node.first().code(this);
     return callFnWithArgs(node.type, number);
 };
 
