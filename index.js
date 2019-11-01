@@ -48,7 +48,7 @@
 
         // Load any additional definitions required for the node
         const receiver = curr.childNamed('receiver');
-        if (receiver) {
+        if (receiver && receiver.children.length) {
             this.parse(receiver.children[0])
         }
 
