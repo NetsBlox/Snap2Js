@@ -501,6 +501,7 @@
             elements = [],
             element;
 
+        this.resetState();
         xml = `<root>${xml.toString()}</root>`;
         element = new XML_Element();
         element.parseString(xml);
@@ -514,7 +515,6 @@
         let body = this.generateCodeFromState(this.state);
         let fn = new Function('__ENV', body);
 
-        this.resetState();
         return fn;
     };
 
