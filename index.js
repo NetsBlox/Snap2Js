@@ -385,7 +385,6 @@
         element.parseString(xml);
         elements = element.children;
         this._resolveRefs(elements);
-        element = elements[0];
 
         //const printScripts = () => {
             //const stage = element.children[0].children.find(c => c.tag === 'stage');
@@ -397,10 +396,11 @@
         //printScripts();
         element = this._flatten(element);
         //printScripts();
-        if (element.tag === 'project') {
-            this.parse(element);
-        } else if (element.tag === 'context') {
-            this.state.returnValue = this.parse(element);
+        if (elements[0].tag === 'context') {
+            this.state.returnValue = this.parse(elements.shift());
+        }
+        for (let i = 0; i < elements.length; i++) {
+            this.parse(elements[i]);
         }
         //console.log('code:', this.state.sprites[0].scripts.receiveGo[0]);
         let body = this.generateCodeFromState(this.state);
