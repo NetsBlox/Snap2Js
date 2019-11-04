@@ -278,7 +278,7 @@ backend.doSetTempo =
 backend.doChangeTempo =
 backend.playSound =
 backend.doPlaySoundUntilDone = function(node) {
-    var sound = this.generateCode(node.inputs[0]);
+    const sound = node.first().code(this);
     return callStatementWithArgs(node.type, sound);
 };
 
@@ -287,13 +287,12 @@ backend.doStopAllSounds = function(node) {
 };
 
 backend.doRest = function(node) {
-    var duration = this.generateCode(node.inputs[0]);
+    const duration = node.first().code(this);
     return callStatementWithArgs(node.type, duration);
 };
 
 backend.doPlayNote = function(node) {
-    var note = this.generateCode(node.inputs[0]);
-    var duration = this.generateCode(node.inputs[1]);
+    const [note, duration] = node.inputsAsCode(this);
     return callStatementWithArgs(node.type, note, duration);
 };
 
