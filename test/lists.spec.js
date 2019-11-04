@@ -51,18 +51,13 @@ describe('lists', function() {
     });
 
     describe('references', function() {
-        it('should support self-referencing', function(done) {
+        it('should support self-referencing', async function() {
             content = utils.getContextXml('recursive-data');
-            var bin = snap2js.compile(content)
+            const bin = snap2js.compile(content)
             cxt = snap2js.newContext();
             fn = bin(cxt);
-            fn().then(res => {
-                assert.equal(res, 4);
-                done();
-            })
-            .catch(err => {
-                done(err);
-            });
+            const res = await fn();
+            assert.equal(res, 4);
         });
     });
 });

@@ -4,53 +4,49 @@ describe('doReport', function() {
     const utils = require('./utils');
     const env = snap2js.newContext();
 
-    it('should return the result of reifyReporter', () => {
+    it('should return the result of reifyReporter', async () => {
         let content = utils.getProjectXml('do-report-simple');
         let fn = snap2js.compile(content);
 
         // Run the script and check the value of 'result' (should be true)
         env.bubble = result => {
             assert.equal(result, true);
-            done();
         };
 
-        fn(env);
+        await fn(env);
     });
 
-    it('should return the result in reifyScript', done => {
+    it('should return the result in reifyScript', async () => {
         let content = utils.getProjectXml('do-report-reify-script');
         let fn = snap2js.compile(content);
 
         // Run the script and check the value of 'result' (should be true)
         env.bubble = result => {
             assert.equal(result, true);
-            done();
         };
 
-        fn(env);
+        await fn(env);
     });
 
-    it('should return the result in (async) reifyScript', done => {
+    it('should return the result in (async) reifyScript', async () => {
         let content = utils.getProjectXml('do-report-reify-script-async');
         let fn = snap2js.compile(content);
         env.bubble = result => {
             assert.equal(result, true);
-            done();
         };
-        fn(env);
+        await fn(env);
     });
 
-    it('should ignore the doReport in custom command blocks', () => {
+    it('should ignore the doReport in custom command blocks', async () => {
         let content = utils.getProjectXml('do-report-nop');
         let fn = snap2js.compile(content);
 
         // Run the script and check the value of 'result' (should be true)
         env.bubble = result => {
             assert.equal(result, true);
-            done();
         };
 
-        fn(env);
+        await fn(env);
     });
 
     it('should return result in custom reporter blocks', done => {

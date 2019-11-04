@@ -4,12 +4,12 @@ describe('sanitize', function() {
     const snap2js = require('..');
     const assert = require('assert');
 
-    it('should compile with custom blocks containing `', function(done) {
+    it('should compile with custom blocks containing `', async function() {
         const content = utils.getContextXml('back-tick-var');
         const context = snap2js.newContext();
 
         const fn = snap2js.compile(content)(context);
-        fn().then(() => done()).catch(done);
+        await fn();
     });
 
     it('should compile with invalid var,sprite names, values', function() {

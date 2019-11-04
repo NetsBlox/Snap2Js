@@ -5,7 +5,13 @@ const utils = require('./utils');
 const SKIP_SNAP_TAGS = ['receiver', 'comment'];
 const INVALID_SNAP_TAGS = ['receiver'];
 const FLATTEN_SNAP_TAGS = ['autolambda'];
-const ASYNC_TYPES = ['doWait', 'doBroadcastAndWait', 'doAsk'];
+const ASYNC_TYPES = [
+    'doWait',
+    'doBroadcastAndWait',
+    'doAsk',
+    'doThinkFor',
+    'doSayFor'
+];
 class AstNode extends Node {
     constructor(id) {
         super();
@@ -230,18 +236,12 @@ class BuiltIn extends AstNode {  // FIXME: Not the best
         const suffix = this.isStatement() ? ';' : '';
         const prefix = this.getCodePrefix();
         return prefix + backend[this.type](this) + suffix;
-        //if (this.isStatement()) {
-            //return backend[this.type](this) + ';';
-        //} else {
-            //if (backend[this.type](this).indexOf('(async function') == 0)
-                //throw new Error('Type: '+ this.type);
-            //return prefix + backend[this.type](this);
-        //}
     }
 
     getCodePrefix() {
-        const isLoop = ['doRepeat', 'doForever', 'doUntil'].includes(this.type);
-        if (!this.isAsync() || isLoop) {
+        // TODO: Should this check use the backend?
+        const isControlFlow = ['doRepeat', 'doForever', 'doUntil', 'doIf', 'doIfElse'].includes(this.type);
+        if (!this.isAsync() || isControlFlow) {
             return '';
         }
 
@@ -380,6 +380,7 @@ const DEFAULT_INPUTS = {
     reportCDR: () => [new EmptyList()],
     doReport: () => [new EmptyString()],
     reportModulus: () => [new EmptyString(), new EmptyString()],
+    reportSum: () => [new EmptyString(), new EmptyString()],
 };
 
 const EXPRESSION_TYPES = [

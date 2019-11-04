@@ -79,7 +79,7 @@ backend.doIfElse = function(node) {
 backend.doReport = function(node) {
     // Get the current callback name and call it!
     const value = node.first() ? node.first().code(this) : '';
-    return `return ${callStatementWithArgs(node.type, value)}`;
+    return `;return ${callStatementWithArgs(node.type, value)}`;
 };
 
 backend.removeClone =
@@ -108,7 +108,7 @@ backend.evaluate = function(node) {
     const args = argInputs.map(arg => arg.code(this));
 
     const prefix = fn.isAsync() ? 'await ' : '';
-    return `${prefix}${fn.code(this)}()`;
+    return `${prefix}${fn.code(this)}(${args.join(', ')})`;
 };
 
 backend.doCallCC = function(node) {
@@ -146,7 +146,7 @@ backend.doUntil = function(node) {
 
 ///////////////////// Looks /////////////////////
 backend.doSwitchToCostume = function(node) {
-    var costume = this.generateCode(node.inputs[0]);
+    const costume = node.first().code(this);
     return callStatementWithArgs(node.type, costume);
 };
 
@@ -156,8 +156,7 @@ backend.doWearNextCostume = function(node) {
 
 backend.changeEffect =
 backend.setEffect = function(node) {
-    var effect = this.generateCode(node.inputs[0]);
-    var amount = this.generateCode(node.inputs[1]);
+    const [effect, amount] = node.inputsAsCode(this);
     return callStatementWithArgs(node.type, effect, amount);
 };
 
@@ -168,7 +167,7 @@ backend.clearEffects = function(node) {
 backend.goBack =
 backend.changeScale =
 backend.setScale = function(node) {
-    var amount = this.generateCode(node.inputs[0]);
+    const amount = node.first().code(this);
     return callStatementWithArgs(node.type, amount);
 };
 
@@ -189,17 +188,9 @@ backend.doSayFor = function(node) {
 };
 
 backend.doThinkFor = function(node) {
-    var time = this.generateCode(node.inputs[1]),
-        msg = this.generateCode(node.inputs[0]),
-        afterFn = `afterThink_${node.id}`;
+    const [msg, time] = node.inputsAsCode(this);
 
-    // TODO: handle rejections?
-    // This can only fail if the underlying implementation is faulty...
-    return [
-        `new SPromise(${afterFn} => {`,
-        callStatementWithArgs(node.type, msg, time, afterFn),
-        `})`
-    ].join('\n');
+    return callStatementWithArgs(node.type, msg, time);
 };
 
 backend.bubble = function(node) {
@@ -390,8 +381,7 @@ backend.context = function(node) {
         `function() {`,
         indent(prepCode),
         indent(`let DEFAULT_CONTEXT = new VariableFrame(self.variables);`),
-        indent(`DEFAULT_CONTEXT = new VariableFrame(self.variables);`),
-        indent(`const result_${node.id} = (${fn})()`),
+        indent(`const result_${node.id} = (${fn}).apply(this, arguments)`),
         indent(`return result_${node.id};`),
         `}`,
     ].join('\n');
