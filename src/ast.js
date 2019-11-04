@@ -74,8 +74,8 @@ class AstNode extends Node {
 
     static from(xmlElement) {
         const {attributes, tag} = xmlElement;
-        if (INVALID_SNAP_TAGS.includes(tag)) {
-            throw new Error(`Invalid xml type for AST generation: ${tag}`);
+        if (SKIP_SNAP_TAGS.includes(tag)) {
+            return null;
         } else if (FLATTEN_SNAP_TAGS.includes(tag)) {
             assert.equal(xmlElement.children.length, 1, 'Cannot flatten node w/ multiple children.');
             return AstNode.from(xmlElement.children[0]);
@@ -114,14 +114,14 @@ class AstNode extends Node {
             block = new BuiltIn(id, type);
         }
 
-        for (let i = 0; i < xmlElement.children.length; i++) {
-            const childTag = xmlElement.children[i].tag;
-            if (SKIP_SNAP_TAGS.includes(childTag)) {
-                continue;
-            }
-            const node = AstNode.from(xmlElement.children[i]);
-            block.addChild(node);
-        }
+        //for (let i = 0; i < xmlElement.children.length; i++) {
+            //const childTag = xmlElement.children[i].tag;
+            //if (SKIP_SNAP_TAGS.includes(childTag)) {
+                //continue;
+            //}
+            //const node = AstNode.from(xmlElement.children[i]);
+            //block.addChild(node);
+        //}
 
         return block;
     }
@@ -381,6 +381,12 @@ const DEFAULT_INPUTS = {
     doReport: () => [new EmptyString()],
     reportModulus: () => [new EmptyString(), new EmptyString()],
     reportSum: () => [new EmptyString(), new EmptyString()],
+    reportEquals: () => [new False(), new False()],
+    reportTextSplit: () => [new EmptyString(), new EmptyString()],
+    doHideVar: () => [new EmptyString()],
+    doStopThis: () => [new EmptyString()],
+    reportIsA: () => [new EmptyString(), new EmptyString()],
+    reportBoolean: () => [new False()],
 };
 
 const EXPRESSION_TYPES = [
@@ -454,3 +460,4 @@ module.exports.BuiltIn = BuiltIn;
 module.exports.Primitive = Primitive;
 module.exports.BoundFunction = BoundFunction;
 module.exports.EXPRESSION_TYPES = EXPRESSION_TYPES;
+module.exports.SKIP_SNAP_TAGS = SKIP_SNAP_TAGS;

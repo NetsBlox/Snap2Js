@@ -2,7 +2,7 @@
 (function(Snap2Js) {
     const assert = require('assert');
     const XML_Element = require('./lib/snap/xml');
-    const {AstNode, Block, Yield, BuiltIn, BoundFunction} = require('./src/ast');
+    const {SKIP_SNAP_TAGS, AstNode, Block, Yield, BuiltIn, BoundFunction} = require('./src/ast');
     const prettier = require('prettier');
     const fs = require('fs');
     const path = require('path');
@@ -19,7 +19,7 @@
         const eventHandlers = {};
         const asts = model.children
             .filter(child => child.tag !== 'comment')
-            .map(child => AstNode.from(child));
+            .map(child => this.createAstNode(child));
 
         for (let i = asts.length; i--;) {
             const root = asts[i];
@@ -36,19 +36,33 @@
         return eventHandlers;
     };
 
-    Snap2Js.createAstNode = function(curr) {
-        if (typeof curr !== 'object') {
-            return AstNode.fromPrimitive(curr);
+    Snap2Js.createAstNode = function(element) {
+        if (typeof element !== 'object') {
+            return AstNode.fromPrimitive(element);
         }
 
-        if (curr.tag === 'color' || curr.tag === 'option')
-            return this.createAstNode(curr.contents)
+        if (SKIP_SNAP_TAGS.includes(element.tag)) {
+            return null;
+        }
 
-        const node = AstNode.from(curr);
+        if (element.tag === 'color' || element.tag === 'option') {
+            return this.createAstNode(element.contents)
+        }
+
+        const node = AstNode.from(element);
+        for (let i = 0; i < element.children.length; i++) {
+            const childTag = element.children[i].tag;
+            const child = this.createAstNode(element.children[i]);
+            if (child !== null) {
+                node.addChild(child);
+            }
+        }
+
 
         // Load any additional definitions required for the node
-        const receiver = curr.childNamed('receiver');
+        const receiver = element.childNamed('receiver');
         if (receiver && receiver.children.length) {
+            console.log('loading receiver:', receiver);
             this.parse(receiver.children[0])
         }
 
@@ -161,11 +175,11 @@
             blockType = block.attributes.type,
             inputTypes,
             blockFnType,
-            name,
-            root;
+            name;
 
+        // TODO: Compile a special warping version, if needed, and regular version...
         const scriptNode = block.childNamed('script');
-        const ast = AstNode.from(scriptNode || '');
+        const ast = this.createAstNode(scriptNode || '');
 
         // Detect the fn to use to define the function
         blockFnType = 'reify' + blockType.substring(0,1).toUpperCase() +

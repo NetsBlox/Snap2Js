@@ -316,11 +316,8 @@ backend.reportTextSplit =
 backend.reportGreaterThan =
 backend.reportLessThan =
 backend.reportEquals = function(node) {
-    const [leftNode, rightNode] = node.inputs();
-    const left = leftNode ? leftNode.code(this) : 'false';
-    const right = rightNode ? rightNode.code(this) : 'false';
+    const [left, right] = node.inputsAsCode(this);
 
-    // TODO: replace ternary with a safe get method?
     return callFnWithArgs(node.type, left, right);
 };
 
