@@ -366,19 +366,28 @@
         } else {
             console.error(`unknown xml tag for reference: ${ref.tag}`);
         }
+
+        // TODO: Add support for contexts here...
         return `${name} = ${content};`;
     };
 
     Snap2Js.resetState = function() {
-        this.state = _.merge({}, DEFAULT_STATE);
+        this.state = JSON.parse(JSON.stringify(DEFAULT_STATE));
     };
 
-    Snap2Js.compile = function(xml) {
+    const DEFAULT_OPTIONS = {
+        timeout: 2000,
+        allowWarp: true
+    };
+    Snap2Js.compile = function(xml, options=DEFAULT_OPTIONS) {
         var endIndex = 0,
             startIndex = 0,
             len = xml.length,
             elements = [],
             element;
+
+        this.resetState();
+        options = Object.assign({}, DEFAULT_OPTIONS, options);
 
         xml = `<root>${xml.toString()}</root>`;
         element = new XML_Element();
@@ -386,29 +395,22 @@
         elements = element.children;
         this._resolveRefs(elements);
 
-        //const printScripts = () => {
-            //const stage = element.children[0].children.find(c => c.tag === 'stage');
-            //const sprite = stage.children.find(c => c.tag === 'sprites').children[0];
-            //const script = sprite.children.find(c => c.tag === 'scripts').children[0];
-            //// TODO: Find the scripts in the if statement
-            //const evaluate = script.children[1].children[0].children[1];
-        //};
-        //printScripts();
         element = this._flatten(element);
-        //printScripts();
         if (elements[0].tag === 'context') {
             this.state.returnValue = this.parse(elements.shift());
         }
         for (let i = 0; i < elements.length; i++) {
             this.parse(elements[i]);
         }
-        //console.log('code:', this.state.sprites[0].scripts.receiveGo[0]);
+
+        this.prepareSyntaxTrees(this.state, options.allowWarp);
+
         let body = this.generateCodeFromState(this.state);
-        //console.log(body);
+
+        // FIXME: Remove the following line
         require('fs').writeFileSync('code.js', `const fn = function (__ENV) {${body}};async function test(){console.log(await fn(require('.').newContext()))};test();`);
         let fn = new Function('__ENV', body);
 
-        this.resetState();
         return fn;
     };
 
@@ -435,37 +437,36 @@
         return node;
     };
 
-    Snap2Js.generateCodeFromState = function(state) {
+    Snap2Js.prepareSyntaxTrees = function(state, allowWarp=true) {
         const customBlockDefs = {};
         this.state.customBlocks.forEach(def => customBlockDefs[def.name] = def.ast);
-        this.state.customBlocks.forEach(def => def.ast.prepare(customBlockDefs));
+        this.state.customBlocks
+            .forEach(def => def.ast.prepare(customBlockDefs, allowWarp));
 
         const spritesAndStage = this.state.sprites.concat([this.state.stage]);
         spritesAndStage.forEach(sprite => {
             // Create a customBlockDefs dict
             const localCustomDefs = Object.create(customBlockDefs);
             sprite.customBlocks.forEach(def => localCustomDefs[def.name] = def.ast);
-            sprite.customBlocks.forEach(def => def.ast.prepare(localCustomDefs));
+            sprite.customBlocks
+                .forEach(def => def.ast.prepare(localCustomDefs, allowWarp));
 
             const isReturningValueFromSprite = this.state.returnValue &&
                 this.state.returnValue.receiver === sprite.name;
 
             if (isReturningValueFromSprite) {
-                this.state.returnValue.prepare(localCustomDefs);
+                this.state.returnValue.prepare(localCustomDefs, allowWarp);
             }
 
-            const trees = Object.values(sprite.scripts)
-                .reduce((l1, l2) => l1.concat(l2), []);
-
             Object.values(sprite.scripts).forEach(trees => {
-                trees.forEach(root => root.prepare(localCustomDefs));
+                trees.forEach(root => root.prepare(localCustomDefs, allowWarp));
             });
 
 
             Object.entries(sprite.variables).forEach(entry => {
                 const [name, value] = entry;
                 if (value instanceof AstNode) {
-                    value.prepare(localCustomDefs);
+                    value.prepare(localCustomDefs, allowWarp);
                     sprite.variables[name] = this.generateCode(value);
                 }
             });
@@ -474,7 +475,7 @@
         Object.entries(this.state.variables).forEach(entry => {
             const [name, value] = entry;
             if (value instanceof AstNode) {
-                value.prepare(customBlockDefs);
+                value.prepare(customBlockDefs, allowWarp);
                 this.state.variables[name] = this.generateCode(value);
             }
         });
@@ -485,6 +486,9 @@
         //if (isReturningValueFromStage) {
         //}
 
+    };
+
+    Snap2Js.generateCodeFromState = function(state) {
         // Sanitize all user entered values
         const compileCustomBlock = block => {
             block.name = utils.sanitize(block.name);
@@ -495,6 +499,7 @@
 
         this.state.customBlocks.forEach(compileCustomBlock);
 
+        const spritesAndStage = this.state.sprites.concat([this.state.stage]);
         spritesAndStage.forEach(sprite => {
             sprite.name = utils.sanitize(sprite.name);
             sprite.customBlocks.forEach(compileCustomBlock);

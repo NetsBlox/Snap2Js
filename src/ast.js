@@ -5,6 +5,7 @@ const utils = require('./utils');
 const SKIP_SNAP_TAGS = ['receiver', 'comment'];
 const INVALID_SNAP_TAGS = ['receiver'];
 const FLATTEN_SNAP_TAGS = ['autolambda'];
+const ASYNC_TYPES = ['doWait', 'doBroadcastAndWait', 'doAsk'];
 class AstNode extends Node {
     constructor(id) {
         super();
@@ -39,14 +40,14 @@ class AstNode extends Node {
         return this.parent.children[myIndex - 1];
     }
 
-    prepare(blockDefinitions={}) {
-        this.simplify();
+    prepare(blockDefinitions={}, allowWarp=true) {
+        this.simplify(allowWarp);
         this.addConcurrencyNodes();
         this.addBlockDefinitions(blockDefinitions);
     }
 
-    simplify() {
-        this.children.forEach(node => node.simplify());
+    simplify(allowWarp) {
+        this.children.forEach(node => node.simplify(allowWarp));
     }
 
     addConcurrencyNodes() {
@@ -165,6 +166,11 @@ class BuiltIn extends AstNode {  // FIXME: Not the best
 
     isAsync() {
         if (ASYNC_TYPES.includes(this.type)) {
+            // doWait can be sync if duration == 0 and in warp block
+            const isWarping = this.isContainedIn('doWarp');
+            if (isWarping && this.type === 'doWait') {
+                return parseFloat(this.first().value) !== 0;
+            }
             return true;
         }
         return super.isAsync();
@@ -181,8 +187,8 @@ class BuiltIn extends AstNode {  // FIXME: Not the best
         return false;
     }
 
-    simplify() {
-        super.simplify();
+    simplify(allowWarp=true) {
+        super.simplify(allowWarp);
 
         // Convert all reifyPredicate/reifyReporter to reifyScript's
         const isImplicitReturnFn = ['reifyReporter', 'reifyPredicate'].includes(this.type);
@@ -195,6 +201,12 @@ class BuiltIn extends AstNode {  // FIXME: Not the best
             this.children[0] = body;
             this.type = 'reifyScript';
         }
+
+        if (!allowWarp && this.type === 'doWarp') {
+            this.type = 'doRepeat';
+            const count = new Primitive('string', '1');
+            this.addChildFirst(count);
+        }
     }
 
     addConcurrencyNodes() {
@@ -203,7 +215,6 @@ class BuiltIn extends AstNode {  // FIXME: Not the best
 
         if (isLoop) {
             const isWarping = this.isContainedIn('doWarp');
-            // TODO: Add support for disabling warping
             if (!isWarping) {
                 const body = this.inputs().pop();
                 body.addChild(new Yield());
@@ -216,22 +227,25 @@ class BuiltIn extends AstNode {  // FIXME: Not the best
             throw new Error(`Backend does not support builtin: ${this.type}`);
         }
 
-        if (this.isStatement()) {
-            return backend[this.type](this) + ';';
-        } else {
-            if (backend[this.type](this).indexOf('(async function') == 0)
-                throw new Error('Type: '+ this.type);
-            const prefix = this.getCodePrefix();
-            return prefix + backend[this.type](this);
-        }
+        const suffix = this.isStatement() ? ';' : '';
+        const prefix = this.getCodePrefix();
+        return prefix + backend[this.type](this) + suffix;
+        //if (this.isStatement()) {
+            //return backend[this.type](this) + ';';
+        //} else {
+            //if (backend[this.type](this).indexOf('(async function') == 0)
+                //throw new Error('Type: '+ this.type);
+            //return prefix + backend[this.type](this);
+        //}
     }
 
     getCodePrefix() {
-        if (!this.isAsync()) {
+        const isLoop = ['doRepeat', 'doForever', 'doUntil'].includes(this.type);
+        if (!this.isAsync() || isLoop) {
             return '';
         }
 
-        if (this.type.startsWith('reify')) {
+        if (this.type.startsWith('reify') || this.type === 'context') {
             return 'async ';
         }
 
@@ -368,9 +382,6 @@ const DEFAULT_INPUTS = {
     reportModulus: () => [new EmptyString(), new EmptyString()],
 };
 
-const ASYNC_TYPES = [
-    'doWait', 'doBroadcastAndWait',
-];
 const EXPRESSION_TYPES = [
     'context',
     'xPosition',
@@ -430,6 +441,7 @@ const EXPRESSION_TYPES = [
     'evaluateCustomBlock',
     'string',
     'option',
+    'color',
     'bool',
     'list',
     'getJSFromRPCStruct',

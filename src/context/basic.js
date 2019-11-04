@@ -118,22 +118,18 @@ context.doBroadcast = function(event) {
 };
 
 context.doBroadcastAndWait = async function(event) {
-    console.log('doBroadcastAndWait');
     const results = this.emit(event, true);
     return Promise.all(results);
     //return this.emit(event, true);
 };
 
-context.doWait = function(duration, after) {
-    var context = arguments[arguments.length-1],
-        warpVar = context.get(WARP_VAR, true),
-        isWarping = warpVar && warpVar.value === true;
-
+context.doWait = function(duration) {
     duration = duration || 0;
     if (duration === 0 && isWarping) {
-        after();
+        // TODO: This is an annoying rule
+        //after();
     } else {
-        setTimeout(after, duration*1000);
+        return sleep(duration*1000);
     }
 };
 

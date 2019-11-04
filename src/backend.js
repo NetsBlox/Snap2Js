@@ -214,7 +214,7 @@ backend.doThink = function(node) {
 
 ///////////////////// Sensing /////////////////////
 backend.doAsk = function(node) {
-    var msg = this.generateCode(node.inputs[0]);
+    const msg = node.first().code(this);
     return callStatementWithArgs(node.type, msg);
 };
 
@@ -223,17 +223,17 @@ backend.doResetTimer = function(node) {
 };
 
 backend.doSetFastTracking = function(node) {
-    var bool = this.generateCode(node.inputs[0]);
+    const bool = node.first().code(this);
     return callStatementWithArgs(node.type, bool);
 };
 
 backend.reportTouchingObject = function(node) {
-    var obj = this.generateCode(node.inputs[0]);
+    const obj = node.first().code(this);
     return callFnWithArgs(node.type, obj);
 };
 
 backend.reportTouchingColor = function(node) {
-    var color = this.generateCode(node.inputs[0]);
+    const color = node.first().code(this);
     return callFnWithArgs(node.type, color);
 };
 
@@ -245,14 +245,12 @@ backend.reportGet = function(node) {
 };
 
 backend.reportColorIsTouchingColor = function(node) {
-    var first = this.generateCode(node.inputs[0]);
-    var second = this.generateCode(node.inputs[1]);
+    const [first, second] = node.inputsAsCode(this);
     return callFnWithArgs(node.type, first, second);
 };
 
 backend.reportAttributeOf = function(node) {
-    var attr = this.generateCode(node.inputs[0]);
-    var obj = this.generateCode(node.inputs[1]);
+    const [attr, obj] = node.inputsAsCode(this);
     return callFnWithArgs(node.type, attr, obj);
 };
 
@@ -266,12 +264,12 @@ backend.getLastAnswer = function(node) {
 };
 
 backend.reportKeyPressed = function(node) {
-    var key = this.generateCode(node.inputs[0]);
+    const key = node.first().code(this);
     return callFnWithArgs(node.type, key);
 };
 
 backend.reportDistanceTo = function(node) {
-    var obj = this.generateCode(node.inputs[0]);
+    const obj = node.first().code(this);
     return callFnWithArgs(node.type, obj);
 };
 
@@ -419,25 +417,25 @@ backend.clear = function(node) {
 };
 
 backend.setColor = function(node) {
-    var color = this.generateCode(node.inputs[0]);
+    const color = node.first().code(this);
     return callStatementWithArgs(node.type, color);
 };
 
 backend.setHue =
 backend.changeHue = function(node) {
-    var hue = this.generateCode(node.inputs[0]);
+    const hue = node.first().code(this);
     return callStatementWithArgs(node.type, hue);
 };
 
 backend.setBrightness =
 backend.changeBrightness = function(node) {
-    var brightness = this.generateCode(node.inputs[0]);
+    const brightness = node.first().code(this);
     return callStatementWithArgs(node.type, brightness);
 };
 
 backend.setSize =
 backend.changeSize = function(node) {
-    var size = this.generateCode(node.inputs[0]);
+    const size = node.first().code(this);
     return callStatementWithArgs(node.type, size);
 };
 
@@ -543,6 +541,7 @@ backend.evaluateCustomBlock = function(node) {
 };
 
 ///////////////////// Primitives /////////////////////
+backend.color =
 backend.string = function(node) {
     return sanitize(node.value);
 };
@@ -565,6 +564,7 @@ backend.getJSFromRPCStruct = function(node) {
     return callFnWithArgs(node.type, args.join(','));
 };
 
+///////////////////// Event Handlers /////////////////////
 backend.eventHandlers = {};
 backend.eventHandlers.receiveOnClone =
 backend.eventHandlers.receiveGo = function(node, code) {
