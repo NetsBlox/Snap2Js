@@ -1,10 +1,10 @@
-const Node = require('../lib/snap/node');
+const GenericNode = require('../lib/snap/node');
 const assert = require('assert');
 const utils = require('./utils');
 
 const SKIP_SNAP_TAGS = ['receiver', 'comment'];
 const INVALID_SNAP_TAGS = ['receiver'];
-const FLATTEN_SNAP_TAGS = ['autolambda'];
+const FLATTEN_SNAP_TAGS = ['autolambda', 'item'];
 const ASYNC_TYPES = [
     'doWait',
     'doBroadcastAndWait',
@@ -12,10 +12,18 @@ const ASYNC_TYPES = [
     'doThinkFor',
     'doSayFor'
 ];
-class AstNode extends Node {
+class Node extends GenericNode {
     constructor(id) {
         super();
         this.id = (id || `id_${Date.now()}`).replace(/[^a-zA-Z0-9]/g, '_');
+    }
+
+    addChild(child) {
+        assert(child instanceof Node, `Child is not Node: ${child}`);
+        if (this.id === 'item_377' && this.children.length > 2) {
+            throw new Error('adding child to reifyPredicate');
+        }
+        super.addChild(child);
     }
 
     first() {
@@ -74,16 +82,23 @@ class AstNode extends Node {
 
     static from(xmlElement) {
         const {attributes, tag} = xmlElement;
+        if (tag === 'ref') {
+            return Node.from(xmlElement.target);
+        }
+        assert(attributes, `Element does not have attributes: ${xmlElement}`);
         if (SKIP_SNAP_TAGS.includes(tag)) {
             return null;
         } else if (FLATTEN_SNAP_TAGS.includes(tag)) {
             assert.equal(xmlElement.children.length, 1, 'Cannot flatten node w/ multiple children.');
-            return AstNode.from(xmlElement.children[0]);
+            return Node.from(xmlElement.children[0]);
         }
 
         let block;
         if (tag === 'script') {
             block = new Block();
+        } else if (xmlElement.tag === 'context') {
+            // TODO
+            block = Node.fromContext(xmlElement);
         } else if (xmlElement.tag === 'custom-block') {
             const value = attributes.s;
             const id = attributes.collabId;
@@ -114,24 +129,62 @@ class AstNode extends Node {
             block = new BuiltIn(id, type);
         }
 
-        //for (let i = 0; i < xmlElement.children.length; i++) {
-            //const childTag = xmlElement.children[i].tag;
-            //if (SKIP_SNAP_TAGS.includes(childTag)) {
-                //continue;
-            //}
-            //const node = AstNode.from(xmlElement.children[i]);
-            //block.addChild(node);
-        //}
+        for (let i = 0; i < xmlElement.children.length; i++) {
+            const childTag = xmlElement.children[i].tag;
+            const child = Node.from(xmlElement.children[i]);
+            if (child !== null) {
+                block.addChild(child);
+            }
+        }
 
         return block;
     }
 
+    static fromContext(element) {
+        let receiver = null;
+        const receiverNode = element.childNamed('receiver');
+        if (receiverNode && receiverNode.children.length) {  // create the context
+            receiver = receiverNode.children[0];
+            if (receiver.tag === 'ref') receiver = receiver.target;
+            //this.parse(receiver);
+        }
+
+        // Add the execution code
+        const [inputs, variables, fnBody] = element.children;
+        // FIXME: How is "variables" used???
+        // Could this be used to store variables captured from the closure?
+        const type = fnBody.tag === 'script' ? 'reifyScript' : 'reifyReporter';
+        const node = new BuiltIn(null, type);  // TODO: Make these custom types?
+        //const fnNode = this.createAstNode(fnBody);
+        const fnNode = Node.from(fnBody);
+        if (fnNode) {
+            node.addChild(fnNode);
+        } else {
+            node.addChild(new Block());
+        }
+        //const inputNodes = inputs.children.map(item => this.createAstNode(item.contents));
+        const inputNodes = inputs.children.map(item => Node.fromPrimitive(item.contents));
+        const inputList = new BuiltIn(null, 'list');  // TODO: Make custom types?
+        inputNodes.forEach(node => inputList.addChild(node));
+        node.addChild(inputList);
+
+        node.simplify();
+
+        // TODO: Should this use reportObject?
+        const receiverName = receiver && receiver.tag === 'sprite' ?
+            receiver.attributes.name : null;
+        const context = new BoundFunction(receiverName);
+        context.addChild(node);
+
+        return context;
+    }
+
     static fromPrimitive(primitive) {
-        return new Primitive(typeof primitive, primitive);
+        return new Primitive('string', primitive);
     }
 }
 
-class Block extends AstNode {
+class Block extends Node {
     constructor() {
         super();
     }
@@ -159,10 +212,11 @@ class Block extends AstNode {
 
 // It might be better to make a type for 'block's and then add
 // a method for isStatement() or something...
-class BuiltIn extends AstNode {  // FIXME: Not the best 
+class BuiltIn extends Node {  // FIXME: Not the best 
     constructor(id, type) {
         super(id);
         this.type = type;
+        assert(!['ref', 'stage', 'project'].includes(this.type), `Invalid BuiltIn type: ${this.type}`);
     }
 
     isStatement() {
@@ -203,7 +257,10 @@ class BuiltIn extends AstNode {  // FIXME: Not the best
             const doReport = new BuiltIn(null, 'doReport');
             doReport.addChild(this.first());
             body.addChild(doReport);
-            assert(this.children.length === 2, `Expected 2 child for ${this.type}. Found ${this.children.length}`);
+            if (this.children.length !== 2) {
+                console.log(this);
+            }
+            assert(this.children.length === 2, `Expected 2 children for ${this.type}. Found ${this.children.length}`);
             this.children[0] = body;
             this.type = 'reifyScript';
         }
@@ -280,9 +337,12 @@ class EmptyNode extends BuiltIn {
     }
 
     code(backend) {
+        if (!this.parent) {
+            return (new EmptyString()).code(backend);
+        }
+
         const parentType = this.parent.type;
         if (!DEFAULT_INPUTS[parentType]) {
-            console.log(this.parent);
             throw new Error(`Default values unknown for ${parentType}`);
         }
         const inputs = DEFAULT_INPUTS[parentType]();
@@ -295,6 +355,7 @@ class CallCustomFunction extends BuiltIn {
     constructor(id, name) {
         super(id, 'evaluateCustomBlock');
         this.name = name;
+
         this.definition = null;
     }
 
@@ -363,7 +424,7 @@ class EmptyString extends Primitive {
     }
 }
 
-class EmptyList extends Primitive {
+class List extends Primitive {
     constructor() {
         super('list');
     }
@@ -373,11 +434,11 @@ const DEFAULT_INPUTS = {
     doIf: () => [new False(), new Block()],
     forward: () => [new EmptyString()],
     list: () => [new EmptyString()],
-    reportJSFunction: () => [new EmptyList(), new Block()],
+    reportJSFunction: () => [new List(), new Block()],
     getJSFromRPCStruct: () => [...new Array(10)].map(_ => new EmptyString()),
-    reifyScript: () => [new Block(), new EmptyList()],
-    reportListItem: () => [new EmptyString(), new EmptyList()],
-    reportCDR: () => [new EmptyList()],
+    reifyScript: () => [new Block(), new List()],
+    reportListItem: () => [new EmptyString(), new List()],
+    reportCDR: () => [new List()],
     doReport: () => [new EmptyString()],
     reportModulus: () => [new EmptyString(), new EmptyString()],
     reportSum: () => [new EmptyString(), new EmptyString()],
@@ -387,6 +448,8 @@ const DEFAULT_INPUTS = {
     doStopThis: () => [new EmptyString()],
     reportIsA: () => [new EmptyString(), new EmptyString()],
     reportBoolean: () => [new False()],
+    reportDate: () => [new EmptyString()],
+    receiveKey: () => [new EmptyString()],
 };
 
 const EXPRESSION_TYPES = [
@@ -452,12 +515,18 @@ const EXPRESSION_TYPES = [
     'bool',
     'list',
     'getJSFromRPCStruct',
+    'reportObject',
 ];
 
-module.exports.AstNode = AstNode;
-module.exports.Block = Block;
-module.exports.BuiltIn = BuiltIn;
-module.exports.Primitive = Primitive;
-module.exports.BoundFunction = BoundFunction;
-module.exports.EXPRESSION_TYPES = EXPRESSION_TYPES;
-module.exports.SKIP_SNAP_TAGS = SKIP_SNAP_TAGS;
+module.exports = {
+    Node,
+    Block,
+    BuiltIn,
+    Primitive,
+    BoundFunction,
+    EXPRESSION_TYPES,
+    SKIP_SNAP_TAGS,
+    EmptyNode,
+    Variable,
+    List,
+};

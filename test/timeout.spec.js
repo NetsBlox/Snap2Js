@@ -34,7 +34,7 @@ describe('callMaybeAsync', function() {
                 try {
                     await fn();
                 } catch (err) {
-                    assert(err.message.includes('Timeout Exceeded'));
+                    assert(err.message.includes('Timeout Exceeded'), err.message);
                 }
             });
         });

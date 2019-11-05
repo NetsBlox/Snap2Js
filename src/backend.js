@@ -108,11 +108,15 @@ backend.evaluate = function(node) {
     const args = argInputs.map(arg => arg.code(this));
 
     const prefix = fn.isAsync() ? 'await ' : '';
-    return `${prefix}${fn.code(this)}(${args.join(', ')})`;
+    return `${prefix}${fnCode}(${args.join(', ')})`;
 };
 
 backend.doCallCC = function(node) {
-    return node.first().code(this);
+    console.log('doCallCC');
+    const fn = node.first();
+    const fnCode = fn.code(this);
+    const prefix = fn.isAsync() ? 'await ' : '';
+    return `(${prefix}${fnCode})()`;
 };
 
 backend.fork = function(node) {
@@ -371,7 +375,7 @@ backend.context = function(node) {
     const fn = node.first().code(this);
     const spriteName = node.receiver && utils.sanitize(node.receiver);
     const prepCode = spriteName ?
-        `let self = project.sprites.find(sprite => sprite.name === ${spriteName});` :
+        `let self = project.sprites.concat([project.stage]).find(sprite => sprite.name === ${spriteName});` :
         `let self = project.stage;`;
 
     return [
@@ -382,6 +386,12 @@ backend.context = function(node) {
         indent(`return result_${node.id};`),
         `}`,
     ].join('\n');
+};
+
+backend.reportObject = function(node) {
+    const name = node.first().code(this);
+    const fn = `sprite => sprite.name === ${name}`;
+    return `project.sprites.concat([project.stage]).find(${fn})`;
 };
 
 backend.doRun = function(node) {
@@ -447,13 +457,8 @@ backend.doDeclareVariables = function(node) {
 };
 
 backend.doAddToList = function(node) {
-    var value = node.first() ? node.first().code(this) : '',
-        rawList = node.inputs()[1],
-        list = null;
+    const [value, list] = node.inputsAsCode(this);
 
-    if (rawList && rawList.type === 'variable') {
-        list = sanitize(rawList.value);
-    }
     return callStatementWithArgs(node.type, value, list);
 };
 

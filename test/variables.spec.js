@@ -169,16 +169,13 @@ describe('variables', function() {
     });
 
     describe('include global vars in ctx', function() {
-        let result,
-            list,
-            cxt,
-            fn;
+        let list;
 
         before(async function() {
-            content = utils.getContextXml('global-vars-with-ctx');
-            var bin = snap2js.compile(content)
-            cxt = snap2js.newContext();
-            fn = bin(cxt);
+            const content = utils.getContextXml('global-vars-with-ctx');
+            const bin = snap2js.compile(content)
+            const cxt = snap2js.newContext();
+            const fn = bin(cxt);
             list = await fn();
         });
 

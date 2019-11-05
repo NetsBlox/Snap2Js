@@ -177,7 +177,9 @@ project.stage.onKeyPressed = function(key) {
 %>
 };
 // Initialize content references
+var self = project;
 SNAP2JS_REFERENCES = [];
+project.variables.set('SNAP2JS_REFERENCES', SNAP2JS_REFERENCES);
 <%= initRefs %>
 
 // for each sprite...

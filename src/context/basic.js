@@ -504,11 +504,12 @@ context.doDeclareVariables = function(args, context) {
     }
 };
 
-context.doAddToList = function(value, name, context) {
-    var list = context.get(name);
-    if (name && list) {
-        list.value.push(value);
-    }
+context.doAddToList = function(value, list) {
+    list.push(value);
+    //var list = context.get(name);  // FIXME: Why is it looking it up?
+    //if (name && list) {
+        //list.value.push(value);
+    //}
 };
 
 context.reportJoinWords = function() {
