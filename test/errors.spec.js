@@ -2,18 +2,25 @@ describe('errors', function() {
     const snap2js = require('..');
     const assert = require('assert');
     const utils = require('./utils');
-    const Q = require('q');
 
     describe('basic', function() {
-        it('should be able to catch error', function(done) {
+        it('should be able to catch error', async function(done) {
             let cxt = snap2js.newContext();
             let content = utils.getContextXml('list-err');
             let bin = snap2js.compile(content);
             let fn = bin(cxt);
-            fn().catch(err => done())
+            try {
+                await fn();
+            } catch (err) {
+                if (err instanceof TypeError) {
+                    done();
+                } else {
+                    done(err);
+                }
+            }
         });
 
-        it.skip('should return the failing block id', function() {
+        it.skip('should return the failing block id', async function() {
             let cxt = snap2js.newContext();
 
             let content = utils.getContextXml('list-err');
@@ -23,8 +30,7 @@ describe('errors', function() {
             let fn = bin(cxt);
             console.log(fn.toString());
             try {
-                Q(fn())
-                    .catch(err => console.error('error:', err));
+                await fn();
                 console.log('no error');
             } catch (e) {
                 console.log('err', e);
@@ -63,26 +69,33 @@ describe('errors', function() {
     });
 
     describe('in warp', function() {
-        it('should be able to catch error', function(done) {
+        it('should be able to catch error', async function(done) {
             let cxt = snap2js.newContext();
             let content = utils.getContextXml('list-err-warp');
             let bin = snap2js.compile(content);
             let fn = bin(cxt);
-            fn().catch(err => done())
+            try {
+                await fn();
+            } catch (err) {
+                if (err instanceof TypeError) {
+                    done();
+                }
+            }
         });
     });
 
     describe('undef var', function() {
-        it('should be able to catch error', function(done) {
+        it('should be able to catch error', async function(done) {
             let cxt = snap2js.newContext();
             let content = utils.getContextXml('undef-var-err');
             let bin = snap2js.compile(content);
             let fn = bin(cxt);
-            return fn().catch(err => {
+            try {
+                await fn();
+            } catch (err) {
                 assert(err instanceof Error);
                 done();
-            })
-            .catch(done);
+            }
         });
     });
 });

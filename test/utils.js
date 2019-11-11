@@ -1,7 +1,7 @@
 const snap2js = require('..');
+const utils = require('../src/utils');
 const assert = require('assert');
 const fs = require('fs');
-const Q = require('q');
 const path = require('path');
 const TEST_CASE_DIR = path.join(__dirname, 'test-cases');
 
@@ -30,13 +30,28 @@ function getCompiledVersionOf(projectName) {
     return snap2js.compile(content);
 }
 
-function compileAndRun(projectName) {
-    let deferred = Q.defer();
-    let content = getProjectXml(projectName);
-    let cxt = snap2js.newContext();
+async function compileAndRun(projectName) {
+    let lastReportedValue = null;
+    const cxt = snap2js.newContext();
+    cxt['doReport'] = val => {
+        lastReportedValue = val;
+        return val;
+    };
 
-    cxt['doReport'] = val => deferred.resolve(val);
-    bin = getCompiledVersionOf(projectName);
+    const bin = getCompiledVersionOf(projectName);
+    await bin(cxt);
+    return lastReportedValue;
+}
+
+function compileAndRunUntilReport(projectName) {
+    const deferred = utils.defer();
+    const cxt = snap2js.newContext();
+    cxt['doReport'] = val => {
+        deferred.resolve(val);
+        return val;
+    };
+
+    const bin = getCompiledVersionOf(projectName);
     bin(cxt);
     return deferred.promise;
 }
@@ -64,6 +79,7 @@ module.exports = {
     isRightBefore,
     getCompiledVersionOf,
     compileAndRun,
+    compileAndRunUntilReport,
     checkBlockValue,
 
     getProjectXml,

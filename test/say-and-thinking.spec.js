@@ -1,32 +1,15 @@
 describe('say and think', function() {
-    let snap2js = require('..'),
-        assert = require('assert'),
-        utils = require('./utils'),
-        isRightAfter = utils.isRightAfter,
-        content;
-
-    before(function(){
-        content = utils.getProjectXml('say-and-think');
-    });
+    const snap2js = require('..');
+    const assert = require('assert');
+    const utils = require('./utils');
+    const isRightAfter = utils.isRightAfter;
 
     describe('compile', function() {
-        var bin,
-            cxt,
-            values = [],
-            totalOrder;
+        let totalOrder;
 
-        before(function(done) {
-            cxt = snap2js.newContext();
-            cxt['doReport'] = function(val) {
-                console.log('reporting', arguments);
-                totalOrder = val;
-            };
-            bin = snap2js.compile(content);
-            bin(cxt);
-            setTimeout(function() {
-                console.log(totalOrder);
-                done();
-            }, 1000);
+        before(async function() {
+            totalOrder = await utils.compileAndRunUntilReport('say-and-think');
+            console.log(totalOrder);
         });
 
         it('should not yield w/ doSay', function() {

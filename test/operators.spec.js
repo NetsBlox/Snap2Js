@@ -10,10 +10,8 @@ describe('operators', function() {
     };
 
     describe('basic math', function() {
-        before(function(done) {
-            utils.compileAndRun('basic-math')
-                .then(res => result = res)
-                .nodeify(done);
+        before(async function() {
+            result = await utils.compileAndRun('basic-math');
         });
 
         it('should add numbers', function() {
@@ -42,22 +40,17 @@ describe('operators', function() {
     });
 
     describe('reportMonadic', function() {
-        it('should support computing the sqrt from context', function(done) {
+        it('should support computing the sqrt from context', function() {
             const content = utils.getContextXml('report-monadic');
             const fn = snap2js.compile(content)(snap2js.newContext());
-            fn().then(result => {
-                assert.equal(+result, 3);
-                done();
-            });
+            const result = fn();
+            assert.equal(+result, 3);
         });
 
         describe('all ops', function() {
             let fns = null;
-            before(done => {
-                utils.compileAndRun('report-monadic').then(result => {
-                    fns = result;
-                    done();
-                });
+            before(async () => {
+                fns = await utils.compileAndRun('report-monadic');
             });
 
             const threeRads = 3*Math.PI/180;
@@ -79,24 +72,19 @@ describe('operators', function() {
                 ['undefined', () => 0]
             ].forEach((pair, i) => {
                 const [name, grader] = pair;
-                it(`should compute ${name}`, function(done) {
+                it(`should compute ${name}`, function() {
                     const blockFn = fns[i];
-                    blockFn().then(result => {
-                        const expected = grader ? grader(3) : 3;
-                        assert.equal(result, expected);
-                        done();
-                    })
-                    .catch(err => done(err));
+                    const result = blockFn();
+                    const expected = grader ? grader(3) : 3;
+                    assert.equal(result, expected);
                 });
             });
         });
     });
 
     describe('random', function() {
-        before(function(done) {
-            utils.compileAndRun('random')
-                .then(res => result = res)
-                .nodeify(done);
+        before(async function() {
+            result = await utils.compileAndRun('random');
         });
 
         it('should not generate equal random numbers', function() {
@@ -108,10 +96,8 @@ describe('operators', function() {
     });
 
     describe('comparisons', function() {
-        before(function(done) {
-            utils.compileAndRun('comparisons')
-                .then(res => result = res)
-                .nodeify(done);
+        before(async function() {
+            result = await utils.compileAndRun('comparisons');
         });
 
         [
@@ -125,10 +111,8 @@ describe('operators', function() {
     });
 
     describe('text', function() {
-        before(function(done) {
-            utils.compileAndRun('string-ops')
-                .then(res => result = res)
-                .nodeify(done);
+        before(async function() {
+            result = await utils.compileAndRun('string-ops');
         });
 
         it('should join words "hello", "world", "there"', function() {
@@ -147,10 +131,8 @@ describe('operators', function() {
     });
 
     describe('boolean', function() {
-        before(function(done) {
-            utils.compileAndRun('boolean')
-                .then(res => result = res)
-                .nodeify(done);
+        before(async function() {
+            result = await utils.compileAndRun('boolean');
         });
 
         it('should support AND', function() {
@@ -186,10 +168,8 @@ describe('operators', function() {
     describe('functions', function() {
 
         describe('js', function() {
-            before(function(done) {
-                utils.compileAndRun('js-fn')
-                    .then(res => result = res)
-                    .nodeify(done);
+            before(async function() {
+                result = await utils.compileAndRun('js-fn');
             });
 
             it('should return a fn', function() {
@@ -202,10 +182,8 @@ describe('operators', function() {
         });
 
         describe('invalid js names', function() {
-            before(function(done) {
-                utils.compileAndRun('fn-names')
-                    .then(res => result = res)
-                    .nodeify(done);
+            before(async function() {
+                result = await utils.compileAndRun('fn-names');
             });
 
             it('should return a fn', function() {
@@ -217,63 +195,50 @@ describe('operators', function() {
         });
 
         describe('predicate-ring', function() {
-            before(function(done) {
-                utils.compileAndRun('predicate-ring')
-                    .then(res => result = res)
-                    .nodeify(done);
+            before(async function() {
+                result = await utils.compileAndRun('predicate-ring');
             });
 
             it('should return a fn', function() {
                 assert.equal(typeof result, 'function');
             });
 
-            it('should eval true correctly (and+and+not)', function(done) {
-                result(true, true, false).then(value => {
-                    assert.equal(value, true);
-                    done();
-                });
+            it('should eval true correctly (and+and+not)', function() {
+                const value = result(true, true, false);
+                assert.equal(value, true);
             });
 
-            it('should eval false correctly (and+and+not)', function(done) {
-                result(true, true, true).then(value => {
-                    assert.equal(value, false);
-                    done();
-                });
+            it('should eval false correctly (and+and+not)', function() {
+                const value = result(true, true, true)
+                assert.equal(value, false);
             });
         });
 
         describe('reporter-ring', function() {
-            before(function(done) {
-                utils.compileAndRun('reporter-ring')
-                    .then(res => result = res)
-                    .nodeify(done);
+            before(async function() {
+                result = await utils.compileAndRun('reporter-ring');
             });
 
             it('should return a fn', function() {
                 assert.equal(typeof result, 'function');
             });
 
-            it('should eval correctly (sum inputs)', function(done) {
-                result(3, 5).then(value => {
-                    assert.equal(value, 8);
-                    done();
-                });
+            it('should eval correctly (sum inputs)', function() {
+                const value = result(3, 5)
+                assert.equal(value, 8);
             });
         });
 
         describe('cmd-ring', function() {
-            var bin;
+            let bin;
 
             before(function() {
                 bin = utils.getCompiledVersionOf('cmd-ring');
             });
 
-            it('should return a fn', function(done) {
-                utils.compileAndRun('cmd-ring')
-                    .then(result => {
-                        assert.equal(typeof result, 'function', result.toString());
-                    })
-                    .nodeify(done);
+            it('should return a fn', async function() {
+                const result = await utils.compileAndRun('cmd-ring');
+                assert.equal(typeof result, 'function', result.toString());
             });
 
             it('should move forward by 100', function(done) {

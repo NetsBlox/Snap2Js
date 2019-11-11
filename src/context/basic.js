@@ -1,6 +1,5 @@
 const base = require('./nop');
 const clone = require('../utils').clone;
-const SPromise = require('synchronous-promise').SynchronousPromise;
 
 const WARP_VAR = '__isAtomic';
 const isString = val => typeof val === 'string';
@@ -87,16 +86,27 @@ context.doReport = function(value) {
     return value;
 };
 
-context.doYield = function(fn) {
-    var args = Array.prototype.slice.call(arguments, 1),
-        context = args.pop();
+function defer() {
+    const deferred = {
+        resolve: null,
+        reject: null
+    };
+    const promise = new Promise((resolve, reject) => {
+        deferred.resolve = resolve;
+        deferred.reject = reject;
+    });
+    deferred.promise = promise;
+    return deferred;
+}
 
-    var isAtomic = context.get(WARP_VAR, true);
-    if (isAtomic && isAtomic.value) {
-        fn.apply(this, args);
-    } else {
-        setTimeout(() => fn.apply(this, args), 5);
-    }
+function sleep(duration) {
+    const deferred = defer();
+    setTimeout(deferred.resolve, duration);
+    return deferred.promise;
+}
+
+context.doYield = async function() {
+    return await sleep(0);
 };
 
 context.doWarp = function(isStart, context) {
@@ -107,20 +117,19 @@ context.doBroadcast = function(event) {
     this.emit(event);
 };
 
-context.doBroadcastAndWait = function(event) {
-    this.emit(event, true);
+context.doBroadcastAndWait = async function(event) {
+    const results = this.emit(event, true);
+    return Promise.all(results);
+    //return this.emit(event, true);
 };
 
-context.doWait = function(duration, after) {
-    var context = arguments[arguments.length-1],
-        warpVar = context.get(WARP_VAR, true),
-        isWarping = warpVar && warpVar.value === true;
-
+context.doWait = function(duration) {
     duration = duration || 0;
     if (duration === 0 && isWarping) {
-        after();
+        // TODO: This is an annoying rule
+        //after();
     } else {
-        setTimeout(after, duration*1000);
+        return sleep(duration*1000);
     }
 };
 
@@ -137,20 +146,20 @@ context.doThink = function(msg) {
     console.error(msg);
 };
 
-context.doThinkFor = function(msg, duration, after) {
-    console.error(msg);
-    duration = +duration || 0;
-    setTimeout(after, duration*1000);
-};
-
-context.doSayFor = function(msg, duration, after) {
-    console.log(msg);
-    duration = +duration || 0;
-    setTimeout(after, duration*1000);
-};
-
 context.bubble = function(msg) {
     console.log(msg);
+};
+
+context.doThinkFor = function(msg, duration) {
+    context.doThink(msg);
+    duration = +duration || 0;
+    return sleep(duration*1000);
+};
+
+context.doSayFor = function(msg, duration) {
+    context.bubble(msg);
+    duration = +duration || 0;
+    return sleep(duration*1000);
 };
 
 context.doWearNextCostume = function() {
@@ -252,9 +261,7 @@ context.reportEquals = function(a, b) {
     return x === y;
 };
 
-context.doRun = function(fn) {
-    var args = Array.prototype.slice.call(arguments, 1);
-    
+context.doRun = function(fn, args) {
     return fn.apply(this, args);
 };
 
@@ -491,20 +498,18 @@ context.doChangeVar = function(name, val, context) {
     variable.value = +variable.value + (+val);
 };
 
-context.doDeclareVariables = function() {
-    var args = Array.prototype.slice.call(arguments),
-        context = args.pop();
-
+context.doDeclareVariables = function(args, context) {
     for (var i = args.length; i--;) {
         context.set(args[i], 0);
     }
 };
 
-context.doAddToList = function(value, name, context) {
-    var list = context.get(name);
-    if (name && list) {
-        list.value.push(value);
-    }
+context.doAddToList = function(value, list) {
+    list.push(value);
+    //var list = context.get(name);  // FIXME: Why is it looking it up?
+    //if (name && list) {
+        //list.value.push(value);
+    //}
 };
 
 context.reportJoinWords = function() {

@@ -1,9 +1,9 @@
 const callRawFnWithArgs = function(fn) {
     const inputs = Array.prototype.slice.call(arguments, 1);
     if (inputs.length) {
-        return `callMaybeAsync(self, ${fn}, ${inputs.join(', ')}, DEFAULT_CONTEXT)`;
+        return `${fn}.call(self, ${inputs.join(', ')}, DEFAULT_CONTEXT)`;
     }
-    return `callMaybeAsync(self, ${fn}, DEFAULT_CONTEXT)`;
+    return `${fn}.call(self, DEFAULT_CONTEXT)`;
 };
 
 const callFnWithArgs = function(fn) {
