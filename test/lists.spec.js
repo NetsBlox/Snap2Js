@@ -49,20 +49,4 @@ describe('lists', function() {
             assert.equal(vals[0], 2)
         });
     });
-
-    describe('references', function() {
-        it('should support self-referencing', function(done) {
-            content = utils.getContextXml('recursive-data');
-            var bin = snap2js.compile(content)
-            cxt = snap2js.newContext();
-            fn = bin(cxt);
-            fn().then(res => {
-                assert.equal(res, 4);
-                done();
-            })
-            .catch(err => {
-                done(err);
-            });
-        });
-    });
 });

@@ -1,7 +1,9 @@
 // We will be generating JavaScript code which will call the primitive fns
 (function(Snap2Js) {
+    const assert = require('assert');
     const XML_Element = require('./lib/snap/xml');
-    const Q = require('q');
+    const AST = require('./src/ast');
+    const {SKIP_SNAP_TAGS, Block, Yield, BuiltIn, BoundFunction} = AST;
     const prettier = require('prettier');
     const fs = require('fs');
     const path = require('path');
@@ -14,127 +16,50 @@
     const boilerplateTpl = _.template(boilerplate);
 
     Snap2Js.parseSpriteScripts = function(model) {
+        const validEventHandlers = Object.keys(this._backend.eventHandlers);
         const eventHandlers = {};
         const asts = model.children
             .filter(child => child.tag !== 'comment')
-            .map(child => this.parseScript(child));
+            .map(child => this.createAstNode(child));
 
-        for (var i = asts.length; i--;) {
-            const code = this.generateScriptCode(asts[i]);
-            if (code) {
-                if (!eventHandlers[asts[i].type]) {
-                    eventHandlers[asts[i].type] = [];
+        for (let i = asts.length; i--;) {
+            const root = asts[i];
+            assert(root instanceof AST.Node);
+
+            const eventHandler = root instanceof Block ? root.first().type : root.type;
+            if (validEventHandlers.includes(eventHandler)) {
+                if (!eventHandlers[eventHandler]) {
+                    eventHandlers[eventHandler] = [];
                 }
-                eventHandlers[asts[i].type].push(code);
+                eventHandlers[eventHandler].push(root);
             }
         }
         return eventHandlers;
     };
 
-    Snap2Js.createAstNode = function(curr, next) {
-        if (typeof curr !== 'object') {
-            return {
-                parent: null,
-                type: typeof curr,
-                value: curr
-            };
+    Snap2Js.createAstNode = function(element) {
+        if (typeof element !== 'object') {
+            return AST.Node.fromPrimitive(element);
+        }
+        if (element.tag === 'ref') element = element.target;
+
+        if (SKIP_SNAP_TAGS.includes(element.tag)) {
+            return null;
         }
 
-        if (curr.tag === 'color' || curr.tag === 'option')
-            return this.createAstNode(curr.contents)
+        const node = this.getNodeForObject(element) || AST.Node.from(element);
 
-        var node,
-            type;
-
-        node = {
-            id: null,
-            parent: null,
-            type: null,
-            inputs: null,
-            next: next || null
-        };
-
-        if (curr.tag === 'custom-block') {
-            type = 'evaluateCustomBlock';
-            node.value = curr.attributes.s;
-            node.id = curr.attributes.collabId;
-
-            // remove receiver if not a global block
-            // FIXME: This should actually load the definitions from the receiver
-            let lastChild = curr.children[curr.children.length-1];
-            if (lastChild && lastChild.tag === 'receiver') {
-                let receiver = lastChild.children[0];
-                curr.children.pop();
-                if (receiver) {
-                    this.parse(receiver);
-                }
-            }
-        } else if (!curr.attributes) {
-            type = Object.keys(curr)[0];
-            if (type === 'block') {
-                throw new Error('bad parsing');
-            }
-        } else if (curr.attributes.var) {
-            type = 'variable';
-            node.value = curr.attributes.var;
-        } else {
-            type = curr.attributes.s || curr.tag;
-            node.id = curr.attributes.collabId;
-        }
-        if (!type) {
-            throw new Error('bad parsing');
-        }
-
-        node.type = type;
-
-        if (node.id) node.id = node.id.replace(/[^a-zA-Z0-9]/g, '_');
-        if (next) {
-            next.parent = node;
-        }
-        node.inputs = curr.children
-            .map(child => {
-                let key = child.tag;
-                let childNode = null;
-
-                if (key === 'script') {
-                    childNode = this.parseScript(child);
-                    if (childNode) childNode.parent = node;
-
-                    return childNode;
-                } else if (key === 'l') {
-                    if (child.children.length === 1) {
-                        childNode = this.createAstNode(child.children[0]);
-                        if (childNode) childNode.parent = node;
-                        return childNode;
-                    } else if (child.children.length) {
-                        let children = child.children.map(child => this.createAstNode(child));
-                        children.forEach(child => child.parent = node);
-                        return children;
-                    }
-                    childNode = this.createAstNode(child.contents);
-                    if (childNode) childNode.parent = node;
-                    return childNode;
-                }
-                childNode = this.createAstNode(child);
-                if (childNode) childNode.parent = node;
-                return childNode;
-            });
-
-        if (!node.value && curr.contents) {
-            node.value = curr.contents;
-        }
         return node;
     };
 
-    Snap2Js.parseScript = function(script) {
-        var rootNode,
-            blocks = script.children,
-            last;
-
-        for (var i = blocks.length; i--;) {
-            last = this.createAstNode(blocks[i], last);
+    Snap2Js.getNodeForObject = function(element) {
+        const OBJECT_TAGS = ['sprite', 'stage'];
+        if (OBJECT_TAGS.includes(element.tag)) {
+            const node = new BuiltIn(element.attributes.id, 'reportObject');
+            const name = AST.Node.fromPrimitive(element.attributes.name);
+            node.addChild(name);
+            return node;
         }
-        return last;
     };
 
     Snap2Js.getReferenceIndex = function(id) {
@@ -150,39 +75,40 @@
     Snap2Js.getContentReference = function(id) {
         const index = this.getReferenceIndex(id);
         if (index > -1) {
-            return `${Snap2Js.REFERENCE_DICT}[${index}]`;
+            const node = new BuiltIn(null, 'reportListItem');
+            node.addChild(AST.Node.fromPrimitive(index + 1));
+            node.addChild(new AST.Variable(Snap2Js.REFERENCE_DICT));
+            return node;
         }
-        return `''`;
+        return new AST.EmptyNode();
     };
 
     Snap2Js.recordContentReference = function(element) {
-        const index = this.getReferenceIndex(element.attributes.id);
+        const {id} = element.attributes;
+        const index = this.getReferenceIndex(id);
         if (index === -1) {
             this.state.references.push(element);
         }
     };
 
-    Snap2Js.parseVariableValue = function(variable) {
-        let result = 0;
-
-        if (variable.tag === 'bool') {
-            result = variable.contents === 'true';
-        } else if (variable.tag === 'l') {
-            result = utils.sanitize(variable.contents);
-        } else if (variable.tag === 'list') {
-            if (variable.attributes.id) {
-                result = this.getContentReference(variable.attributes.id);
-            } else {  // unreferenced list literal
-                result = '[' + variable.children.map(child => {
-                    return this.parseVariableValue(child.children[0]);
-                }).join(',') + ']';
-            }
+    Snap2Js.parseVariableValue = function(variable, allowReference=true) {
+        if (variable.attributes.isReferenced && allowReference) {  // FIXME
+            return this.getContentReference(variable.attributes.id);
+        } else if (variable.tag === 'context') {  // FIXME: Is this necessary?
+            return this.parse.call(this, variable, true);
         } else if (variable.tag === 'ref') {
-            result = this.getContentReference(variable.attributes.id);
-        } else if (variable.tag) {
-            result = this.parse.call(this, variable, true);
+            //return this.parseVariableValue(variable.target);
+            return this.getContentReference(variable.attributes.id);
+        } else if (variable.tag === 'list') {
+            const list = new AST.List();
+            variable.children
+                .map(child => this.parseVariableValue(child.children[0]))
+                .forEach(item => list.addChild(item));
+
+            return list;
+        } else {
+            return this.createAstNode(variable);
         }
-        return result;
     };
 
     Snap2Js.parseInitialVariables = function(vars) {
@@ -208,12 +134,13 @@
         position.y = model.attributes.y;
         dir = model.attributes.heading;
         blocks = model.childNamed('blocks').children;
+        const variables = this.parseInitialVariables(model.childNamed('variables').children);
         return {
             id: model.attributes.collabId,
             name: model.attributes.name,
-            variables: this.parseInitialVariables(model.childNamed('variables').children),
-            scripts: this.parseSpriteScripts(model.childNamed('scripts')),
             customBlocks: blocks.map(block => this.parseBlockDefinition(block)),
+            variables: variables,
+            scripts: [],
             position: position,
             draggable: model.attributes.draggable === 'true',
             rotation: model.attributes.rotation,
@@ -228,6 +155,7 @@
 
         return {
             customBlocks: blocks.map(block => this.parseBlockDefinition(block)),
+            variables: this.parseInitialVariables(model.childNamed('variables').children),
             scripts: this.parseSpriteScripts(model.childNamed('scripts')),
             width: model.attributes.width,
             height: model.attributes.height,
@@ -239,21 +167,14 @@
     Snap2Js.parseBlockDefinition = function(block) {
         var spec = block.attributes.s,
             inputs = utils.inputNames(spec).map(input => this.createAstNode(input)),
-            blockType = block.attributes.type,
-            inputTypes,
-            blockFnType,
-            name,
-            root;
+            blockType = block.attributes.type;
 
+        // TODO: Compile a special warping version, if needed, and regular version...
         const scriptNode = block.childNamed('script');
-        const ast = scriptNode ? this.parseScript(scriptNode) :
-            {  // Add a string node as a sort of no-op
-                type: 'string',
-                value: 'nop'
-            };
+        const ast = scriptNode ? this.createAstNode(scriptNode) : new AST.EmptyNode();
 
         // Detect the fn to use to define the function
-        blockFnType = 'reify' + blockType.substring(0,1).toUpperCase() +
+        let blockFnType = 'reify' + blockType.substring(0,1).toUpperCase() +
             blockType.substring(1);
 
         if (!this._backend[blockFnType]) {
@@ -261,10 +182,10 @@
         }
 
         // parse the inputs to make the block def name
-        inputTypes = block.childNamed('inputs').children
+        const inputTypes = block.childNamed('inputs').children
             .map(child => child.attributes.type);
 
-        name = utils.parseSpec(spec).map(part => {
+        const name = utils.parseSpec(spec).map(part => {
             if (part[0] === '%' && part.length > 1) {
                 return inputTypes.shift();
             }
@@ -272,22 +193,15 @@
         }).join(' ');
 
         // Modify the ast to get it to generate an entire fn
-        root = {
-            type: blockFnType,
-            id: block.attributes.collabId,
-            inputs: [
-                ast,
-                {
-                    type: 'list',
-                    inputs: inputs
-                }
-            ]
-        };
-        ast.parent = root;
+        const root = new BuiltIn(block.attributes.collabId, 'reifyScript');  // TODO: Make these custom types?
+        root.addChild(ast);
+        const inputList = new BuiltIn(null, 'list');  // TODO: Make custom types?
+        inputs.forEach(input => inputList.addChild(input));
+        root.addChild(inputList);
 
         return {
             name: name,
-            code: this.generateCode(root)
+            ast: root,
         };
     };
 
@@ -296,7 +210,8 @@
         stage: {
             name: 'Stage',
             customBlocks: [],
-            scripts: {}
+            scripts: {},
+            variables: {},
         },
         variables: {},
         customBlocks: [],
@@ -307,11 +222,11 @@
         tempo: 60
     };
 
-    Snap2Js.parse = function(element, isVariable) {
+    Snap2Js.parse = function(element) {
         let type = element.tag;
 
         if (this.parse[type]) {
-            return this.parse[type].call(this, element, isVariable);
+            return this.parse[type].call(this, element);
         } else {
             throw new Error(`Unsupported xml type: ${type}`);
         }
@@ -328,14 +243,14 @@
     };
 
     Snap2Js.parse.project = function(element) {
-        var stage = element.childNamed('stage');
-        this.parse(stage);
-
-        var globalVars = this.parseInitialVariables(element.childNamed('variables').children);
-        var blocks = element.childNamed('blocks').children;
+        const globalVars = this.parseInitialVariables(element.childNamed('variables').children);
+        const blocks = element.childNamed('blocks').children;
 
         this.state.variables = globalVars;
         this.state.customBlocks = blocks.map(block => this.parseBlockDefinition(block));
+
+        const stage = element.childNamed('stage');
+        this.parse(stage);
     };
 
     Snap2Js.parse.stage = function(stage) {
@@ -353,13 +268,16 @@
         let name = element.attributes.name;
         let sprite = this.state.sprites.find(sprite => sprite.name === name);
         if (!sprite) {
-            this.state.sprites.push(this.parseSprite(element));
+            sprite = this.parseSprite(element);
+            this.state.sprites.push(sprite);
+            sprite.scripts = this.parseSpriteScripts(element.childNamed('scripts'));
         } else {
             console.error(`Sprite ${name} already parsed. Skipping...`);
         }
     };
 
-    Snap2Js.parse.context = function(element, isVariable) {
+    Snap2Js.parse.context = function(element) {
+        return AST.Node.from(element);
         let receiver = null;
         const receiverNode = element.childNamed('receiver');
         if (receiverNode && receiverNode.children.length) {  // create the context
@@ -369,60 +287,34 @@
         }
 
         // Add the execution code
-        let block = element.children[2];
-        let fnNode = null;
-        let node = null;
-        if (block.tag === 'script') {
-            fnNode = this.parseScript(block);
-            let inputEls = element.childNamed('inputs').children;
-            let inputNodes = inputEls.map(item => this.createAstNode(item.contents));
-            node = {
-                type: 'reifyScript',
-                inputs: [fnNode, {type: 'list', inputs: inputNodes}]
-            };
-            node.inputs.forEach(input => input.parent = node);
+        const [inputs, variables, fnBody] = element.children;
+        // FIXME: How is "variables" used???
+        // Could this be used to store variables captured from the closure?
+        const type = fnBody.tag === 'script' ? 'reifyScript' : 'reifyReporter';
+        const node = new BuiltIn(null, type);  // TODO: Make these custom types?
+        const fnNode = this.createAstNode(fnBody);
+        if (fnNode) {
+            node.addChild(fnNode);
         } else {
-            fnNode = this.createAstNode(block);
-            let inputEls = element.childNamed('inputs').children;
-            let inputNodes = inputEls.map(item => this.createAstNode(item.contents));
-            // use autolambda (auto-returns result) if not a script
-            let lambda = {
-                type: 'autolambda',
-                inputs: [fnNode]
-            }
-            node = {
-                type: 'reifyScript',
-                inputs: [lambda, {type: 'list', inputs: inputNodes}]
-            };
+            node.addChild(new Block());
         }
+        const inputNodes = inputs.children.map(item => this.createAstNode(item.contents));
+        const inputList = new BuiltIn(null, 'list');  // TODO: Make custom types?
+        inputNodes.forEach(node => inputList.addChild(node));
+        node.addChild(inputList);
 
-        node.inputs.forEach(input => input.parent = node);
+        node.simplify();
 
-        let body = `return ${this.generateCode(node)}`;
+        const receiverName = receiver && receiver.tag === 'sprite' ?
+            receiver.attributes.name : null;
+        const context = new BoundFunction(receiverName);
+        context.addChild(node);
 
-        // TODO: set the 'self' and 'DEFAULT_CONTEXT' variables
-        // TODO: move this code to the backend...
-        if (receiver && receiver.tag === 'sprite') {
-            let name = utils.sanitize(receiver.attributes.name);
-            body = `let self = project.sprites.find(sprite => sprite.name === ${name});\n` +
-                `let DEFAULT_CONTEXT = new VariableFrame(self.variables);\n` +
-                `${body}`;
-        } else {
-            body = `let self = project.stage;\n` +
-                `let DEFAULT_CONTEXT = new VariableFrame(self.variables);\n` +
-                `${body}`;
-        }
-
-        let fn = new Function(body);
-        let code = `(${fn.toString()})()`;
-        if (!isVariable) {
-            this.state.returnValue = code;
-        }
-        return code;
+        return context;
     };
 
-    Snap2Js.transpile = function(xml, pretty=false) {
-        let fn = this.compile(xml)
+    Snap2Js.transpile = function(xml, pretty=false, options) {
+        const fn = this.compile(xml, options);
         let code = fn.toString();
         if (pretty) {
             code = prettier.format(fn.toString());
@@ -430,71 +322,76 @@
         return code;
     };
 
-    Snap2Js._resolveRefs = function(elements) {
-        let refValues = {},
-            allChildren = [],
-            refs = [];
+    Snap2Js.resolveReferences = function(elements) {
+        let allChildren = [];
 
         for (let i = elements.length; i--;) {
             allChildren = allChildren.concat(elements[i].allChildren());
         }
 
-        // For each of the references, record it in the REFERENCES obj.
-        // Lists should be created by making an empty list to start and then modifying it
+        const refNodes = allChildren.filter(child => child.tag === 'ref');
+
         for (let i = allChildren.length; i--;) {
-            if (allChildren[i].tag === 'ref') {
-                refs.push(allChildren[i]);
-            } else if (allChildren[i].attributes.id) {
-                if (allChildren[i].tag !== 'event') {
-                    this.recordContentReference(allChildren[i]);
+            const child = allChildren[i];
+            const {id} = child.attributes;
+            const isNotReference = child.tag !== 'ref';
+            if (isNotReference && id) {
+                const references = refNodes.filter(ref => ref.attributes.id === id);
+                if (references.length) {
+                    child.attributes.isReferenced = true;
+                    this.recordContentReference(child);
+                    references.forEach(ref => ref.target = child);
                 }
-                refValues[allChildren[i].attributes.id] = allChildren[i];
             }
         }
 
-        for (let i = refs.length; i--;) {
-            let id = refs[i].attributes.id;
-            refs[i].target = refValues[id];
-        }
+        refNodes.forEach(ref => {
+            assert(ref.target, `Did not find target for reference: ${ref.attributes.id}`)
+        });
 
-        // Create the initialization code for the references
-        this.state.initRefs = this.getInitRefs();
-        return elements;
+        return refNodes;
     };
 
-    Snap2Js.getInitRefs = function() {
-        return this.state.references
-            .map((ref, i) => this.getInitRefCodeFor(ref, i))
-            .join('\n');
-    };
+    Snap2Js.getReferencedValue = function(element, index) {
+        const isList = element.tag === 'list';
+        const content = isList ? new AST.List() :
+            this.parseVariableValue(element, false);
 
-    Snap2Js.getInitRefCodeFor = function(ref, index) {
-        const name = `${Snap2Js.REFERENCE_DICT}[${index}]`;
-        let content = `'0'`;
+        // Add to references list
+        const addToReferences = new BuiltIn(null, 'doInsertInList');
+        addToReferences.addChild(content);
+        addToReferences.addChild(AST.Node.fromPrimitive(index + 1));
+        addToReferences.addChild(new AST.Variable(Snap2Js.REFERENCE_DICT));
 
-        // Stage, sprites should look up the sprite/stage from the project
-        if (ref.tag === 'stage') {
-            content = 'project.stage';
-        } else if (ref.tag === 'sprite') {
-            const spriteName = utils.sanitize(ref.attributes.name);
-            content = `project.sprites.find(sprite => sprite.name === ${spriteName})`;
-        } else if (ref.tag === 'list') {  // lists may self-reference
-            let initCode = [`${name} = [];`];
-            initCode = initCode.concat(ref.children
-                .map(child => this.parseVariableValue(child.children[0]))
-                .map((content, i) => `${name}[${i}] = ${content};`));
-            return initCode.join('\n');
-        } else {
-            console.error(`unknown xml tag for reference: ${ref.tag}`);
+        const commands = [addToReferences];
+
+        if (isList) {
+            for (let i = 0; i < element.children.length; i++) {
+                const unwrappedElement = element.children[i].children[0];
+                const itemNode = this.parseVariableValue(unwrappedElement);
+
+                const list = new BuiltIn(null, 'reportListItem');
+                list.addChild(AST.Node.fromPrimitive(index + 1));
+                list.addChild(new AST.Variable(Snap2Js.REFERENCE_DICT));
+
+                const addToList = new BuiltIn(null, 'doAddToList');
+                addToList.addChild(itemNode);
+                addToList.addChild(list);
+                commands.push(addToList);
+            }
         }
-        return `${name} = ${content};`;
+
+        return commands;
     };
 
     Snap2Js.resetState = function() {
-        this.state = _.merge({}, DEFAULT_STATE);
+        this.state = JSON.parse(JSON.stringify(DEFAULT_STATE));
     };
 
-    Snap2Js.compile = function(xml) {
+    const DEFAULT_OPTIONS = {
+        allowWarp: true
+    };
+    Snap2Js.compile = function(xml, options=DEFAULT_OPTIONS) {
         var endIndex = 0,
             startIndex = 0,
             len = xml.length,
@@ -502,90 +399,178 @@
             element;
 
         this.resetState();
+        options = Object.assign({}, DEFAULT_OPTIONS, options);
+
         xml = `<root>${xml.toString()}</root>`;
         element = new XML_Element();
         element.parseString(xml);
         elements = element.children;
+        this.resolveReferences(elements);
 
-        this._resolveRefs(elements);
-        // Compile all the text...
-        for (let i = elements.length; i--;) {
-            this.parse(elements[i]);
+        element = this._flatten(element);
+        if (elements[0].tag === 'context') {
+            this.state.returnValue = this.parse(elements[0]);
+            const receivers = elements[0].allChildren()
+                .filter(child => child.tag === 'receiver')
+                .map(node => node.children[0])
+                .filter(node => !!node)
+                .reduce((l1, l2) => l1.concat(l2), []);
+
+            if (elements[1]) {
+                receivers.push(elements[1]);
+            }
+
+            receivers.forEach(receiver => this.parse(receiver));
+        } else {
+            for (let i = 0; i < elements.length; i++) {
+                this.parse(elements[i]);
+            }
         }
+
+        this.prepareSyntaxTrees(this.state, options.allowWarp);
+
         let body = this.generateCodeFromState(this.state);
+
+        this.writeToDebugFile(body, elements[0].tag === 'context');  // REMOVE
         let fn = new Function('__ENV', body);
 
         return fn;
     };
 
-    Snap2Js.generateCodeFromState = function(state) {
-        // Sanitize all user entered values
-        this.state.stage.name = utils.sanitize(this.state.stage.name);
+    Snap2Js.writeToDebugFile = function(body, isContext) {
+        const content = [
+            'const fn = function (__ENV) {',
+            body,
+            '};',
+            'async function test(){',
+            isContext ? 
+            'const f = await fn(require(\'.\').newContext());\nconsole.log(await f());' :
+            'console.log(await fn(require(\'.\').newContext()))',
+            '};',
+            'test();',
+        ].join('\n');
+        fs.writeFileSync('code.js', content);
+    };
 
-        this.state.stage.customBlocks.forEach(block => block.name = utils.sanitize(block.name))
-        this.state.customBlocks.forEach(block => block.name = utils.sanitize(block.name))
+    Snap2Js._flatten = function(node) {
+        let children = [];
 
-        this.state.sprites.forEach(sprite => {
-            sprite.name = utils.sanitize(sprite.name);
-            sprite.customBlocks.forEach(block => block.name = utils.sanitize(block.name));
+        for (let i = 0; i < node.children.length; i++) {
+            let child = node.children[i];
+            if (child.tag === 'l' && child.children.length === 1) {
+                //if (child.children.length === 1) {
+                    children.push(this._flatten(child.children[0]));
+                //} else if (child.children.length) {
+                    //console.log('children', children);
+                    //children = children.concat(child.children
+                        //.map(child => this._flatten(child)));
+                //}
+            } else if (child.tag === 'autolambda') {
+                children.push(this._flatten(child.children[0]));
+            } else {
+                children.push(this._flatten(child));
+            }
+        }
+        node.children = children;
+        return node;
+    };
+
+    Snap2Js.prepareSyntaxTrees = function(state, allowWarp=true) {
+        const customBlockDefs = {};
+        this.state.customBlocks.forEach(def => customBlockDefs[def.name] = def.ast);
+        this.state.customBlocks
+            .forEach(def => def.ast.prepare(customBlockDefs, allowWarp));
+
+        const spritesAndStage = this.state.sprites.concat([this.state.stage]);
+        spritesAndStage.forEach(sprite => {
+            // Create a customBlockDefs dict
+            const localCustomDefs = Object.create(customBlockDefs);
+            sprite.customBlocks.forEach(def => localCustomDefs[def.name] = def.ast);
+            sprite.customBlocks
+                .forEach(def => def.ast.prepare(localCustomDefs, allowWarp));
+
+            const isReturningValueFromSprite = this.state.returnValue &&
+                this.state.returnValue.receiver === sprite.name;
+
+            if (isReturningValueFromSprite) {
+                this.state.returnValue.prepare(localCustomDefs, allowWarp);
+            }
+
+            Object.values(sprite.scripts).forEach(trees => {
+                trees.forEach(root => root.prepare(localCustomDefs, allowWarp));
+            });
+
+
+            Object.entries(sprite.variables).forEach(entry => {
+                const [name, value] = entry;
+                if (value instanceof AST.Node) {
+                    value.prepare(localCustomDefs, allowWarp);
+                    sprite.variables[name] = this.generateCode(value);
+                }
+            });
         });
+
+        Object.entries(this.state.variables).forEach(entry => {
+            const [name, value] = entry;
+            if (value instanceof AST.Node) {
+                value.prepare(customBlockDefs, allowWarp);
+                this.state.variables[name] = this.generateCode(value);
+            }
+        });
+
+        // FIXME: What custom block scope should I use for the references?
+        this.state.references = this.state.references
+            .map((reference, i) => this.getReferencedValue(reference, i))
+            .reduce((l1, l2) => l1.concat(l2), []);
+
+        // Define the REFERENCES object?
+        //this.state.references.unshift();
+
+        this.state.references
+            .filter(reference => reference instanceof AST.Node)
+            .forEach(reference => reference.prepare(customBlockDefs, allowWarp));
+
+        //const isReturningValueFromStage = this.state.returnValue &&
+            //!this.state.returnValue.receiver;
+        //if (isReturningValueFromStage) {
+        //}
+
+    };
+
+    Snap2Js.generateCodeFromState = function(state) {
+        // Create the initialization code for the references
+        this.state.initRefs = this.state.references
+            .map(node => this.generateCode(node))
+            .join('\n');
+
+        // Sanitize all user entered values
+        const compileCustomBlock = block => {
+            block.name = utils.sanitize(block.name);
+            block.code = Snap2Js.generateCode(block.ast);
+        };
+
+        this.state.customBlocks.forEach(compileCustomBlock);
+
+        const spritesAndStage = this.state.sprites.concat([this.state.stage]);
+        spritesAndStage.forEach(sprite => {
+            sprite.name = utils.sanitize(sprite.name);
+            sprite.customBlocks.forEach(compileCustomBlock);
+            const events = Object.keys(sprite.scripts);
+            for (let i = 0; i < events.length; i++) {
+                const trees = sprite.scripts[events[i]];
+                sprite.scripts[events[i]] = trees.map(root => this.generateCode(root));
+            }
+        });
+
+        if (this.state.returnValue) {
+            this.state.returnValue = this.generateCode(this.state.returnValue);
+        }
         return boilerplateTpl(this.state);
     };
 
-    Snap2Js._initNodeMap = {};
-    // TODO: move this to the backend...
-    Snap2Js._initNodeMap.receiveOnClone =
-    Snap2Js._initNodeMap.receiveGo = function(code, node) {
-        return [
-            '(function() {',
-            'var DEFAULT_CONTEXT = new VariableFrame(self.variables);',
-            indent(code),
-            '})();'
-        ].join('\n');
-    };
-
-    Snap2Js._initNodeMap.receiveMessage = function(code, node) {
-        var event = Snap2Js.generateCode(node.inputs[0]),
-            cond = event === utils.sanitize(`any message`) ? 'true' : `event === ${event}`;
-        return [
-            `if (${cond}) {`,
-            'let DEFAULT_CONTEXT = new VariableFrame(self.variables);',
-            indent(code),
-            '}'
-        ].join('\n');
-    };
-
-    Snap2Js._initNodeMap.receiveKey = function(code, node) {
-        var key = Snap2Js.generateCode(node.inputs[0]),
-            cond = key === "'any key'" ? 'true' : `key === ${key}`;
-
-        return [
-            `if (${cond}) {`,
-            'let DEFAULT_CONTEXT = new VariableFrame(self.variables);',
-            indent(code),
-            '}'
-        ].join('\n');
-    };
-
-    Snap2Js.generateScriptCode = function(root) {
-        if (Snap2Js._initNodeMap[root.type]) {
-            return Snap2Js._initNodeMap[root.type](Snap2Js.generateCode(root.next), root);
-        } else {
-            console.error('warn: script does not start with supported init node:', root.type);
-        }
-    };
-
-    Snap2Js.generateCode = function(root) {
-        if (!root) return `SPromise.resolve()`;
-        if (!Snap2Js._backend[root.type]) {
-            throw new Error(`Unsupported node type: ${root.type}`);
-        }
-
-        var code = Snap2Js._backend[root.type].call(Snap2Js, root);
-        if (!Snap2Js._backend[root.type].async && root.next) {
-            code += `\n.then(() => ${Snap2Js.generateCode(root.next)})`;
-        }
-        return code.replace(/\);/g, ');\n');
+    Snap2Js.generateCode = function(node) {
+        if (!node.code) console.log('node is', node);
+        return node.code(Snap2Js._backend) || '';
     };
 
     Snap2Js._backend = {};

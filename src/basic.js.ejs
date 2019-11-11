@@ -1,5 +1,3 @@
-const SPromise = __ENV.SPromise;
-
 class Variable {
     constructor(name, value) {
         this.name = name;
@@ -46,9 +44,10 @@ class Stage {
     }
 
     emit(event, wait) {
+        console.log('emitting', event);
         if (wait) {
-            project.sprites.concat([project.stage])
-                .forEach(obj => obj.onUserEventReceived(event));
+            return project.sprites.concat([project.stage])
+                .map(obj => obj.onUserEventReceived(event));
         } else {
             setTimeout(() => {
                 project.sprites.concat([project.stage])
@@ -89,7 +88,7 @@ class Sprite extends Stage {
     clone() {
         let clone = Object.create(this);
         this.clones.push(clone);
-        setTimeout(() => clone.onCloneStart(), 0);
+        clone.onCloneStart();
     }
 }
 
@@ -121,17 +120,26 @@ project.sprites.push(sprite);
 project.stage.customBlocks.set(<%= def.name %>, <%= def.code %>);
 <% }) %>
 
-project.stage.onFlagPressed = function() {
+project.stage.onFlagPressed = async function() {
     var self = this;
 <%
 (stage.scripts.receiveGo || [])
-    .forEach(function(code) {
+    .forEach(function(code, i) {
 %>
-    <%= code %>
-
+    const handler_<%= i %> = <%= code %>
 <%
 });
 %>
+
+    return Promise.all([
+<%
+(stage.scripts.receiveGo || [])
+    .forEach(function(_, i) {
+%>
+    handler_<%=i%>,
+<%
+    });
+%>    ]);
 };
 
 project.stage.onUserEventReceived = function(event) {
@@ -139,13 +147,21 @@ project.stage.onUserEventReceived = function(event) {
 
 <%
 (stage.scripts.receiveMessage || [])
-    .forEach(function(code) {
+    .forEach(function(code, i) {
 %>
-    <%= code %>
-
+    const handler_<%= i %> = <%= code %>
 <%
 });
 %>
+    return Promise.all([
+<%
+(stage.scripts.receiveMessage || [])
+    .forEach(function(_, i) {
+%>
+    handler_<%=i%>,
+<%
+    });
+%>    ]);
 };
 
 project.stage.onKeyPressed = function(key) {
@@ -161,7 +177,9 @@ project.stage.onKeyPressed = function(key) {
 %>
 };
 // Initialize content references
+var self = project;
 SNAP2JS_REFERENCES = [];
+project.variables.set('SNAP2JS_REFERENCES', SNAP2JS_REFERENCES);
 <%= initRefs %>
 
 // for each sprite...
@@ -178,13 +196,20 @@ sprite.onFlagPressed = function() {
     var self = this;
 <%
 (rawSprite.scripts.receiveGo || [])
-    .forEach(function(code) {
+    .forEach(function(code, i) {
 %>
-    <%= code %>
-
+    const handler_<%= i %> = <%= code %>
 <%
 });
 %>
+    return Promise.all([
+<%
+(rawSprite.scripts.receiveGo || [])
+    .forEach(function(_, i) {
+%>handler_<%=i%>,
+<%
+    });
+%>    ]);
 };
 
 sprite.onKeyPressed = function(key) {
@@ -205,14 +230,20 @@ sprite.onUserEventReceived = function(event) {
 
 <%
 (rawSprite.scripts.receiveMessage || [])
-    .forEach(function(code) {
+    .forEach(function(code, i) {
 %>
-    <%= code %>
-
+    const handler_<%= i %> = <%= code %>
 <%
 });
 %>
-
+    return Promise.all([
+<%
+(rawSprite.scripts.receiveMessage || [])
+    .forEach(function(_, i) {
+%>handler_<%=i%>,
+<%
+    });
+%>    ]);
 };
 
 sprite.onCloneStart = function(event) {
@@ -247,18 +278,6 @@ sprite.checkConditions = function() {
 project.timerStart = Date.now();
 __ENV.__start(project, __ENV);
 
-function callMaybeAsync(self, fn) {
-    let args = [].slice.call(arguments, 2);
-
-    // Wait for any args to resolve
-    let result = __ENV.SPromise.all(args);
-
-    result = result.then(args => fn.apply(self, args));
-
-    return result;
-}
-callMaybeAsync = __ENV.callMaybeAsync || callMaybeAsync;
-
 <% Object.keys(variables).forEach(function(variable) { %>
 project.variables.set(<%= variable %>, <%= variables[variable] %>);<% }) %>
 <% customBlocks.forEach(function(def) { %>
@@ -267,12 +286,11 @@ project.customBlocks.set(<%= def.name %>, <%= def.code %>);
 
 <%= initCode %>
 
-<% // This only executes if there is not context...? %>
-<% // This should be the default fn to call when this runs... %>
-<% // or should this  %>
-<% if (returnValue) { %>
+<% // This only executes if there is not context...?
+   // This should be the default fn to call when this runs...
+   // or should this
+  if (returnValue) { %>
 return <%= returnValue %>;
 <% } else { %>
-project.sprites.forEach(sprite => sprite.onFlagPressed());
-project.stage.onFlagPressed();
+return Promise.all(project.sprites.concat(project.stage).map(sprite => sprite.onFlagPressed()));
 <% } %>

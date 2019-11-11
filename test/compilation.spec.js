@@ -12,10 +12,9 @@ describe('compilation', function() {
     utils.getProjectPaths()
         .filter(filename => !filename.includes('all-control'))
         .forEach(filename => {
-            it(`should nop every operation in ${filename}`, function() {
-                var content = fs.readFileSync(filename, 'utf8');
-                var bin = snap2js.compile(content)
-                bin(context);
+            it(`should be able to compile ${filename}`, function() {
+                const content = fs.readFileSync(filename, 'utf8');
+                const bin = snap2js.compile(content)
             });
 
         });

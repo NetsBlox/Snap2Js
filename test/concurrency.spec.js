@@ -9,18 +9,18 @@ describe('concurrency', function() {
     });
 
     describe('transpile', function() {
-        var code;
+        let code;
 
         before(function() {
-            code = snap2js.transpile(content)
+            code = snap2js.transpile(content);
         });
 
-        it('should contain "doWarp"', function() {
-            assert(/\bdoWarp\b/.test(code));
+        it('should not contain "doWarp"', function() {
+            assert(!/\bdoWarp\b/.test(code));
         });
 
-        it('should not contain "for"', function() {
-            assert.equal(/for\s*\(/.test(code), false);
+        it('should contain "for"', function() {
+            assert(/for\s*\(/.test(code));
         });
     });
 

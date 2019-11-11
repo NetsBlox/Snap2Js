@@ -37,11 +37,8 @@ describe('variables', function() {
             bin(cxt);
         });
 
-        it('should load variables with block values', function(done) {
-            utils.compileAndRun('initial-var-fn')
-                .then(result => {
-                })
-                .nodeify(done);
+        it('should load variables with block values', async function() {
+            await utils.compileAndRun('initial-var-fn')
             cxt = snap2js.newContext();
         });
     });
@@ -90,12 +87,12 @@ describe('variables', function() {
     });
 
     describe('nested lists', function() {
-        var result;
+        let result;
 
         before(done => {
             content = utils.getProjectXml('nested-lists');
-            var cxt = snap2js.newContext();
-            var bin = snap2js.compile(content);
+            const cxt = snap2js.newContext();
+            const bin = snap2js.compile(content);
             cxt['bubble'] = val => {
                 console.log('value', val);
                 result = val;
@@ -172,20 +169,14 @@ describe('variables', function() {
     });
 
     describe('include global vars in ctx', function() {
-        let result,
-            list,
-            cxt,
-            fn;
+        let list;
 
-        before(function() {
-            content = utils.getContextXml('global-vars-with-ctx');
-            var bin = snap2js.compile(content)
-            cxt = snap2js.newContext();
-            fn = bin(cxt);
-            fn().then(_list => {
-                list = _list;
-                done();
-            });
+        before(async function() {
+            const content = utils.getContextXml('global-vars-with-ctx');
+            const bin = snap2js.compile(content)
+            const cxt = snap2js.newContext();
+            const fn = bin(cxt);
+            list = await fn();
         });
 
         it('should support script vars', function() {

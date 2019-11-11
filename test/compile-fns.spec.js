@@ -72,14 +72,12 @@ describe('functions', function() {
     describe('anon statement fn', () => {
         before(() => content = utils.getContextXml('build-list'));
 
-        it(`should return list 1-100`, function(done) {
+        it(`should return list 1-100`, async function() {
             let factory = snap2js.compile(content);
             let env = snap2js.newContext();
             let fn = factory(env);
-            fn().then(result => {
-                result.forEach((n, i) => assert.equal(n, i+1));
-                done();
-            });
+            const result = await fn();
+            result.forEach((n, i) => assert.equal(n, i+1));
         });
 
     });

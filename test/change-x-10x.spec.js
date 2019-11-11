@@ -18,10 +18,6 @@ describe('change x 10x', function() {
         it('should contain "setXPosition"', function() {
             assert(/\bsetXPosition\b/.test(code));
         });
-
-        it('should not contain "for"', function() {
-            assert.equal(/for\s*\(/.test(code), false);
-        });
     });
 
     describe('compile', function() {

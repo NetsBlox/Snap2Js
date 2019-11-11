@@ -46,11 +46,10 @@ describe('hello if-else', function() {
             cxt['bubble'] = function(str) {
                 assert(false);
             };
-            cxt['doSayFor'] = function(str, time, after) {
+            cxt['doSayFor'] = async function(str, time) {
                 assert.equal(time, 2);
                 assert.equal(str, 'I am small');
                 said = true;
-                after();
             };
             cxt['forward'] = function(d) {
                 assert.equal(d, 10);
