@@ -360,7 +360,8 @@ backend.reifyScript = function(node) {
         indent(`const result_${node.id} = (function()${body.code(this)})();`);
     return [
     `function(${tmpArgs.join(', ')}) {`,
-        indent(`let context = new VariableFrame(arguments[${args.length}] || DEFAULT_CONTEXT);`),
+        indent(`let parentContext = arguments[${args.length}] instanceof VariableFrame ? arguments[${args.length}] : DEFAULT_CONTEXT;`),
+        indent(`let context = new VariableFrame(parentContext);`),
         indent(`let self = context.get('${CALLER}').value;`),
         indent(args.map((arg, index) => `context.set(${arg}, a${index});`).join('\n')),
         indent(`let OUTER_CONTEXT = DEFAULT_CONTEXT;`),

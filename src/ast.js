@@ -366,13 +366,26 @@ class EmptyNode extends BuiltIn {
             return (new EmptyString()).code(backend);
         }
 
-        const parentType = this.parent.type;
-        if (!DEFAULT_INPUTS[parentType]) {
+        const defaultInput = this.getDefaultInput(this.parent.type);
+        return defaultInput.code(backend);
+    }
+
+    getDefaultInput(parentType) {
+        const input = DEFAULT_INPUT[parentType]
+        const index = this.parent.inputs().indexOf(this);
+
+        if (DEFAULT_INPUT[parentType]) {
+            return DEFAULT_INPUT[parentType](index);
+        } else if (DEFAULT_INPUTS[parentType]) {
+            const inputs = DEFAULT_INPUTS[parentType]();
+            if (index < inputs.length) {
+                return inputs[index];
+            } else {
+                throw new Error(`No default value for input ${index} of ${parentType}`);
+            }
+        } else {
             throw new Error(`Default values unknown for ${parentType}`);
         }
-        const inputs = DEFAULT_INPUTS[parentType]();
-        const index = this.parent.inputs().indexOf(this);
-        return inputs[index].code(backend);
     }
 }
 
@@ -462,7 +475,6 @@ class List extends Primitive {
 const DEFAULT_INPUTS = {
     doIf: () => [new False(), new Block()],
     forward: () => [new EmptyString()],
-    list: () => [new EmptyString()],
     reportJSFunction: () => [new List(), new Block()],
     getJSFromRPCStruct: () => [...new Array(10)].map(_ => new EmptyString()),
     reifyScript: () => [new Block(), new List()],
@@ -479,6 +491,9 @@ const DEFAULT_INPUTS = {
     reportBoolean: () => [new False()],
     reportDate: () => [new EmptyString()],
     receiveKey: () => [new EmptyString()],
+};
+const DEFAULT_INPUT = {
+    list: index => new EmptyString(),
 };
 
 const EXPRESSION_TYPES = [
