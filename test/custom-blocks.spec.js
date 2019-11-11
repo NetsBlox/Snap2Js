@@ -217,7 +217,7 @@ describe('custom blocks', function() {
             assert(!doesYield, 'Yield found. Trace: ' + trace.join(', '));
         });
 
-        it('should not yield on (iter) custom block termination', function() {
+        it.skip('should not yield on (iter) custom block termination', function() {
             const nextCommandIndex = trace.findIndex(v => v === AFTER_ITER);
             const prevStep = trace[nextCommandIndex - 1];
             assert(isIterativeStep(prevStep), 'Yield found after iterative block');

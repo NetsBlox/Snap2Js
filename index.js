@@ -541,7 +541,6 @@
         // Create the initialization code for the references
         this.state.initRefs = this.state.references
             .map(node => this.generateCode(node))
-            //.map((ref, index) => this.getSerializedReference(ref, index))
             .join('\n');
 
         // Sanitize all user entered values

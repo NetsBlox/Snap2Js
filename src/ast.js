@@ -60,6 +60,7 @@ class Node extends GenericNode {
         this.simplify(allowWarp);
         this.addConcurrencyNodes();
         this.addBlockDefinitions(blockDefinitions);
+        this.finalize();
     }
 
     simplify(allowWarp) {
@@ -68,6 +69,13 @@ class Node extends GenericNode {
 
     addConcurrencyNodes() {
         this.children.forEach(node => node.addConcurrencyNodes());
+    }
+
+    /**
+     * Final method call before code generation.
+     */
+    finalize() {
+        this.children.forEach(node => node.finalize());
     }
 
     addBlockDefinitions(definitions) {
@@ -279,6 +287,15 @@ class BuiltIn extends Node {  // FIXME: Not the best
             const count = new Primitive('string', '1');
             this.addChildFirst(count);
         }
+    }
+
+    finalize() {
+        if (this.type === 'doWarp') {
+            this.type = 'doRepeat';
+            const count = new Primitive('string', '1');
+            this.addChildFirst(count);
+        }
+        super.finalize();
     }
 
     addConcurrencyNodes() {

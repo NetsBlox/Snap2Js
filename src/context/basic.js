@@ -159,7 +159,7 @@ context.doThinkFor = function(msg, duration) {
 context.doSayFor = function(msg, duration) {
     context.bubble(msg);
     duration = +duration || 0;
-    setTimeout(after, duration*1000);
+    return sleep(duration*1000);
 };
 
 context.doWearNextCostume = function() {
@@ -528,7 +528,6 @@ context.evaluateCustomBlock = function(name, fnVar) {
     var args = Array.prototype.slice.call(arguments, 2),
         fn = fnVar.value;
 
-    console.log('calling', name, 'with', args);
     return fn.apply(this, args);
 };
 

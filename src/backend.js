@@ -55,7 +55,7 @@ backend.bounceOffEdge = function(node) {
 backend.doWarp = function(node) {
     // doWarp is essentially compiled away since we add explicit
     // doYield nodes to the AST
-    return node.first().code(this);
+    throw new Error('doWarp should have been compiled away...');
 };
 
 backend.doWait = function(node) {

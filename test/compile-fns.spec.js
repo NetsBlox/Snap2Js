@@ -69,7 +69,7 @@ describe('functions', function() {
         });
     });
 
-    describe.only('anon statement fn', () => {
+    describe('anon statement fn', () => {
         before(() => content = utils.getContextXml('build-list'));
 
         it(`should return list 1-100`, async function() {
