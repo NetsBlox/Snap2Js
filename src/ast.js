@@ -217,7 +217,7 @@ class BuiltIn extends Node {  // FIXME: Not the best
     constructor(id, type) {
         super(id);
         this.type = type;
-        assert(!['ref', 'stage', 'project'].includes(this.type), `Invalid BuiltIn type: ${this.type}`);
+        assert(!['ref', 'stage', 'project', 'event'].includes(this.type), `Invalid BuiltIn type: ${this.type}`);
     }
 
     isStatement() {
