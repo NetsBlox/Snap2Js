@@ -91,8 +91,8 @@
         }
     };
 
-    Snap2Js.parseVariableValue = function(variable) {
-        if (variable.attributes.isReferenced) {  // FIXME
+    Snap2Js.parseVariableValue = function(variable, allowReference=true) {
+        if (variable.attributes.isReferenced && allowReference) {  // FIXME
             return this.getContentReference(variable.attributes.id);
         } else if (variable.tag === 'context') {  // FIXME: Is this necessary?
             return this.parse.call(this, variable, true);
@@ -352,35 +352,10 @@
         return refNodes;
     };
 
-    Snap2Js.getSerializedReference = function(value, index) {
-        // TODO: If it
-        const name = `${Snap2Js.REFERENCE_DICT}[${index}]`;
-        let content = `'0'`;
-
-        if (value instanceof AST.Node) {
-            content = this.generateCode(value)
-        } else if (value.tag === 'stage' || value.tag === 'sprite') {
-            content = 'project.stage';
-        } else if (value.tag === 'sprite') {
-            const spriteName = utils.sanitize(value.attributes.name);
-            content = `project.sprites.find(sprite => sprite.name === ${spriteName})`;
-        } else if (value.tag === 'list') {  // lists may self-reference
-            let initCode = [`${name} = [];`];
-            initCode = initCode.concat(value.children
-                .map(child => this.parseVariableValue(child.children[0]))
-                .map((content, i) => `${name}[${i}] = ${content};`));
-            return initCode.join('\n');
-        } else {
-            throw new Error(`Unexpected referenced content: ${value}`);
-        }
-
-        return `${name} = ${content};`;
-    };
-
     Snap2Js.getReferencedValue = function(element, index) {
         const isList = element.tag === 'list';
         const content = isList ? new AST.List() :
-            this.parseVariableValue(element);
+            this.parseVariableValue(element, false);
 
         // Add to references list
         const addToReferences = new BuiltIn(null, 'doInsertInList');

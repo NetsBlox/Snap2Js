@@ -5,6 +5,7 @@ const utils = require('./utils');
 const SKIP_SNAP_TAGS = ['receiver', 'comment'];
 const INVALID_SNAP_TAGS = ['receiver'];
 const FLATTEN_SNAP_TAGS = ['autolambda', 'item'];
+const FN_TYPES = ['context', 'reifyScript'];
 const ASYNC_TYPES = [
     'doWait',
     'doBroadcastAndWait',
@@ -12,6 +13,7 @@ const ASYNC_TYPES = [
     'doThinkFor',
     'doSayFor'
 ];
+const FN_EVAL = ['evaluateCustomBlock', 'reportCallCC', 'evaluate'];
 class Node extends GenericNode {
     constructor(id) {
         super();
@@ -74,10 +76,6 @@ class Node extends GenericNode {
 
     code(backend) {
         throw new Error(`code not implemented for ${this.constructor.name}`);
-    }
-
-    isAsync() {
-        return !!this.children.find(child => child.isAsync());
     }
 
     static from(xmlElement) {
@@ -206,7 +204,10 @@ class Block extends Node {
 
             return `{\n${code}\n}`;  // FIXME: Move this to the backend?
         }
-
+    }
+    
+    isAsync() {
+        return !!this.children.find(child => child.isAsync());
     }
 }
 
@@ -232,8 +233,16 @@ class BuiltIn extends Node {  // FIXME: Not the best
                 return parseFloat(this.first().value) !== 0;
             }
             return true;
+        } else if (FN_EVAL.includes(this.type)) {
+            return !!this.children.find(child => child.isAsync());
+        } else if (this.type === 'context') {
+            return this.children[0].isAsync();
         }
-        return super.isAsync();
+
+        const children = this.children
+            .filter(child => !FN_TYPES.includes(child.type));
+
+        return !!children.find(child => child.isAsync());
     }
 
     isContainedIn(type) {
@@ -295,8 +304,7 @@ class BuiltIn extends Node {  // FIXME: Not the best
         return prefix + backend[this.type](this) + suffix;
     }
 
-    getCodePrefix() {
-        // TODO: Should this check use the backend?
+    getCodePrefix() {  // TODO: Should this be moved to the backend?
         const isControlFlow = ['doRepeat', 'doForever', 'doUntil', 'doIf', 'doIfElse'].includes(this.type);
         if (!this.isAsync() || isControlFlow) {
             return '';
@@ -381,6 +389,10 @@ class CallCustomFunction extends BuiltIn {
             return false;
         }
 
+        if (!this.definition) {
+            const parents = this.allParents();
+        }
+        assert(this.definition, `No definition found for ${this.name}`);
         return this.definition.isAsync();
     }
 
@@ -529,4 +541,5 @@ module.exports = {
     EmptyNode,
     Variable,
     List,
+    ASYNC_TYPES,
 };

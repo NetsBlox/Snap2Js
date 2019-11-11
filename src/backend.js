@@ -112,7 +112,6 @@ backend.evaluate = function(node) {
 };
 
 backend.doCallCC = function(node) {
-    console.log('doCallCC');
     const fn = node.first();
     const fnCode = fn.code(this);
     const prefix = fn.isAsync() ? 'await ' : '';
@@ -324,6 +323,8 @@ backend.reportEquals = function(node) {
 
     return callFnWithArgs(node.type, left, right);
 };
+
+//backend.reportObject =
 
 backend.reportJoinWords = function(node) {
     const listInput = node.first(),
