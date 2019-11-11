@@ -22,9 +22,6 @@ class Node extends GenericNode {
 
     addChild(child) {
         assert(child instanceof Node, `Child is not Node: ${child}`);
-        if (this.id === 'item_377' && this.children.length > 2) {
-            throw new Error('adding child to reifyPredicate');
-        }
         super.addChild(child);
     }
 
@@ -65,6 +62,10 @@ class Node extends GenericNode {
 
     simplify(allowWarp) {
         this.children.forEach(node => node.simplify(allowWarp));
+    }
+
+    setEmptyNodes(name) {
+        this.children.forEach(node => node.setEmptyNodes(name));
     }
 
     addConcurrencyNodes() {
@@ -274,18 +275,38 @@ class BuiltIn extends Node {  // FIXME: Not the best
             const doReport = new BuiltIn(null, 'doReport');
             doReport.addChild(this.first());
             body.addChild(doReport);
-            if (this.children.length !== 2) {
-                console.log(this);
-            }
             assert(this.children.length === 2, `Expected 2 children for ${this.type}. Found ${this.children.length}`);
             this.children[0] = body;
             this.type = 'reifyScript';
+        }
+
+        if (this.type === 'reifyScript') {
+            const [body, inputs] = this.children;
+            const hasImplicitInputs = inputs.children.length === 0;
+            if (hasImplicitInputs) {
+                const varName = `arg_${this.id}`;
+                const newInputs = new List();
+                newInputs.addChild(new Primitive('string', varName));
+                this.children[1] = newInputs;
+                this.setEmptyNodes(varName);
+            }
         }
 
         if (!allowWarp && this.type === 'doWarp') {
             this.type = 'doRepeat';
             const count = new Primitive('string', '1');
             this.addChildFirst(count);
+        }
+    }
+
+    setEmptyNodes(name) {
+        for (let i = this.children.length; i--;) {
+            const child = this.children[i];
+            if (child instanceof EmptyNode) {
+                this.children[i] = new Variable(name);
+            } else if (child.type !== 'reifyScript') {
+                child.setEmptyNodes(name);
+            }
         }
     }
 
