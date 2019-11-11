@@ -91,6 +91,11 @@ describe('functions', function() {
             const result = await utils.compileAndRun('fake-implicit-inputs');
             assert.equal(result, 1);
         });
+
+        it('should not set inputs inside other rings', async function() {
+            const result = await utils.compileAndRun('nested-implicit-inputs');
+            assert.equal(result, 16);
+        });
     });
 
     describe.skip('closures', () => {
