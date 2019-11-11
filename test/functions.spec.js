@@ -79,7 +79,18 @@ describe('functions', function() {
             const result = await fn();
             result.forEach((n, i) => assert.equal(n, i+1));
         });
+    });
 
+    describe('implicit arguments', () => {
+        it('should default to empty slots as inputs', async function() {
+            const result = await utils.compileAndRun('implicit-inputs');
+            assert.equal(result, 9);
+        });
+
+        it('should not treat empty slots as inputs if specified', async function() {
+            const result = await utils.compileAndRun('fake-implicit-inputs');
+            assert.equal(result, 1);
+        });
     });
 
     describe.skip('closures', () => {
@@ -102,7 +113,6 @@ describe('functions', function() {
             assert.equal(hello(), 'I am running on the server');
         });
 
-        // This is more of a problem with the snap serialization...
         //  It should capture the variables in the scope...
         it(`should retrieve script variables`, function() {
             // TODO
