@@ -222,11 +222,11 @@
         tempo: 60
     };
 
-    Snap2Js.parse = function(element, isVariable) {
+    Snap2Js.parse = function(element) {
         let type = element.tag;
 
         if (this.parse[type]) {
-            return this.parse[type].call(this, element, isVariable);
+            return this.parse[type].call(this, element);
         } else {
             throw new Error(`Unsupported xml type: ${type}`);
         }
@@ -276,7 +276,7 @@
         }
     };
 
-    Snap2Js.parse.context = function(element, isVariable) {
+    Snap2Js.parse.context = function(element) {
         return AST.Node.from(element);
         let receiver = null;
         const receiverNode = element.childNamed('receiver');
