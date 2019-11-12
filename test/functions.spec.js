@@ -43,6 +43,10 @@ describe('functions', function() {
                 let code = snap2js.transpile(content);
             });
 
+            it(`should be able to compile code w/o warp`, function() {
+                snap2js.transpile(content, false, {allowWarp: false});
+            });
+
             it(`should create a js function`, function() {
                 let fn = snap2js.compile(content);
                 assert.equal(typeof fn, 'function');
