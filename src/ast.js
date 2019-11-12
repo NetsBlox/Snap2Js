@@ -339,11 +339,21 @@ class BuiltIn extends Node {  // FIXME: Not the best
 
         const suffix = this.isStatement() ? ';' : '';
         const prefix = this.getCodePrefix();
+        if (!backend[this.type](this)) {
+            throw new Error(`${this.type} did not generate code!`);
+        }
         return prefix + backend[this.type](this) + suffix;
     }
 
     getCodePrefix() {  // TODO: Should this be moved to the backend?
-        const isControlFlow = ['doRepeat', 'doForever', 'doUntil', 'doIf', 'doIfElse'].includes(this.type);
+        const isControlFlow = [
+            'doRepeat',
+            'doForever',
+            'doUntil',
+            'doIf',
+            'doIfElse',
+            'doReport',
+        ].includes(this.type);
         if (!this.isAsync() || isControlFlow) {
             return '';
         }
