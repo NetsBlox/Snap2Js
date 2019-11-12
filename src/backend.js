@@ -6,8 +6,6 @@ const CALLER = '__SELF';
 const callRawFnWithArgs = require('./backend-helpers').callRawFnWithArgs;
 const callFnWithArgs = require('./backend-helpers').callFnWithArgs;
 const callStatementWithArgs = require('./backend-helpers').callStatementWithArgs;
-const callRawStatementWithArgs = require('./backend-helpers').callRawStatementWithArgs;
-const newPromise = require('./backend-helpers').newPromise;
 
 const backend = {};
 

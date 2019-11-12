@@ -278,39 +278,6 @@
 
     Snap2Js.parse.context = function(element) {
         return AST.Node.from(element);
-        let receiver = null;
-        const receiverNode = element.childNamed('receiver');
-        if (receiverNode && receiverNode.children.length) {  // create the context
-            receiver = receiverNode.children[0];
-            if (receiver.tag === 'ref') receiver = receiver.target;
-            this.parse(receiver);
-        }
-
-        // Add the execution code
-        const [inputs, variables, fnBody] = element.children;
-        // FIXME: How is "variables" used???
-        // Could this be used to store variables captured from the closure?
-        const type = fnBody.tag === 'script' ? 'reifyScript' : 'reifyReporter';
-        const node = new BuiltIn(null, type);  // TODO: Make these custom types?
-        const fnNode = this.createAstNode(fnBody);
-        if (fnNode) {
-            node.addChild(fnNode);
-        } else {
-            node.addChild(new Block());
-        }
-        const inputNodes = inputs.children.map(item => this.createAstNode(item.contents));
-        const inputList = new BuiltIn(null, 'list');  // TODO: Make custom types?
-        inputNodes.forEach(node => inputList.addChild(node));
-        node.addChild(inputList);
-
-        node.simplify();
-
-        const receiverName = receiver && receiver.tag === 'sprite' ?
-            receiver.attributes.name : null;
-        const context = new BoundFunction(receiverName);
-        context.addChild(node);
-
-        return context;
     };
 
     Snap2Js.transpile = function(xml, pretty=false, options) {
@@ -431,25 +398,9 @@
 
         let body = this.generateCodeFromState(this.state);
 
-        this.writeToDebugFile(body, elements[0].tag === 'context');  // REMOVE
         let fn = new Function('__ENV', body);
 
         return fn;
-    };
-
-    Snap2Js.writeToDebugFile = function(body, isContext) {
-        const content = [
-            'const fn = function (__ENV) {',
-            body,
-            '};',
-            'async function test(){',
-            isContext ? 
-            'const f = await fn(require(\'.\').newContext());\nconsole.log(await f());' :
-            'console.log(await fn(require(\'.\').newContext()))',
-            '};',
-            'test();',
-        ].join('\n');
-        fs.writeFileSync('code.js', content);
     };
 
     Snap2Js._flatten = function(node) {
@@ -458,13 +409,7 @@
         for (let i = 0; i < node.children.length; i++) {
             let child = node.children[i];
             if (child.tag === 'l' && child.children.length === 1) {
-                //if (child.children.length === 1) {
-                    children.push(this._flatten(child.children[0]));
-                //} else if (child.children.length) {
-                    //console.log('children', children);
-                    //children = children.concat(child.children
-                        //.map(child => this._flatten(child)));
-                //}
+                children.push(this._flatten(child.children[0]));
             } else if (child.tag === 'autolambda') {
                 children.push(this._flatten(child.children[0]));
             } else {
@@ -523,9 +468,6 @@
             .map((reference, i) => this.getReferencedValue(reference, i))
             .reduce((l1, l2) => l1.concat(l2), []);
 
-        // Define the REFERENCES object?
-        //this.state.references.unshift();
-
         this.state.references
             .filter(reference => reference instanceof AST.Node)
             .forEach(reference => reference.prepare(customBlockDefs, allowWarp));
@@ -546,7 +488,7 @@
         // Sanitize all user entered values
         const compileCustomBlock = block => {
             block.name = utils.sanitize(block.name);
-            block.code = Snap2Js.generateCode(block.ast);
+            block.code = this.generateCode(block.ast);
         };
 
         this.state.customBlocks.forEach(compileCustomBlock);
@@ -569,8 +511,7 @@
     };
 
     Snap2Js.generateCode = function(node) {
-        if (!node.code) console.log('node is', node);
-        return node.code(Snap2Js._backend) || '';
+        return node.code(this._backend) || '';
     };
 
     Snap2Js._backend = {};

@@ -46,18 +46,6 @@ const sanitize = function(text) {
     return text;
 };
 
-const isWarping = function(node) {
-    let parent = node.parent;
-    while (parent) {
-        if (parent.type === 'doWarp') {
-            return true;
-        }
-        parent = parent.parent;
-    }
-
-    return false;
-};
-
 const defer = function () {
     const deferred = {resolve: null, reject: null};
     deferred.promise = new Promise((resolve, reject) => {
@@ -73,6 +61,5 @@ module.exports = {
     parseSpec: parseSpec,
     inputNames: inputNames,
     sanitize,
-    isWarping,
     defer,
 };
