@@ -1,0 +1,15 @@
+<context>
+  <inputs>
+    <input>row</input>
+  </inputs>
+  <variables/>
+  <block s="reportListItem">
+    <l>1</l>
+    <block var="row"/>
+  </block>
+  <context>
+    <inputs/>
+    <variables/>
+  </context>
+</context>
+
