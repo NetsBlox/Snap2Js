@@ -15,16 +15,8 @@ const callStatementWithArgs = function() {
     return callFnWithArgs.apply(null, arguments) + '\n';
 };
 
-const callRawStatementWithArgs = function() {
-    return callRawFnWithArgs.apply(null, arguments) + '\n';
-};
-
-const newPromise = (value='') => `SPromise.resolve(${value})`;
-
 module.exports = {
     callRawFnWithArgs,
     callFnWithArgs,
-    callRawStatementWithArgs,
     callStatementWithArgs,
-    newPromise,
 };
