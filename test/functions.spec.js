@@ -127,4 +127,11 @@ describe('functions', function() {
             // TODO
         });
     });
+
+    describe('async fns in variables', function() {
+        it('should resolve async fn as variable', async function() {
+            const result = await utils.compileAndRun('aliased-async-fn');
+            assert.equal(result, true);
+        });
+    });
 });
