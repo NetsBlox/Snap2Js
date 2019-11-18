@@ -429,10 +429,8 @@
 
         this.prepareSyntaxTrees(this.state, options.allowWarp);
 
-        let body = this.generateCodeFromState(this.state);
-
-        this.writeToDebugFile(body, elements[0].tag === 'context');  // REMOVE
-        let fn = new Function('__ENV', body);
+        const body = this.generateCodeFromState(this.state);
+        const fn = new Function('__ENV', body);
 
         return fn;
     };
