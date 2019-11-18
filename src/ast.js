@@ -13,7 +13,7 @@ const ASYNC_TYPES = [
     'doThinkFor',
     'doSayFor'
 ];
-const FN_EVAL = ['evaluateCustomBlock', 'reportCallCC', 'evaluate'];
+const FN_EVAL = ['reportCallCC', 'evaluate', 'doCallCC'];
 class Node extends GenericNode {
     constructor(id) {
         super();
@@ -60,6 +60,10 @@ class Node extends GenericNode {
         this.finalize();
     }
 
+    isAsync() {
+        return !!this.children.find(node => node.isAsync());
+    }
+
     simplify(allowWarp) {
         this.children.forEach(node => node.simplify(allowWarp));
     }
@@ -100,12 +104,13 @@ class Node extends GenericNode {
             return Node.from(xmlElement.children[0]);
         }
 
-        let block;
+        let block,
+            childrenLoaded = false;
         if (tag === 'script') {
             block = new Block();
         } else if (xmlElement.tag === 'context') {
-            // TODO
             block = Node.fromContext(xmlElement);
+            childrenLoaded = true;
         } else if (xmlElement.tag === 'custom-block') {
             const value = attributes.s;
             const id = attributes.collabId;
@@ -136,11 +141,13 @@ class Node extends GenericNode {
             block = new BuiltIn(id, type);
         }
 
-        for (let i = 0; i < xmlElement.children.length; i++) {
-            const childTag = xmlElement.children[i].tag;
-            const child = Node.from(xmlElement.children[i]);
-            if (child !== null) {
-                block.addChild(child);
+        if (!childrenLoaded) {
+            for (let i = 0; i < xmlElement.children.length; i++) {
+                const childTag = xmlElement.children[i].tag;
+                const child = Node.from(xmlElement.children[i]);
+                if (child !== null) {
+                    block.addChild(child);
+                }
             }
         }
 
@@ -153,17 +160,17 @@ class Node extends GenericNode {
         if (receiverNode && receiverNode.children.length) {  // create the context
             receiver = receiverNode.children[0];
             if (receiver.tag === 'ref') receiver = receiver.target;
-            //this.parse(receiver);
         }
 
         // Add the execution code
         const [inputs, variables, fnBody] = element.children;
+        const isNoOp = !fnBody;
         // FIXME: How is "variables" used???
         // Could this be used to store variables captured from the closure?
-        const type = fnBody.tag === 'script' ? 'reifyScript' : 'reifyReporter';
+
+        const type = (isNoOp || fnBody.tag === 'script') ? 'reifyScript' : 'reifyReporter';
         const node = new BuiltIn(null, type);  // TODO: Make these custom types?
-        //const fnNode = this.createAstNode(fnBody);
-        const fnNode = Node.from(fnBody);
+        const fnNode = isNoOp ? null : Node.from(fnBody);
         if (fnNode) {
             node.addChild(fnNode);
         } else {
@@ -243,9 +250,11 @@ class BuiltIn extends Node {  // FIXME: Not the best
             }
             return true;
         } else if (FN_EVAL.includes(this.type)) {
-            return !!this.children.find(child => child.isAsync());
-        } else if (this.type === 'context') {
-            return this.children[0].isAsync();
+            const fn = this.first();
+            if (!fn) {
+                console.log('this', this);
+            }
+            return fn.type === 'variable' || super.isAsync();
         }
 
         const children = this.children
@@ -454,7 +463,7 @@ class CallCustomFunction extends BuiltIn {
             const parents = this.allParents();
         }
         assert(this.definition, `No definition found for ${this.name}`);
-        return this.definition.isAsync();
+        return this.definition.isAsync() || super.isAsync();
     }
 
     addBlockDefinitions(defs) {
