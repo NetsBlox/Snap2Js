@@ -3,7 +3,6 @@
 const prog = require('caporal');
 const version = require('../package.json');
 const snap2js = require('..');
-const Q = require('q');
 const path = require('path');
 const fs = require('fs');
 const exists = require('exists-file');
@@ -33,6 +32,9 @@ const BROWSERIFY_OPTS = {
     debug: false,
     standalone: undefined
 };
+const {promisify} = require('util');
+const readFile = promisify(fs.readFile);
+const writeFile = promisify(fs.writeFile);
 
 prog
     .version(version)
@@ -46,56 +48,47 @@ prog
             if (args.files.length > 1) logger.warn(`Only interpretting ${args.files[0]}`)
             return interpretFile(args.files[0], opts, logger);
         } else {
-            return Q.all(args.files.map(filename => saveToFile(filename, opts, logger)));
+            return Promise.all(args.files.map(filename => saveToFile(filename, opts, logger)));
         }
     });
 
-function compileFile(filename, opts, logger) {
-    return Q.ninvoke(fs, 'readFile', filename)
-        .then(contents => snap2js.transpile(contents))
-        .fail(err => console.error(err));
+async function compileFile(filename, opts, logger) {
+    const contents = await readFile(filename)
+    return snap2js.transpile(contents);
 }
 
-function saveToFile(filename, opts, logger) {
-    let outfile = path.join(opts.output, path.basename(filename).replace(/\.[a-zA-Z0-9]+$/, '.js'));
-    let tmpfile = outfile + '.tmp';
-    let context = opts.context;
+async function saveToFile(filename, opts, logger) {
+    const outfile = path.join(opts.output, path.basename(filename).replace(/\.[a-zA-Z0-9]+$/, '.js'));
+    const tmpfile = outfile + '.tmp';
+    const context = opts.context;
 
     logger.debug('compiling ' + filename + ' to ' + outfile);
-    return compileFile(filename, opts, logger)
-        .then(fn => {
-            var relPath = path.resolve(`${path.dirname(__dirname)}/src/context/${context}`);
-            var contextPath = path.relative(path.resolve(opts.output), relPath);
-            var code = `(${fn.toString()})(require('./${contextPath}'))`;
-            return Q.ninvoke(fs, 'writeFile', tmpfile, code);
-        })
-        .then(() => {
-            var b = browserify([tmpfile], BROWSERIFY_OPTS),
-                outputStream = fs.createWriteStream(outfile);
+    const fn = await compileFile(filename, opts, logger);
+    const relPath = path.resolve(`${path.dirname(__dirname)}/src/context/${context}`);
+    const contextPath = path.relative(path.resolve(opts.output), relPath);
+    const code = `(${fn.toString()})(require('./${contextPath}'))`;
+    await writeFile(tmpfile, code);
 
-            b.bundle().pipe(outputStream);
-            outputStream.on('error',
-                err => logger.warn(err));
+    const b = browserify([tmpfile], BROWSERIFY_OPTS);
+    const outputStream = fs.createWriteStream(outfile);
 
-            outputStream.on('close', () => {
-                logger.debug('finished compiling ' + outfile);
-                logger.debug('removing ' + tmpfile);
-                fs.unlinkSync(tmpfile);
-            });
-        })
-        .fail(err => console.error(err));
+    b.bundle().pipe(outputStream);
+    outputStream.on('error', err => logger.warn(err));
+
+    outputStream.on('close', () => {
+        logger.debug('finished compiling ' + outfile);
+        logger.debug('removing ' + tmpfile);
+        fs.unlinkSync(tmpfile);
+    });
 }
 
-function interpretFile(filename, opts, logger) {
-    let context = opts.context;
-    return Q.ninvoke(fs, 'readFile', filename)
-        .then(contents => snap2js.compile(contents))
-        .then(fn => {
-            const env = require(`../src/context/${context}`);
+async function interpretFile(filename, opts, logger) {
+    const context = opts.context;
+    const contents = await readFile(filename);
+    const fn = await snap2js.compile(contents);
+    const env = require(`../src/context/${context}`);
 
-            return fn(env);
-        })
-        .catch(err => console.error('error', err));
+    return fn(env);
 }
 
 function fileExists(dir) {
