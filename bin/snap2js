@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 const prog = require('caporal');
-const version = require('../package.json');
+const version = require('../package.json').version;
 const snap2js = require('..');
 const path = require('path');
 const fs = require('fs');
