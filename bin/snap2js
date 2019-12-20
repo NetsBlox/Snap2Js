@@ -41,6 +41,10 @@ prog
     .description('A tool to compile Snap! xml files to JavaScript')
     .argument('<files...>', 'Snap xml files to compile')
     .option('-i,--interpret')
+    .option(
+        '--args [inputs]',
+        'Comma separated list of arguments (if interpreting a serialized function)'
+    )
     .option('--output <dir>', 'Output directory', fileExists, '.')
     .option('--context <type>', 'Context to use', isContext, 'basic')
     .action((args, opts, logger) => {
@@ -84,11 +88,22 @@ async function saveToFile(filename, opts, logger) {
 
 async function interpretFile(filename, opts, logger) {
     const context = opts.context;
-    const contents = await readFile(filename);
+    const contents = await readFile(filename, 'utf8');
     const fn = await snap2js.compile(contents);
     const env = require(`../src/context/${context}`);
 
-    return fn(env);
+    const result = await fn(env);
+    if (isFunction(contents)) {
+        const args = opts.args ? opts.args.split(',') : [];
+        const fnOutput = await result.apply(null, args);
+        console.log(fnOutput);
+        return fnOutput;
+    }
+    return result;
+}
+
+function isFunction(data) {
+    return data.trim().startsWith('<context');
 }
 
 function fileExists(dir) {
