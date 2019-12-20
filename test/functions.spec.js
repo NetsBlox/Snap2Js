@@ -32,6 +32,9 @@ describe('functions', function() {
         input: ['TEST '],
         output: 'TEST világ'
     };
+    INPUT_OUTPUTS['outercontext-var'] = {
+        output: ['a', 'b', 'c']
+    };
 
     utils.getContextNames().forEach((name, i) => {
         describe(name, () => {
@@ -64,9 +67,9 @@ describe('functions', function() {
                     const factory = snap2js.compile(content);
                     const fn = factory(env);
                     if (input) {
-                        assert.equal(await fn.apply(null, input), output);
+                        assert.deepEqual(await fn.apply(null, input), output);
                     } else {
-                        assert.equal(await fn(), output);
+                        assert.deepEqual(await fn(), output);
                     }
                 });
             }

@@ -165,9 +165,6 @@ class Node extends GenericNode {
         // Add the execution code
         const [inputs, variables, fnBody] = element.children;
         const isNoOp = !fnBody;
-        // FIXME: How is "variables" used???
-        // Could this be used to store variables captured from the closure?
-
         const type = (isNoOp || fnBody.tag === 'script') ? 'reifyScript' : 'reifyReporter';
         const node = new BuiltIn(null, type);  // TODO: Make these custom types?
         const fnNode = isNoOp ? null : Node.from(fnBody);
@@ -483,6 +480,7 @@ class BoundFunction extends BuiltIn {
     constructor(receiverName) {
         super(null, 'context');
         this.receiver = receiverName;
+        this.variables = [];
     }
 }
 
