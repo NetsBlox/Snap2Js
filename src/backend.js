@@ -378,10 +378,16 @@ backend.context = function(node) {
         `let self = project.sprites.concat([project.stage]).find(sprite => sprite.name === ${spriteName});` :
         `let self = project.stage;`;
 
+    const declareVariables = node.variables.map(variable => {
+        const [name, value] = variable;
+        return `DEFAULT_CONTEXT.set(${name}, ${value.code(this)});`;
+    }).join('\n');
+
     return [
         `function() {`,
         indent(prepCode),
         indent(`let DEFAULT_CONTEXT = new VariableFrame(self.variables);`),
+        indent(declareVariables),
         indent(`const result_${node.id} = (${fn}).apply(this, arguments)`),
         indent(`return result_${node.id};`),
         `}`,

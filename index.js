@@ -3,7 +3,7 @@
     const assert = require('assert');
     const XML_Element = require('./lib/snap/xml');
     const AST = require('./src/ast');
-    const {SKIP_SNAP_TAGS, Block, Yield, BuiltIn, BoundFunction} = AST;
+    const {SKIP_SNAP_TAGS, Block, Yield, BuiltIn} = AST;
     const prettier = require('prettier');
     const fs = require('fs');
     const path = require('path');
@@ -49,6 +49,15 @@
 
         const node = this.getNodeForObject(element) || AST.Node.from(element);
 
+        if (element.tag === 'context') {
+            const outerContext = element.childNamed('context');
+            if (outerContext) {
+                const variables = this.parseInitialVariables(
+                    outerContext.childNamed('variables').children
+                );
+                node.variables = Object.entries(variables);
+            }
+        }
         return node;
     };
 
@@ -277,7 +286,7 @@
     };
 
     Snap2Js.parse.context = function(element) {
-        return AST.Node.from(element);
+        return this.createAstNode(element);
     };
 
     Snap2Js.transpile = function(xml, pretty=false, options) {
