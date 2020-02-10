@@ -175,7 +175,11 @@
     const DEFAULT_BLOCK_FN_TYPE = 'reifyScript';
     Snap2Js.parseBlockDefinition = function(block) {
         var spec = block.attributes.s,
-            inputs = utils.inputNames(spec).map(input => this.createAstNode(input)),
+            types = block.childNamed('inputs').children.map(child => child.attributes.type),
+            inputs = utils.inputNames(spec)
+                .filter((name, index) => {
+                    return types[index] !== '%upvar';
+                }).map(input => this.createAstNode(input)),
             blockType = block.attributes.type;
 
         // TODO: Compile a special warping version, if needed, and regular version...
@@ -462,6 +466,10 @@
                 }
             });
         });
+
+        if (this.state.returnValue && !this.state.returnValue.receiver) {
+            this.state.returnValue.prepare(customBlockDefs, allowWarp);
+        }
 
         Object.entries(this.state.variables).forEach(entry => {
             const [name, value] = entry;

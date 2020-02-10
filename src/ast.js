@@ -25,6 +25,13 @@ class Node extends GenericNode {
         super.addChild(child);
     }
 
+    addSiblingBefore(child) {
+        assert(this.parent, 'Cannot add sibling to a node w/o a parent.');
+        const myIndex = this.parent.children.indexOf(this);
+        this.parent.children.splice(myIndex, 0, child);
+        child.parent = this.parent;
+    }
+
     first() {
         return this.children[0];
     }
@@ -179,8 +186,6 @@ class Node extends GenericNode {
         inputNodes.forEach(node => inputList.addChild(node));
         node.addChild(inputList);
 
-        node.simplify();
-
         // TODO: Should this use reportObject?
         const receiverName = receiver && receiver.tag === 'sprite' ?
             receiver.attributes.name : null;
@@ -302,6 +307,25 @@ class BuiltIn extends Node {  // FIXME: Not the best
             this.type = 'doRepeat';
             const count = new Primitive('string', '1');
             this.addChildFirst(count);
+        }
+
+        if (this.type === 'evaluateCustomBlock') {
+            const types = utils.inputNames(this.name);
+            const inputs = this.inputs();
+            const upvars = [];
+
+            for (let i = types.length; i--;) {
+                if (types[i] === 'upvar') {
+                    upvars.unshift(inputs[i]);
+                    this.removeChild(inputs[i]);
+                }
+            }
+
+            if (upvars.length) {
+                const declareUpvars = new BuiltIn(null, 'doDeclareVariables');
+                upvars.forEach(upvar => declareUpvars.addChild(upvar));
+                this.addSiblingBefore(declareUpvars);
+            }
         }
     }
 

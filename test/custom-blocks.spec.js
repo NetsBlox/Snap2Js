@@ -237,4 +237,17 @@ describe('custom blocks', function() {
             assert.equal(recResult, 120);
         });
     });
+
+    describe('upvars', function() {
+        it('should declare variables for use in custom blocks', async function() {
+            const content = utils.getContextXml('upvar-custom-block');
+            const factory = snap2js.compile(content);
+            const cxt = snap2js.newContext();
+            const values = [];
+            cxt.bubble = iter => values.push(iter);
+            const fn = await factory(cxt);
+            await fn();
+            assert.deepEqual(values, [1, 2, 3, 4, 5]);
+        });
+    });
 });
