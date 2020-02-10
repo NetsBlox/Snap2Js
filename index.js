@@ -467,6 +467,10 @@
             });
         });
 
+        if (this.state.returnValue && !this.state.returnValue.receiver) {
+            this.state.returnValue.prepare(customBlockDefs, allowWarp);
+        }
+
         Object.entries(this.state.variables).forEach(entry => {
             const [name, value] = entry;
             if (value instanceof AST.Node) {
