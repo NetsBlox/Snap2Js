@@ -253,9 +253,6 @@ class BuiltIn extends Node {  // FIXME: Not the best
             return true;
         } else if (FN_EVAL.includes(this.type)) {
             const fn = this.first();
-            if (!fn) {
-                console.log('this', this);
-            }
             return fn.type === 'variable' || super.isAsync();
         }
 
