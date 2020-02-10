@@ -94,12 +94,25 @@ async function interpretFile(filename, opts, logger) {
 
     const result = await fn(env);
     if (isFunction(contents)) {
-        const args = opts.args ? opts.args.split(',') : [];
-        const fnOutput = await result.apply(null, args);
-        console.log(fnOutput);
-        return fnOutput;
+        const args = opts.args ? parseFnArgs(opts.args) : [];
+        try {
+            const fnOutput = await result.apply(null, args);
+            console.log(fnOutput);
+            return fnOutput;
+        } catch (err) {
+            console.log(err.stack);
+            process.exit(1);
+        }
     }
     return result;
+}
+
+function parseFnArgs(argString) {
+    try {
+        return JSON.parse(argString);
+    } catch (err) {
+        return argString.split(',');
+    }
 }
 
 function isFunction(data) {
