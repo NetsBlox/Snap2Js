@@ -44,7 +44,6 @@ class Stage {
     }
 
     emit(event, wait) {
-        console.log('emitting', event);
         if (wait) {
             return project.sprites.concat([project.stage])
                 .map(obj => obj.onUserEventReceived(event));
