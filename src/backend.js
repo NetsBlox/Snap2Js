@@ -519,7 +519,8 @@ backend.reportCONS = function(node) {
 };
 
 backend.variable = function(node) {
-    return callFnWithArgs(node.type, sanitize(node.value));
+    const [value] = node.inputsAsCode(this);
+    return callFnWithArgs(node.type, value);
 };
 
 backend.evaluateCustomBlock = function(node) {
