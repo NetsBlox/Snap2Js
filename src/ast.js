@@ -509,7 +509,7 @@ class Variable extends BuiltIn {
     constructor(value) {
         super();
         this.type = 'variable';
-        this.addChild(new Primitive(value));
+        this.addChild(new Primitive('string', value));
     }
 }
 
