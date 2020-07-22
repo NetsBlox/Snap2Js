@@ -508,8 +508,8 @@ class BoundFunction extends BuiltIn {
 class Variable extends BuiltIn {
     constructor(value) {
         super();
-        this.value = value;
         this.type = 'variable';
+        this.addChild(new Primitive(value));
     }
 }
 
