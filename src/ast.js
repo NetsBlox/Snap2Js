@@ -25,6 +25,13 @@ class Node extends GenericNode {
         super.addChild(child);
     }
 
+    replaceChild(index, child) {
+        const oldChild = this.children[index];
+        this.children[index] = child;
+        oldChild.parent = null;
+        this.children[index].parent = this;
+    }
+
     addSiblingBefore(child) {
         assert(this.parent, 'Cannot add sibling to a node w/o a parent.');
         const myIndex = this.parent.children.indexOf(this);
@@ -96,6 +103,21 @@ class Node extends GenericNode {
 
     code(backend) {
         throw new Error(`code not implemented for ${this.constructor.name}`);
+    }
+
+    refactor(filter, map, terminate = () => false) {
+        for (let i = 0; i < this.children.length; i++) {
+            if (terminate(this.children[i])) {
+                return;
+            }
+
+            if (filter(this.children[i])) {
+                const newNode = map(this.children[i]);
+                this.replaceChild(i, newNode);
+            } else {
+                this.children[i].refactor(filter, map, terminate);
+            }
+        }
     }
 
     static from(xmlElement) {
@@ -309,18 +331,17 @@ class BuiltIn extends Node {  // FIXME: Not the best
         if (this.type === 'evaluateCustomBlock') {
             const types = utils.inputNames(this.name);
             const inputs = this.inputs();
-            const upvars = [];
+            const upvars = new List();
 
             for (let i = types.length; i--;) {
                 if (types[i] === 'upvar') {
-                    upvars.unshift(inputs[i]);
-                    this.removeChild(inputs[i]);
+                    upvars.addChild(inputs[i]);
                 }
             }
 
-            if (upvars.length) {
+            if (upvars.inputs().length) {
                 const declareUpvars = new BuiltIn(null, 'doDeclareVariables');
-                upvars.forEach(upvar => declareUpvars.addChild(upvar));
+                declareUpvars.addChild(upvars);
                 this.addSiblingBefore(declareUpvars);
             }
         }

@@ -249,5 +249,14 @@ describe('custom blocks', function() {
             await fn();
             assert.deepEqual(values, [1, 2, 3, 4, 5]);
         });
+
+        it('should support renamed upvars', async function() {
+            const content = utils.getContextXml('rename-upvar');
+            const factory = snap2js.compile(content);
+            const cxt = snap2js.newContext();
+            const sumFifthCol = await factory(cxt);
+            const result = await sumFifthCol([[1,2,3,4,5], [2,3,4,5,6]]);
+            assert.equal(result, 11);
+        });
     });
 });
