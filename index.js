@@ -176,8 +176,14 @@
     Snap2Js.parseBlockDefinition = function(block) {
         var spec = block.attributes.s,
             types = block.childNamed('inputs').children.map(child => child.attributes.type),
-            inputs = utils.inputNames(spec)
-                .map(input => this.createAstNode(input)),
+            inputs = _.zip(utils.inputNames(spec), types).map(info => {
+                    const [name, type] = info;
+                    const node = this.createAstNode(name);
+                    if (type === '%upvar') {
+                        node.value += '_' + node.id;
+                    }
+                    return [name, node, type];
+                }),
             blockType = block.attributes.type;
 
         // TODO: Compile a special warping version, if needed, and regular version...
@@ -207,29 +213,34 @@
         const root = new BuiltIn(block.attributes.collabId, 'reifyScript');
         root.addChild(ast);
         const inputList = new AST.List();
-        inputs.forEach(input => inputList.addChild(input));
+        inputs.forEach(input => inputList.addChild(input[1]));
         root.addChild(inputList);
 
-        const upvars = utils.inputNames(spec)
-            .map((name, index) => [name, index, types[index]])
+        const upvars = inputs
             .filter(info => {
-                const [/*name*/, /*index*/, type] = info;
+                const [/*name*/, /*node*/, type] = info;
                 return type === '%upvar';
+            })
+            .map(info => {
+                const [name, node] = info;
+                return [name, node];
             });
 
         if (upvars.length) {
             upvars.forEach(upvar => {
-                const [name, index] = upvar;
+                const [name, node] = upvar;
+                const uniqName = node.value;
                 root.refactor(
                     node => {
                         const firstChild = node.first();
-                        const setGetVarTypes = ['variable', 'doSetVar'];
+                        const setGetVarTypes = ['variable', 'doSetVar', 'doChangeVar'];
                         if (firstChild) {
                             return setGetVarTypes.includes(node.type) && firstChild.value === name;
                         }
                     },
                     node => {
-                        const refVar = new AST.Variable(name);
+                        console.log('node', node);
+                        const refVar = new AST.Variable(uniqName);
                         node.replaceChild(0, refVar);
                         return node;
                     },
