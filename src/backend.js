@@ -3,9 +3,8 @@ const utils = require('./utils');
 const indent = utils.indent;
 const sanitize = utils.sanitize;
 const CALLER = '__SELF';
-const callRawFnWithArgs = require('./backend-helpers').callRawFnWithArgs;
-const callFnWithArgs = require('./backend-helpers').callFnWithArgs;
-const callStatementWithArgs = require('./backend-helpers').callStatementWithArgs;
+const {callFnWithArgs, callRawFnWithArgs} = require('./backend-helpers');
+const {callStatementWithArgs} = require('./backend-helpers');
 
 const backend = {};
 
@@ -439,6 +438,32 @@ backend.setSize =
 backend.changeSize = function(node) {
     const size = node.first().code(this);
     return callStatementWithArgs(node.type, size);
+};
+
+backend.setPenHSVA =
+backend.changePenHSVA = function(node) {
+    const [prop, value] = node.inputsAsCode(this);
+    return callStatementWithArgs(node.type, prop, value);
+};
+
+backend.write = function(node) {
+    const [text, size] = node.inputsAsCode(this);
+    return callStatementWithArgs(node.type, text, size);
+};
+
+backend.doPasteOn = function(node) {
+    const [target] = node.inputsAsCode(this);
+    return callStatementWithArgs(node.type, target);
+};
+
+backend.getPenDown =
+backend.reportPenTrailsAsCostume = function(node) {
+    return callFnWithArgs(node.type);
+};
+
+backend.getPenAttribute = function(node) {
+    const [prop] = node.inputsAsCode(this);
+    return callFnWithArgs(node.type, prop);
 };
 
 ///////////////////// Variables /////////////////////

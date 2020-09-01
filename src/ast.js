@@ -640,6 +640,10 @@ const EXPRESSION_TYPES = [
     'list',
     'getJSFromRPCStruct',
     'reportObject',
+
+    'reportPenTrailsAsCostume',
+    'getPenAttribute',
+    'getPenDown',
 ];
 
 module.exports = {

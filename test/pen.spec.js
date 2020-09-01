@@ -6,6 +6,13 @@ describe('pen', function() {
         content;
 
     describe('all blocks', function() {
+        it('should compile all blocks', function() {
+            content = utils.getProjectXml('all-penv2');
+            bin = snap2js.compile(content);
+        });
+    });
+
+    describe('all blocks (old)', function() {
         var bin,
             cxt;
 
