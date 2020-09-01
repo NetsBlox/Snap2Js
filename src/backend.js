@@ -203,6 +203,29 @@ backend.doThink = function(node) {
     return callStatementWithArgs(node.type, msg);
 };
 
+backend.getEffect = function(node) {
+    const [effect] = node.inputsAsCode(this);
+    return callFnWithArgs(node.type, effect);
+};
+
+backend.reportShown = function(node) {
+    return callFnWithArgs(node.type);
+};
+
+backend.reportGetImageAttribute = function(node) {
+    const [attr, image] = node.inputsAsCode(this);
+    return callFnWithArgs(node.type, attr, image);
+};
+
+backend.goToLayer = function(node) {
+    const [layer] = node.inputsAsCode(this);
+    return callFnWithArgs(node.type, layer);
+};
+
+backend.reportNewCostumeStretched = function(node) {
+    const [costume, x, y] = node.inputsAsCode(this);
+    return callFnWithArgs(node.type, costume, x, y);
+};
 ///////////////////// Sensing /////////////////////
 backend.doAsk = function(node) {
     const msg = node.first().code(this);

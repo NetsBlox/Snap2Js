@@ -644,6 +644,10 @@ const EXPRESSION_TYPES = [
     'reportPenTrailsAsCostume',
     'getPenAttribute',
     'getPenDown',
+    'getEffect',
+    'reportShown',
+    'reportGetImageAttribute',
+    'reportNewCostumeStretched',
 ];
 
 module.exports = {

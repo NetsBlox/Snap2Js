@@ -69,5 +69,10 @@ describe('looks', function() {
             };
             bin(cxt);
         });
+
+        it('should be able to compile v6 blocks', function() {
+            const content = utils.getProjectXml('all-looksv2');
+            snap2js.compile(content);
+        })
     });
 });
