@@ -9,7 +9,7 @@ describe('sensing', function() {
             cxt;
 
         before(function() {
-            content = utils.getProjectXml('all-sensing');
+            const content = utils.getProjectXml('all-sensing');
             bin = snap2js.compile(content);
         });
 
@@ -64,6 +64,11 @@ describe('sensing', function() {
             };
             bin(cxt);
         };
+
+        it('should compile v6 blocks', function() {
+            const content = utils.getProjectXml('all-sensingv2');
+            snap2js.compile(content);
+        });
 
     });
 

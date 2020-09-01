@@ -263,11 +263,18 @@ backend.reportColorIsTouchingColor = function(node) {
     return callFnWithArgs(node.type, first, second);
 };
 
+backend.reportAspect =
+backend.reportRelationTo =
 backend.reportAttributeOf = function(node) {
     const [attr, obj] = node.inputsAsCode(this);
     return callFnWithArgs(node.type, attr, obj);
 };
 
+backend.reportUsername =
+backend.reportLatitude =
+backend.reportLongitude =
+backend.reportStageHeight =
+backend.reportStageWidth =
 backend.reportIsFastTracking =
 backend.getTimer =
 backend.reportMouseX =
@@ -285,6 +292,31 @@ backend.reportKeyPressed = function(node) {
 backend.reportDistanceTo = function(node) {
     const obj = node.first().code(this);
     return callFnWithArgs(node.type, obj);
+};
+
+backend.doSetGlobalFlag = function(node) {
+    const [flag, value] = node.inputsAsCode(this);
+    return callStatementWithArgs(node.type, flag, value);
+};
+
+backend.doSetVideoTransparency = function(node) {
+    const [value] = node.inputsAsCode(this);
+    return callStatementWithArgs(node.type, value);
+};
+
+backend.reportAudio = function(node) {
+    const [prop] = node.inputsAsCode(this);
+    return callFnWithArgs(node.type, prop);
+};
+
+backend.reportVideo = function(node) {
+    const [type, who] = node.inputsAsCode(this);
+    return callStatementWithArgs(node.type, type, who);
+};
+
+backend.reportGlobalFlag = function(node) {
+    const [flag] = node.inputsAsCode(this);
+    return callStatementWithArgs(node.type, flag);
 };
 
 ///////////////////// Sounds /////////////////////

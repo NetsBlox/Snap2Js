@@ -648,6 +648,16 @@ const EXPRESSION_TYPES = [
     'reportShown',
     'reportGetImageAttribute',
     'reportNewCostumeStretched',
+    'reportRelationTo',
+    'reportAspect',
+    'reportAudio',
+    'reportVideo',
+    'reportGlobalFlag',
+    'reportUsername',
+    'reportLatitude',
+    'reportLongitude',
+    'reportStageHeight',
+    'reportStageWidth',
 ];
 
 module.exports = {
