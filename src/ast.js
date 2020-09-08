@@ -443,6 +443,11 @@ class BuiltIn extends Node {  // FIXME: Not the best
 
             this.addSiblingBefore(initChangeAmount);
 
+            const initIterVar = new BuiltIn(null, 'doSetVar');
+            initIterVar.addChild(new Primitive('string', upvar.value));
+            initIterVar.addChild(new Variable(startVar.value));
+            this.addSiblingBefore(initIterVar);
+
             const incIndex = new BuiltIn(null, 'doChangeVar');
             incIndex.addChild(new Primitive('string', upvar.value));
             incIndex.addChild(new Variable(changeAmount.value));

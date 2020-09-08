@@ -74,9 +74,8 @@ backend.doIfElse = function(node) {
 };
 
 backend.reportIfElse = function(node) {
-    console.log(node);
     const [cond, ifTrue, ifFalse] = node.inputsAsCode(this);
-    return `${cond} ? ${ifTrue} : ${ifFalse}`;
+    return `(${cond} ? ${ifTrue} : ${ifFalse})`;
 };
 
 backend.doReport = function(node) {

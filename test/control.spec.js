@@ -16,6 +16,19 @@ describe('control', function() {
         });
     });
 
+    describe('doFor', function() {
+        it('should loop until iterator == 11', async function() {
+            const count = await utils.compileAndRun('doFor');
+            assert.equal(count, 11);
+        });
+
+        it('should loop until iterator == 1', async function() {
+            const count = await utils.compileAndRun('reverseDoFor');
+            assert.deepEqual(count, [10, 9, 8, 7, 6, 5, 4, 3, 2, 1]);
+        });
+
+    });
+
     describe('doUntil', function() {
         it('should loop until count == 61', async function() {
             const count = await utils.compileAndRun('repeat-until');
