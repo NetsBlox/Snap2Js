@@ -385,7 +385,6 @@ class BuiltIn extends Node {  // FIXME: Not the best
             initIndex.addChild(new Primitive('string', '1'));
             this.addSiblingBefore(initIndex);
 
-            this.type = 'doRepeat';
             const iters = new BuiltIn(null, 'reportListLength');
             iters.addChild(new Primitive('string', listVar.value));
             this.addChildFirst(iters);
@@ -402,6 +401,70 @@ class BuiltIn extends Node {  // FIXME: Not the best
             listItem.addChild(new Variable(listVar.value));
             setIter.addChild(listItem);
             block.addChildFirst(setIter);
+            return true;
+        }
+
+        if (this.type === 'doFor') {
+            this.type = 'doUntil';
+            const [upvar, start, end, block] = this.inputs();
+            const declareUpvars = new BuiltIn(null, 'doDeclareVariables');
+            const changeAmount = new Primitive('string', `${this.id}_changeAmount`);
+            const startVar = new Primitive('string', `${this.id}_start`);
+            const endVar = new Primitive('string', `${this.id}_end`);
+            const upvars = new List();
+            upvars.addChild(upvar);
+            upvars.addChild(changeAmount);
+            upvars.addChild(startVar);
+            upvars.addChild(endVar);
+            declareUpvars.addChild(upvars);
+            this.addSiblingBefore(declareUpvars);
+
+            const initStartVar = new BuiltIn(null, 'doSetVar');
+            initStartVar.addChild(new Primitive('string', startVar.value));
+            initStartVar.addChild(start);
+            this.addSiblingBefore(initStartVar);
+
+            const initEndVar = new BuiltIn(null, 'doSetVar');
+            initEndVar.addChild(new Primitive('string', endVar.value));
+            initEndVar.addChild(end);
+            this.addSiblingBefore(initEndVar);
+
+            const initChangeAmount = new BuiltIn(null, 'doSetVar');
+            initChangeAmount.addChild(new Primitive('string', changeAmount.value));
+            const ternary = new BuiltIn(null, 'reportIfElse');
+            const isGreaterThan = new BuiltIn(null, 'reportGreaterThan');
+            isGreaterThan.addChild(new Variable(endVar.value));
+            isGreaterThan.addChild(new Variable(startVar.value));
+
+            ternary.addChild(isGreaterThan);
+            ternary.addChild(new Primitive('string', '1'));
+            ternary.addChild(new Primitive('string', '-1'));
+            initChangeAmount.addChild(ternary);
+
+            this.addSiblingBefore(initChangeAmount);
+
+            const incIndex = new BuiltIn(null, 'doChangeVar');
+            incIndex.addChild(new Primitive('string', upvar.value));
+            incIndex.addChild(new Variable(changeAmount.value));
+            block.addChild(incIndex);
+
+            const cond = new BuiltIn(null, 'reportIfElse');
+            const isEndBigger = new BuiltIn(null, 'reportGreaterThan');
+            isEndBigger.addChild(new Variable(endVar.value));
+            isEndBigger.addChild(new Variable(startVar.value));
+            cond.addChild(isEndBigger);
+
+            const isIndexTooLarge = new BuiltIn(null, 'reportGreaterThan');
+            isIndexTooLarge.addChild(new Variable(upvar.value));
+            isIndexTooLarge.addChild(new Variable(endVar.value));
+            cond.addChild(isIndexTooLarge);
+
+            const isIndexTooSmall = new BuiltIn(null, 'reportLessThan');
+            isIndexTooSmall.addChild(new Variable(upvar.value));
+            isIndexTooSmall.addChild(new Variable(endVar.value));
+            cond.addChild(isIndexTooSmall);
+
+            this.addChildFirst(cond);
             return true;
         }
     }
@@ -428,7 +491,7 @@ class BuiltIn extends Node {  // FIXME: Not the best
 
     addConcurrencyNodes() {
         super.addConcurrencyNodes();
-        const isLoop = ['doRepeat', 'doForever', 'doUntil', 'doForEach']
+        const isLoop = ['doRepeat', 'doForever', 'doUntil', 'doForEach', 'doFor']
             .includes(this.type);
 
         if (isLoop) {
@@ -612,6 +675,12 @@ class List extends Primitive {
     }
 }
 
+class EmptyRing extends BuiltIn {
+    constructor() {
+        super(null, 'reifyScript');
+    }
+}
+
 const DEFAULT_INPUTS = {
     doIf: () => [new False(), new Block()],
     forward: () => [new EmptyString()],
@@ -635,6 +704,10 @@ const DEFAULT_INPUTS = {
     doPlaySoundUntilDone: () => [new EmptyString()],
     doPlaySoundAtRate: () => [new EmptyString(), new EmptyString()],
     reportGetSoundAttribute: () => [new EmptyString(), new EmptyString()],
+    doTellTo: () => [new EmptyString(), new EmptyRing(), new List()],
+    reportAskFor: () => [new EmptyString(), new EmptyRing(), new List()],
+    doBroadcastAndWait: () => [new EmptyString()],
+    doWaitUntil: () => [new False()],
 };
 const DEFAULT_INPUT = {
     list: index => new EmptyString(),
@@ -732,6 +805,9 @@ const EXPRESSION_TYPES = [
     'getPan',
     'getVolume',
     'reportGetSoundAttribute',
+    'newClone',
+    'reportIfElse',
+    'reportAskFor',
 ];
 
 module.exports = {

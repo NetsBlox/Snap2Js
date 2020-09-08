@@ -73,6 +73,12 @@ backend.doIfElse = function(node) {
     return `if (${cond}) ${ifTrue} else ${ifFalse}`;
 };
 
+backend.reportIfElse = function(node) {
+    console.log(node);
+    const [cond, ifTrue, ifFalse] = node.inputsAsCode(this);
+    return `${cond} ? ${ifTrue} : ${ifFalse}`;
+};
+
 backend.doReport = function(node) {
     // Get the current callback name and call it!
     const value = node.first() ? node.first().code(this) : '';
@@ -142,6 +148,26 @@ backend.doUntil = function(node) {
     const cond = node.first() ? node.first().code(this) : 'false';
     const block = node.inputs()[1];
     return `while(!${cond}) ${block.code(this)}`;
+};
+
+backend.doTellTo = function(node) {
+    const [target, fn, args] = node.inputsAsCode(this);
+    return callStatementWithArgs(node.type, target, fn, args);
+};
+
+backend.doSend = function(node) {
+    const [event, target] = node.inputsAsCode(this);
+    return callStatementWithArgs(node.type, event, target);
+};
+
+backend.newClone = function(node) {
+    const [target] = node.inputsAsCode(this);
+    return callFnWithArgs(node.type, target);
+};
+
+backend.reportAskFor = function(node) {
+    const [target, fn, inputs] = node.inputsAsCode(this);
+    return callFnWithArgs(node.type, target, fn, inputs);
 };
 
 ///////////////////// Looks /////////////////////

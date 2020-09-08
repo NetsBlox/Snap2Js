@@ -5,12 +5,12 @@ describe('control', function() {
 
     describe('all blocks', function() {
         // It's not really safe to run the generated code...
-        it('should compile old version', function() {
+        it('should compile all blocks', function() {
             bin = utils.getCompiledVersionOf('all-control');
             assert.equal(typeof bin, 'function');
         });
 
-        it('should compile', function() {
+        it('should compile v6 blocks', function() {
             bin = utils.getCompiledVersionOf('all-controlv2');
             assert.equal(typeof bin, 'function');
         });
