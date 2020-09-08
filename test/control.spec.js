@@ -22,11 +22,17 @@ describe('control', function() {
             assert.equal(count, 11);
         });
 
-        it('should loop until iterator == 1', async function() {
+        it('should loop until correctly', async function() {
             const count = await utils.compileAndRun('reverseDoFor');
             assert.deepEqual(count, [10, 9, 8, 7, 6, 5, 4, 3, 2, 1]);
         });
+    });
 
+    describe('doForEach', function() {
+        it('should loop until correctly', async function() {
+            const count = await utils.compileAndRun('doForEach');
+            assert.deepEqual(count, [10, 9, 8, 7, 6, 5, 4, 3, 2, 1].reverse());
+        });
     });
 
     describe('doUntil', function() {

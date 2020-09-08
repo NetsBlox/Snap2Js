@@ -367,7 +367,7 @@ class BuiltIn extends Node {  // FIXME: Not the best
             const upvars = new List();
             const listVar = new Primitive('string', `${this.id}_listvar`);
             const indexVar = new Primitive('string', `${this.id}_indexvar`);
-            const iterVar = new Primitive('string', `${this.id}_itervar`);
+            const iterVar = new Primitive('string', upvar.value);
             upvars.addChild(upvar);
             upvars.addChild(listVar);
             upvars.addChild(indexVar);
@@ -386,7 +386,7 @@ class BuiltIn extends Node {  // FIXME: Not the best
             this.addSiblingBefore(initIndex);
 
             const iters = new BuiltIn(null, 'reportListLength');
-            iters.addChild(new Primitive('string', listVar.value));
+            iters.addChild(new Variable(listVar.value));
             this.addChildFirst(iters);
 
             const incIndex = new BuiltIn(null, 'doChangeVar');
@@ -397,7 +397,7 @@ class BuiltIn extends Node {  // FIXME: Not the best
             const setIter = new BuiltIn(null, 'doSetVar');
             setIter.addChild(new Primitive('string', iterVar.value));
             const listItem = new BuiltIn(null, 'reportListItem');
-            listItem.addChild(new Primitive('string', indexVar.value));
+            listItem.addChild(new Variable(indexVar.value));
             listItem.addChild(new Variable(listVar.value));
             setIter.addChild(listItem);
             block.addChildFirst(setIter);
