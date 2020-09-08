@@ -342,8 +342,42 @@ backend.doPlayNote = function(node) {
     return callStatementWithArgs(node.type, note, duration);
 };
 
+backend.getPan =
+backend.getVolume =
 backend.getTempo = function(node) {
     return callFnWithArgs(node.type);
+};
+
+backend.doPlaySoundAtRate = function(node) {
+    const [sound, rate] = node.inputsAsCode(this);
+    return callStatementWithArgs(node.type, sound, rate);
+};
+
+backend.doSetInstrument = function(node) {
+    const [instrument] = node.inputsAsCode(this);
+    return callStatementWithArgs(node.type, instrument);
+};
+
+backend.setPan =
+backend.changePan =
+backend.setVolume =
+backend.changeVolume = function(node) {
+    const [amount] = node.inputsAsCode(this);
+    return callStatementWithArgs(node.type, amount);
+};
+
+backend.playFreq = function(node) {
+    const [freq] = node.inputsAsCode(this);
+    return callStatementWithArgs(node.type, freq);
+};
+
+backend.stopFreq = function(node) {
+    return callStatementWithArgs(node.type);
+};
+
+backend.reportGetSoundAttribute = function(node) {
+    const [attr, sound] = node.inputsAsCode(this);
+    return callFnWithArgs(node.type, attr, sound);
 };
 
 ///////////////////// Operators /////////////////////
@@ -616,6 +650,41 @@ backend.evaluateCustomBlock = function(node) {
     } else {
         return callFnWithArgs(node.type, safeName, fn);
     }
+};
+
+backend.reportKeep = function(node) {
+    const [filter, list] = node.inputsAsCode(this);
+    return callFnWithArgs(node.type, filter, list);
+};
+
+backend.reportMap = function(node) {
+    const [map, list] = node.inputsAsCode(this);
+    return callFnWithArgs(node.type, map, list);
+};
+
+backend.reportNumbers = function(node) {
+    const [start, end] = node.inputsAsCode(this);
+    return callFnWithArgs(node.type, start, end);
+};
+
+backend.reportListIndex = function(node) {
+    const [item, list] = node.inputsAsCode(this);
+    return callFnWithArgs(node.type, item, list);
+};
+
+backend.reportConcatenatedLists = function(node) {
+    const [lists] = node.inputsAsCode(this);
+    return callFnWithArgs(node.type, lists);
+};
+
+backend.reportCombine = function(node) {
+    const [lists, combiner] = node.inputsAsCode(this);
+    return callFnWithArgs(node.type, lists, combiner);
+};
+
+backend.reportFindFirst = function(node) {
+    const [findFn, list] = node.inputsAsCode(this);
+    return callFnWithArgs(node.type, findFn, list);
 };
 
 ///////////////////// Primitives /////////////////////

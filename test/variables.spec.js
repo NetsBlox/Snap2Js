@@ -166,6 +166,11 @@ describe('variables', function() {
         it('should item by index', function() {
             assert.equal(result[1], 2);
         });
+
+        it('should compile v6 blocks', function() {
+            const content = utils.getProjectXml('all-variablesv2');
+            snap2js.compile(content)
+        });
     });
 
     describe('include global vars in ctx', function() {

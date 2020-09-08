@@ -239,7 +239,6 @@
                         }
                     },
                     node => {
-                        console.log('node', node);
                         const refVar = new AST.Variable(uniqName);
                         node.replaceChild(0, refVar);
                         return node;
@@ -370,7 +369,10 @@
         }
 
         refNodes.forEach(ref => {
-            assert(ref.target, `Did not find target for reference: ${ref.attributes.id}`)
+            assert(
+                ref.target || !ref.attributes.id,
+                `Did not find target for reference: ${ref.attributes.id}`
+            );
         });
 
         return refNodes;
