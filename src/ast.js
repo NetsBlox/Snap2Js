@@ -347,7 +347,7 @@ class BuiltIn extends Node {  // FIXME: Not the best
 
             for (let i = types.length; i--;) {
                 if (types[i] === 'upvar') {
-                    upvars.addChild(inputs[i]);
+                    upvars.addChild(new Primitive('string', inputs[i].value));
                 }
             }
 
