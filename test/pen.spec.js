@@ -5,7 +5,7 @@ describe('pen', function() {
         checkBlockValue = require('./utils').checkBlockValue,
         content;
 
-    describe('all blocks', function() {
+    describe('all blocks (old)', function() {
         var bin,
             cxt;
 
@@ -42,6 +42,10 @@ describe('pen', function() {
             checkBlockValue(bin, 'setSize', 1, done);
         });
 
+        it('should compile v6 blocks', function() {
+            content = utils.getProjectXml('all-penv2');
+            bin = snap2js.compile(content);
+        });
     });
 
 });

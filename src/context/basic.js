@@ -527,4 +527,17 @@ context.evaluateCustomBlock = function(name, fnVar) {
     return fn.apply(this, args);
 };
 
+context.reportNumbers = function(start, end) {
+    start = parseFloat(start);
+    end = parseFloat(end);
+    let numbers = [];
+    let iter = start;
+    const inc = end > start ? 1 : -1;
+    while (end > start ? iter <= end : iter >= end) {
+        numbers.push(iter);
+        iter += inc;
+    }
+    return numbers;
+};
+
 module.exports = context;

@@ -5,9 +5,33 @@ describe('control', function() {
 
     describe('all blocks', function() {
         // It's not really safe to run the generated code...
-        it('should compile', function() {
+        it('should compile all blocks', function() {
             bin = utils.getCompiledVersionOf('all-control');
             assert.equal(typeof bin, 'function');
+        });
+
+        it('should compile v6 blocks', function() {
+            bin = utils.getCompiledVersionOf('all-controlv2');
+            assert.equal(typeof bin, 'function');
+        });
+    });
+
+    describe('doFor', function() {
+        it('should loop until iterator == 11', async function() {
+            const count = await utils.compileAndRun('doFor');
+            assert.equal(count, 11);
+        });
+
+        it('should loop until correctly', async function() {
+            const count = await utils.compileAndRun('reverseDoFor');
+            assert.deepEqual(count, [10, 9, 8, 7, 6, 5, 4, 3, 2, 1]);
+        });
+    });
+
+    describe('doForEach', function() {
+        it('should loop until correctly', async function() {
+            const count = await utils.compileAndRun('doForEach');
+            assert.deepEqual(count, [10, 9, 8, 7, 6, 5, 4, 3, 2, 1].reverse());
         });
     });
 

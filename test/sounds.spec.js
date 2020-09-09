@@ -53,6 +53,10 @@ describe('sounds', function() {
             bin(cxt);
         });
 
+        it('should compile v6 blocks', function() {
+            const content = utils.getProjectXml('all-soundsv2');
+            snap2js.compile(content);
+        });
     });
 });
 

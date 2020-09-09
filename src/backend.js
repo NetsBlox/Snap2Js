@@ -3,9 +3,8 @@ const utils = require('./utils');
 const indent = utils.indent;
 const sanitize = utils.sanitize;
 const CALLER = '__SELF';
-const callRawFnWithArgs = require('./backend-helpers').callRawFnWithArgs;
-const callFnWithArgs = require('./backend-helpers').callFnWithArgs;
-const callStatementWithArgs = require('./backend-helpers').callStatementWithArgs;
+const {callFnWithArgs, callRawFnWithArgs} = require('./backend-helpers');
+const {callStatementWithArgs} = require('./backend-helpers');
 
 const backend = {};
 
@@ -72,6 +71,11 @@ backend.doIf = function(node) {
 backend.doIfElse = function(node) {
     const [cond, ifTrue, ifFalse] = node.inputsAsCode(this);
     return `if (${cond}) ${ifTrue} else ${ifFalse}`;
+};
+
+backend.reportIfElse = function(node) {
+    const [cond, ifTrue, ifFalse] = node.inputsAsCode(this);
+    return `(${cond} ? ${ifTrue} : ${ifFalse})`;
 };
 
 backend.doReport = function(node) {
@@ -145,6 +149,26 @@ backend.doUntil = function(node) {
     return `while(!${cond}) ${block.code(this)}`;
 };
 
+backend.doTellTo = function(node) {
+    const [target, fn, args] = node.inputsAsCode(this);
+    return callStatementWithArgs(node.type, target, fn, args);
+};
+
+backend.doSend = function(node) {
+    const [event, target] = node.inputsAsCode(this);
+    return callStatementWithArgs(node.type, event, target);
+};
+
+backend.newClone = function(node) {
+    const [target] = node.inputsAsCode(this);
+    return callFnWithArgs(node.type, target);
+};
+
+backend.reportAskFor = function(node) {
+    const [target, fn, inputs] = node.inputsAsCode(this);
+    return callFnWithArgs(node.type, target, fn, inputs);
+};
+
 ///////////////////// Looks /////////////////////
 backend.doSwitchToCostume = function(node) {
     const costume = node.first().code(this);
@@ -204,6 +228,29 @@ backend.doThink = function(node) {
     return callStatementWithArgs(node.type, msg);
 };
 
+backend.getEffect = function(node) {
+    const [effect] = node.inputsAsCode(this);
+    return callFnWithArgs(node.type, effect);
+};
+
+backend.reportShown = function(node) {
+    return callFnWithArgs(node.type);
+};
+
+backend.reportGetImageAttribute = function(node) {
+    const [attr, image] = node.inputsAsCode(this);
+    return callFnWithArgs(node.type, attr, image);
+};
+
+backend.goToLayer = function(node) {
+    const [layer] = node.inputsAsCode(this);
+    return callFnWithArgs(node.type, layer);
+};
+
+backend.reportNewCostumeStretched = function(node) {
+    const [costume, x, y] = node.inputsAsCode(this);
+    return callFnWithArgs(node.type, costume, x, y);
+};
 ///////////////////// Sensing /////////////////////
 backend.doAsk = function(node) {
     const msg = node.first().code(this);
@@ -241,11 +288,18 @@ backend.reportColorIsTouchingColor = function(node) {
     return callFnWithArgs(node.type, first, second);
 };
 
+backend.reportAspect =
+backend.reportRelationTo =
 backend.reportAttributeOf = function(node) {
     const [attr, obj] = node.inputsAsCode(this);
     return callFnWithArgs(node.type, attr, obj);
 };
 
+backend.reportUsername =
+backend.reportLatitude =
+backend.reportLongitude =
+backend.reportStageHeight =
+backend.reportStageWidth =
 backend.reportIsFastTracking =
 backend.getTimer =
 backend.reportMouseX =
@@ -263,6 +317,31 @@ backend.reportKeyPressed = function(node) {
 backend.reportDistanceTo = function(node) {
     const obj = node.first().code(this);
     return callFnWithArgs(node.type, obj);
+};
+
+backend.doSetGlobalFlag = function(node) {
+    const [flag, value] = node.inputsAsCode(this);
+    return callStatementWithArgs(node.type, flag, value);
+};
+
+backend.doSetVideoTransparency = function(node) {
+    const [value] = node.inputsAsCode(this);
+    return callStatementWithArgs(node.type, value);
+};
+
+backend.reportAudio = function(node) {
+    const [prop] = node.inputsAsCode(this);
+    return callFnWithArgs(node.type, prop);
+};
+
+backend.reportVideo = function(node) {
+    const [type, who] = node.inputsAsCode(this);
+    return callStatementWithArgs(node.type, type, who);
+};
+
+backend.reportGlobalFlag = function(node) {
+    const [flag] = node.inputsAsCode(this);
+    return callStatementWithArgs(node.type, flag);
 };
 
 ///////////////////// Sounds /////////////////////
@@ -288,8 +367,42 @@ backend.doPlayNote = function(node) {
     return callStatementWithArgs(node.type, note, duration);
 };
 
+backend.getPan =
+backend.getVolume =
 backend.getTempo = function(node) {
     return callFnWithArgs(node.type);
+};
+
+backend.doPlaySoundAtRate = function(node) {
+    const [sound, rate] = node.inputsAsCode(this);
+    return callStatementWithArgs(node.type, sound, rate);
+};
+
+backend.doSetInstrument = function(node) {
+    const [instrument] = node.inputsAsCode(this);
+    return callStatementWithArgs(node.type, instrument);
+};
+
+backend.setPan =
+backend.changePan =
+backend.setVolume =
+backend.changeVolume = function(node) {
+    const [amount] = node.inputsAsCode(this);
+    return callStatementWithArgs(node.type, amount);
+};
+
+backend.playFreq = function(node) {
+    const [freq] = node.inputsAsCode(this);
+    return callStatementWithArgs(node.type, freq);
+};
+
+backend.stopFreq = function(node) {
+    return callStatementWithArgs(node.type);
+};
+
+backend.reportGetSoundAttribute = function(node) {
+    const [attr, sound] = node.inputsAsCode(this);
+    return callFnWithArgs(node.type, attr, sound);
 };
 
 ///////////////////// Operators /////////////////////
@@ -441,6 +554,32 @@ backend.changeSize = function(node) {
     return callStatementWithArgs(node.type, size);
 };
 
+backend.setPenHSVA =
+backend.changePenHSVA = function(node) {
+    const [prop, value] = node.inputsAsCode(this);
+    return callStatementWithArgs(node.type, prop, value);
+};
+
+backend.write = function(node) {
+    const [text, size] = node.inputsAsCode(this);
+    return callStatementWithArgs(node.type, text, size);
+};
+
+backend.doPasteOn = function(node) {
+    const [target] = node.inputsAsCode(this);
+    return callStatementWithArgs(node.type, target);
+};
+
+backend.getPenDown =
+backend.reportPenTrailsAsCostume = function(node) {
+    return callFnWithArgs(node.type);
+};
+
+backend.getPenAttribute = function(node) {
+    const [prop] = node.inputsAsCode(this);
+    return callFnWithArgs(node.type, prop);
+};
+
 ///////////////////// Variables /////////////////////
 backend.doChangeVar =
 backend.doSetVar = function(node) {
@@ -536,6 +675,41 @@ backend.evaluateCustomBlock = function(node) {
     } else {
         return callFnWithArgs(node.type, safeName, fn);
     }
+};
+
+backend.reportKeep = function(node) {
+    const [filter, list] = node.inputsAsCode(this);
+    return callFnWithArgs(node.type, filter, list);
+};
+
+backend.reportMap = function(node) {
+    const [map, list] = node.inputsAsCode(this);
+    return callFnWithArgs(node.type, map, list);
+};
+
+backend.reportNumbers = function(node) {
+    const [start, end] = node.inputsAsCode(this);
+    return callFnWithArgs(node.type, start, end);
+};
+
+backend.reportListIndex = function(node) {
+    const [item, list] = node.inputsAsCode(this);
+    return callFnWithArgs(node.type, item, list);
+};
+
+backend.reportConcatenatedLists = function(node) {
+    const [lists] = node.inputsAsCode(this);
+    return callFnWithArgs(node.type, lists);
+};
+
+backend.reportCombine = function(node) {
+    const [lists, combiner] = node.inputsAsCode(this);
+    return callFnWithArgs(node.type, lists, combiner);
+};
+
+backend.reportFindFirst = function(node) {
+    const [findFn, list] = node.inputsAsCode(this);
+    return callFnWithArgs(node.type, findFn, list);
 };
 
 ///////////////////// Primitives /////////////////////

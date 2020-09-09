@@ -22,6 +22,9 @@ class Node extends GenericNode {
 
     addChild(child) {
         assert(child instanceof Node, `Child is not Node: ${child}`);
+        if (child.parent) {
+            child.parent.removeChild(child);
+        }
         super.addChild(child);
     }
 
@@ -79,7 +82,13 @@ class Node extends GenericNode {
     }
 
     simplify(allowWarp) {
-        this.children.forEach(node => node.simplify(allowWarp));
+        for (let i = 0; i < this.children.length; i++) {
+            const child = this.children[i];
+            const changedSiblings = child.simplify(allowWarp);
+            if (changedSiblings) {
+                i = this.children.indexOf(child);
+            }
+        }
     }
 
     setEmptyNodes(name) {
@@ -305,8 +314,11 @@ class BuiltIn extends Node {  // FIXME: Not the best
             const doReport = new BuiltIn(null, 'doReport');
             doReport.addChild(this.first());
             body.addChild(doReport);
-            assert(this.children.length === 2, `Expected 2 children for ${this.type}. Found ${this.children.length}`);
-            this.children[0] = body;
+            this.addChildFirst(body);
+            assert(
+                this.children.length === 2,
+                new Error(`Expected 2 children for ${this.type}. Found ${this.children.length}`)
+            );
             this.type = 'reifyScript';
         }
 
@@ -335,7 +347,7 @@ class BuiltIn extends Node {  // FIXME: Not the best
 
             for (let i = types.length; i--;) {
                 if (types[i] === 'upvar') {
-                    upvars.addChild(inputs[i]);
+                    upvars.addChild(new Primitive('string', inputs[i].value));
                 }
             }
 
@@ -344,6 +356,121 @@ class BuiltIn extends Node {  // FIXME: Not the best
                 declareUpvars.addChild(upvars);
                 this.addSiblingBefore(declareUpvars);
             }
+            return true;
+        }
+
+        if (this.type === 'doForEach') {
+            // Compile away the for-each and convert it to a repeat loop
+            this.type = 'doRepeat';
+            const [upvar, list, block] = this.inputs();
+            const declareUpvars = new BuiltIn(null, 'doDeclareVariables');
+            const upvars = new List();
+            const listVar = new Primitive('string', `${this.id}_listvar`);
+            const indexVar = new Primitive('string', `${this.id}_indexvar`);
+            const iterVar = new Primitive('string', upvar.value);
+            upvars.addChild(upvar);
+            upvars.addChild(listVar);
+            upvars.addChild(indexVar);
+            upvars.addChild(iterVar);
+            declareUpvars.addChild(upvars);
+            this.addSiblingBefore(declareUpvars);
+
+            const initList = new BuiltIn(null, 'doSetVar');
+            initList.addChild(new Primitive('string', listVar.value));
+            initList.addChild(list);
+            this.addSiblingBefore(initList);
+
+            const initIndex = new BuiltIn(null, 'doSetVar');
+            initIndex.addChild(new Primitive('string', indexVar.value));
+            initIndex.addChild(new Primitive('string', '1'));
+            this.addSiblingBefore(initIndex);
+
+            const iters = new BuiltIn(null, 'reportListLength');
+            iters.addChild(new Variable(listVar.value));
+            this.addChildFirst(iters);
+
+            const incIndex = new BuiltIn(null, 'doChangeVar');
+            incIndex.addChild(new Primitive('string', indexVar.value));
+            incIndex.addChild(new Primitive('string', '1'));
+            block.addChild(incIndex);
+
+            const setIter = new BuiltIn(null, 'doSetVar');
+            setIter.addChild(new Primitive('string', iterVar.value));
+            const listItem = new BuiltIn(null, 'reportListItem');
+            listItem.addChild(new Variable(indexVar.value));
+            listItem.addChild(new Variable(listVar.value));
+            setIter.addChild(listItem);
+            block.addChildFirst(setIter);
+            return true;
+        }
+
+        if (this.type === 'doFor') {
+            this.type = 'doUntil';
+            const [upvar, start, end, block] = this.inputs();
+            const declareUpvars = new BuiltIn(null, 'doDeclareVariables');
+            const changeAmount = new Primitive('string', `${this.id}_changeAmount`);
+            const startVar = new Primitive('string', `${this.id}_start`);
+            const endVar = new Primitive('string', `${this.id}_end`);
+            const upvars = new List();
+            upvars.addChild(upvar);
+            upvars.addChild(changeAmount);
+            upvars.addChild(startVar);
+            upvars.addChild(endVar);
+            declareUpvars.addChild(upvars);
+            this.addSiblingBefore(declareUpvars);
+
+            const initStartVar = new BuiltIn(null, 'doSetVar');
+            initStartVar.addChild(new Primitive('string', startVar.value));
+            initStartVar.addChild(start);
+            this.addSiblingBefore(initStartVar);
+
+            const initEndVar = new BuiltIn(null, 'doSetVar');
+            initEndVar.addChild(new Primitive('string', endVar.value));
+            initEndVar.addChild(end);
+            this.addSiblingBefore(initEndVar);
+
+            const initChangeAmount = new BuiltIn(null, 'doSetVar');
+            initChangeAmount.addChild(new Primitive('string', changeAmount.value));
+            const ternary = new BuiltIn(null, 'reportIfElse');
+            const isGreaterThan = new BuiltIn(null, 'reportGreaterThan');
+            isGreaterThan.addChild(new Variable(endVar.value));
+            isGreaterThan.addChild(new Variable(startVar.value));
+
+            ternary.addChild(isGreaterThan);
+            ternary.addChild(new Primitive('string', '1'));
+            ternary.addChild(new Primitive('string', '-1'));
+            initChangeAmount.addChild(ternary);
+
+            this.addSiblingBefore(initChangeAmount);
+
+            const initIterVar = new BuiltIn(null, 'doSetVar');
+            initIterVar.addChild(new Primitive('string', upvar.value));
+            initIterVar.addChild(new Variable(startVar.value));
+            this.addSiblingBefore(initIterVar);
+
+            const incIndex = new BuiltIn(null, 'doChangeVar');
+            incIndex.addChild(new Primitive('string', upvar.value));
+            incIndex.addChild(new Variable(changeAmount.value));
+            block.addChild(incIndex);
+
+            const cond = new BuiltIn(null, 'reportIfElse');
+            const isEndBigger = new BuiltIn(null, 'reportGreaterThan');
+            isEndBigger.addChild(new Variable(endVar.value));
+            isEndBigger.addChild(new Variable(startVar.value));
+            cond.addChild(isEndBigger);
+
+            const isIndexTooLarge = new BuiltIn(null, 'reportGreaterThan');
+            isIndexTooLarge.addChild(new Variable(upvar.value));
+            isIndexTooLarge.addChild(new Variable(endVar.value));
+            cond.addChild(isIndexTooLarge);
+
+            const isIndexTooSmall = new BuiltIn(null, 'reportLessThan');
+            isIndexTooSmall.addChild(new Variable(upvar.value));
+            isIndexTooSmall.addChild(new Variable(endVar.value));
+            cond.addChild(isIndexTooSmall);
+
+            this.addChildFirst(cond);
+            return true;
         }
     }
 
@@ -369,7 +496,8 @@ class BuiltIn extends Node {  // FIXME: Not the best
 
     addConcurrencyNodes() {
         super.addConcurrencyNodes();
-        const isLoop = ['doRepeat', 'doForever', 'doUntil'].includes(this.type);
+        const isLoop = ['doRepeat', 'doForever', 'doUntil', 'doForEach', 'doFor']
+            .includes(this.type);
 
         if (isLoop) {
             const isWarping = this.isContainedIn('doWarp');
@@ -552,6 +680,12 @@ class List extends Primitive {
     }
 }
 
+class EmptyRing extends BuiltIn {
+    constructor() {
+        super(null, 'reifyScript');
+    }
+}
+
 const DEFAULT_INPUTS = {
     doIf: () => [new False(), new Block()],
     forward: () => [new EmptyString()],
@@ -571,6 +705,14 @@ const DEFAULT_INPUTS = {
     reportBoolean: () => [new False()],
     reportDate: () => [new EmptyString()],
     receiveKey: () => [new EmptyString()],
+    playSound: () => [new EmptyString()],
+    doPlaySoundUntilDone: () => [new EmptyString()],
+    doPlaySoundAtRate: () => [new EmptyString(), new EmptyString()],
+    reportGetSoundAttribute: () => [new EmptyString(), new EmptyString()],
+    doTellTo: () => [new EmptyString(), new EmptyRing(), new List()],
+    reportAskFor: () => [new EmptyString(), new EmptyRing(), new List()],
+    doBroadcastAndWait: () => [new EmptyString()],
+    doWaitUntil: () => [new False()],
 };
 const DEFAULT_INPUT = {
     list: index => new EmptyString(),
@@ -640,6 +782,37 @@ const EXPRESSION_TYPES = [
     'list',
     'getJSFromRPCStruct',
     'reportObject',
+
+    'reportPenTrailsAsCostume',
+    'getPenAttribute',
+    'getPenDown',
+    'getEffect',
+    'reportShown',
+    'reportGetImageAttribute',
+    'reportNewCostumeStretched',
+    'reportRelationTo',
+    'reportAspect',
+    'reportAudio',
+    'reportVideo',
+    'reportGlobalFlag',
+    'reportUsername',
+    'reportLatitude',
+    'reportLongitude',
+    'reportStageHeight',
+    'reportStageWidth',
+    'reportKeep',
+    'reportMap',
+    'reportCombine',
+    'reportNumbers',
+    'reportListIndex',
+    'reportConcatenatedLists',
+    'reportFindFirst',
+    'getPan',
+    'getVolume',
+    'reportGetSoundAttribute',
+    'newClone',
+    'reportIfElse',
+    'reportAskFor',
 ];
 
 module.exports = {
