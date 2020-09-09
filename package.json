@@ -1,6 +1,6 @@
 {
   "name": "snap2js",
-  "version": "1.5.1",
+  "version": "1.6.0",
   "description": "Cross compiler from Snap! to JavaScript",
   "main": "index.js",
   "bin": {
