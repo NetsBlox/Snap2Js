@@ -1,10 +1,10 @@
 // Generating the js code from the ast nodes (indexed by node type)
-const utils = require('./utils');
+const utils = require('../utils');
 const indent = utils.indent;
 const sanitize = utils.sanitize;
 const CALLER = '__SELF';
-const {callFnWithArgs, callRawFnWithArgs} = require('./backend-helpers');
-const {callStatementWithArgs} = require('./backend-helpers');
+const {callFnWithArgs, callRawFnWithArgs} = require('./javascript-helpers');
+const {callStatementWithArgs} = require('./javascript-helpers');
 
 const backend = {};
 

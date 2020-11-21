@@ -9,7 +9,7 @@
     const path = require('path');
     const utils = require('./src/utils');
     const indent = utils.indent;
-    const DefaultBackend = require('./src/backend');
+    const DefaultBackend = require('./src/backend/javascript');
     const DefaultContext = require('./src/context/basic');
     const _ = require('lodash');
     const boilerplate = fs.readFileSync(path.join(__dirname, 'src', 'basic.js.ejs'), 'utf8');
