@@ -1,5 +1,5 @@
 // nop everything
-const backend = require('../backend');
+const backend = require('../backend/javascript');
 const nop = () => {};
 
 var context = {};
