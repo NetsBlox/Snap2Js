@@ -4,7 +4,7 @@
 As the name suggests, Snap2Js is a compiler from [Snap!](http://snap.berkeley.edu) to JavaScript.
 
 ## Quick Start
-Snap2Js requires [NodeJS](https://nodejs.org) LTS (v6). Snap2JS can be installed using `npm` as follows:
+Snap2Js requires [NodeJS](https://nodejs.org) LTS. Snap2JS can be installed using `npm` as follows:
 
 ```
 npm install -g snap2js
