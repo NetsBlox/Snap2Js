@@ -70,7 +70,7 @@ async function saveToFile(filename, opts, logger) {
     const fn = await compileFile(filename, opts, logger);
     const relPath = path.resolve(path.join(path.dirname(__dirname), 'src', 'context', context));
     const contextPath = path.relative(path.resolve(opts.output), relPath);
-    const code = `(${fn.toString()})(require('./${contextPath.replace(new RegExp(path.sep, 'g'), '/')}'))`;
+    const code = `(${fn.toString()})(require('./${contextPath.replace(/\\/g, "\\\\")}'))`;
     await writeFile(tmpfile, code);
 
     const b = browserify([tmpfile], BROWSERIFY_OPTS);
