@@ -341,6 +341,9 @@ context.reportModulus = function(left, right) {
 context.reportProduct = function(left, right) {
     return left * right;
 };
+context.reportVariadicProduct = function(vals) {
+    return vals.reduce((a, b) => a * b, 1);
+};
 
 context.reportRandom = function(min, max) {
     var floor = +min,
@@ -361,6 +364,9 @@ context.reportDifference = function (left, right) {
 
 context.reportSum = function(left, right) {
     return (+left) + (+right);
+};
+context.reportVariadicSum = function(vals) {
+    return vals.reduce((a, b) => +a + +b, 0);
 };
 
 context.reportGreaterThan = function(a, b) {
