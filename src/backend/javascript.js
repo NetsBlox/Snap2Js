@@ -406,15 +406,31 @@ backend.reportGetSoundAttribute = function(node) {
 };
 
 ///////////////////// Operators /////////////////////
+backend.reportListAttribute =
 backend.reportMonadic =
 backend.reportModulus =
 backend.reportQuotient =
 backend.reportProduct =
 backend.reportDifference =
 backend.reportRandom =
+backend.reportAtan2 =
+backend.reportMin =
+backend.reportMax =
 backend.reportSum = function(node) {
     const [left, right] = node.inputsAsCode(this);
     return callFnWithArgs(node.type, left, right);
+};
+backend.reportVariadicSum =
+backend.reportVariadicProduct =
+backend.reportVariadicMin =
+backend.reportVariadicMax = function(node) {
+    const vals = node.inputsAsCode(this);
+    return callFnWithArgs(node.type, vals);
+};
+
+backend.reportReshape = function(node) {
+    const [list, ...dims] = node.inputsAsCode(this);
+    return callFnWithArgs(node.type, list, dims);
 };
 
 backend.reportRound = function(node) {
@@ -428,10 +444,12 @@ backend.reportAnd =
 backend.reportOr =
 backend.reportTextSplit =
 backend.reportGreaterThan =
+backend.reportGreaterThanOrEquals =
 backend.reportLessThan =
+backend.reportLessThanOrEquals =
+backend.reportNotEquals =
 backend.reportEquals = function(node) {
     const [left, right] = node.inputsAsCode(this);
-
     return callFnWithArgs(node.type, left, right);
 };
 
@@ -458,7 +476,6 @@ backend.reportBoolean = function(node) {
 
 backend.reportJSFunction = function(node) {
     const [args, body] = node.inputsAsCode(this);
-
     return callFnWithArgs(node.type, args, body);
 };
 
@@ -592,7 +609,6 @@ backend.doSetVar = function(node) {
 backend.doShowVar =
 backend.doHideVar = function(node) {
     const name = node.first().code(this);
-
     return callStatementWithArgs(node.type, name);
 };
 
@@ -603,7 +619,6 @@ backend.doDeclareVariables = function(node) {
 
 backend.doAddToList = function(node) {
     const [value, list] = node.inputsAsCode(this);
-
     return callStatementWithArgs(node.type, value, list);
 };
 
@@ -614,7 +629,6 @@ backend.reportListLength = function(node) {
 
 backend.reportListItem = function(node) {
     const [index, list] = node.inputsAsCode(this);
-
     return callFnWithArgs(node.type, index, list);
 };
 
@@ -623,6 +637,7 @@ backend.reportCDR = function(node) {
     return callFnWithArgs(node.type, list);
 };
 
+backend.reportCrossproduct =
 backend.reportNewList = function(node) {
     var items = node.inputsAsCode(this);
         args = [node.type].concat(items);
@@ -642,13 +657,11 @@ backend.doDeleteFromList = function(node) {
 
 backend.doReplaceInList = function(node) {
     const [index, list, item] = node.inputsAsCode(this);
-
     return callStatementWithArgs(node.type, index, list, item);
 };
 
 backend.doInsertInList = function(node) {
     const [value, index, list] = node.inputsAsCode(this);
-
     return callStatementWithArgs(node.type, value, index, list);
 };
 

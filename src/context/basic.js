@@ -279,6 +279,10 @@ context.reportIsA = function(thing, type) {
     return typeof thing === type;
 };
 
+context.reportAtan2 = function(y, x) {
+    return degrees(Math.atan2(y, x));
+};
+
 context.reportMonadic = function(operation, number) {
     var x = +number,
         result = 0;
@@ -330,6 +334,123 @@ context.reportMonadic = function(operation, number) {
     return result;
 };
 
+function getRank(list) {
+    return Array.isArray(list) ? 1 + list.map(getRank).reduce((a, b) => Math.max(a, b), 0) : 0;
+}
+function getDimensions(list) {
+    if (!Array.isArray(list)) return [];
+    const subDims = list.map(getDimensions);
+    const res = [list.length];
+    for (let i = 0;; ++i) {
+        const nextDim = subDims.reduce((a, b) => i >= b.length ? a : Math.max(a, b[i]), 0);
+        if (nextDim <= 0) break;
+        res.push(nextDim);
+    }
+    return res;
+}
+function reversed(list) {
+    const res = [...list];
+    res.reverse();
+    return res;
+}
+function flattened(list) {
+    function impl(src, dest) {
+        if (Array.isArray(src)) src.forEach(x => impl(x, dest));
+        else dest.push(src);
+        return dest;
+    }
+    return impl(list, []);
+}
+function transposed(list) {
+    const rows = list.length;
+    const cols = list.reduce((a, b) => Math.max(a, Array.isArray(b) ? b.length : 1), 0);
+
+    const res = [];
+    for (let j = 0; j < cols; ++j) {
+        const resInner = [];
+        for (let i = 0; i < rows; ++i) {
+            let value = list[i];
+            if (Array.isArray(value)) value = value[j];
+            if (value === undefined) value = '';
+            resInner.push(value);
+        }
+        res.push(resInner);
+    }
+    return res;
+}
+function csvify(list) {
+    if (!Array.isArray(list)) return list;
+    const isMatrix = list.every(row => Array.isArray(row));
+
+    function prepScalar(val) {
+        val = val.toString();
+        const trivial = !val.includes(',') && !val.includes('"');
+        return trivial ? val : '"' + val.replace(/"/g, '""') + '"';
+    }
+    function prepVector(items) {
+        return items.map(x => prepScalar(x)).join(',');
+    }
+
+    return isMatrix ? list.map(row => prepVector(row)).join('\n') : prepVector(list);
+}
+
+context.reportListAttribute = function(attr, list) {
+    switch (attr) {
+        case 'length': return list.length;
+        case 'rank': return getRank(list);
+        case 'dimensions': return getDimensions(list);
+        case 'reverse': return reversed(list);
+        case 'flatten': return flattened(list);
+        case 'columns': return transposed(list);
+        case 'lines': return list.join('\n');
+        case 'json': return JSON.stringify(list);
+        case 'csv': return csvify(list);
+        default: return 0;
+    }
+};
+
+context.reportReshape = function(list, dims) {
+    if (dims.length === 0) return [];
+
+    function consume(src, pos, count, dest) {
+        while (count-- > 0) {
+            dest.push(src.length ? src[pos[0]] : '');
+            if (++pos[0] >= src.length) pos[0] = 0;
+        }
+        return dest;
+    }
+    function impl(src, pos, dims, dest) {
+        const [count, ...rest] = dims;
+        if (rest.length === 0) {
+            consume(src, pos, count, dest);
+        } else {
+            for (let i = 0; i < count; ++i) {
+                dest.push(impl(src, pos, rest, []));
+            }
+        }
+        return dest;
+    }
+    return impl(flattened(list), [0], dims, []);
+};
+
+context.reportCrossproduct = function(lists) {
+    if (lists.length === 0) return [];
+
+    function impl(lists, working, dest) {
+        if (working.length >= lists.length) {
+            dest.push([...working]);
+        } else {
+            for (const value of lists[working.length]) {
+                working.push(value);
+                impl(lists, working, dest);
+                working.pop();
+            }
+        }
+        return dest;
+    }
+    return impl(lists, [], []);
+};
+
 context.reportRound = function(number) {
     return Math.round(number);
 };
@@ -340,6 +461,23 @@ context.reportModulus = function(left, right) {
 
 context.reportProduct = function(left, right) {
     return left * right;
+};
+context.reportVariadicProduct = function(vals) {
+    return vals.reduce((a, b) => a * b, 1);
+};
+
+context.reportMax = function(a, b) {
+    return Math.max(+a, +b);
+};
+context.reportMin = function(a, b) {
+    return Math.min(+a, +b);
+};
+
+context.reportVariadicMax = function(vals) {
+    return vals.reduce((a, b) => Math.max(+a, +b), -Infinity);
+};
+context.reportVariadicMin = function(vals) {
+    return vals.reduce((a, b) => Math.min(+a, +b), Infinity);
 };
 
 context.reportRandom = function(min, max) {
@@ -362,6 +500,9 @@ context.reportDifference = function (left, right) {
 context.reportSum = function(left, right) {
     return (+left) + (+right);
 };
+context.reportVariadicSum = function(vals) {
+    return vals.reduce((a, b) => +a + +b, 0);
+};
 
 context.reportGreaterThan = function(a, b) {
     var x = +a,
@@ -382,6 +523,16 @@ context.reportLessThan = function(a, b) {
         y = b;
     }
     return x < y;
+};
+
+context.reportLessThanOrEquals = function(a, b) {
+    return !context.reportGreaterThan(a, b);
+};
+context.reportGreaterThanOrEquals = function(a, b) {
+    return !context.reportLessThan(a, b);
+};
+context.reportNotEquals = function(a, b) {
+    return !context.reportEquals(a, b);
 };
 
 context.reportTextSplit = function(string, delimiter) {
